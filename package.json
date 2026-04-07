@@ -1,0 +1,29 @@
+{
+  "name": "ant-id-training",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm:dev -w apps/backend\" \"npm:dev -w apps/frontend\"",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "db:generate": "npm run prisma:generate -w apps/backend",
+    "db:migrate": "npm run prisma:migrate -w apps/backend",
+    "db:seed": "npm run prisma:seed -w apps/backend",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "keywords": [],
+  "author": "Anathos",
+  "license": "ISC",
+  "type": "commonjs",
+  "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

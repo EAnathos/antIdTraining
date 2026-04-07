@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+apps/*/node_modules/
+
+# Build outputs
+dist/
+build/
+apps/*/dist/
+apps/*/build/
+
+# Vite / TypeScript caches
+.vite/
+*.tsbuildinfo
+
+# Runtime files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Uploads / local generated assets
+apps/backend/uploads/
+
+# Coverage
+coverage/
+*.lcov
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
