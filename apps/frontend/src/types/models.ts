@@ -1,3 +1,14 @@
+export type TaxonCriterion = {
+  id: string
+  label: string
+  position: number
+}
+
+export type TaxonLevelDetail = {
+  description: string | null
+  criteria: TaxonCriterion[]
+}
+
 export type Taxon = {
   id: string
   subfamily: string
@@ -6,6 +17,11 @@ export type Taxon = {
   subgenus: string | null
   speciesGroup: string | null
   species: string
+  levelDetails: {
+    subfamily: TaxonLevelDetail
+    genus: TaxonLevelDetail
+    species: TaxonLevelDetail
+  }
 }
 
 export type ReferenceItem = {

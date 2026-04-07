@@ -63,6 +63,7 @@ export function AdminDashboardPage() {
             createTaxon={data.createTaxon}
             updateTaxon={data.updateTaxon}
             deleteTaxon={data.deleteTaxon}
+            saveTaxonLevelDetails={data.saveTaxonLevelDetails}
           />
         )}
 

@@ -11,6 +11,17 @@ type TaxonForm = {
   species: string
 }
 
+type LevelDetailDraft = {
+  description: string
+  criteria: string[]
+}
+
+type TaxonDetailsDraft = {
+  subfamily: LevelDetailDraft
+  genus: LevelDetailDraft
+  species: LevelDetailDraft
+}
+
 type Props = {
   taxons: Taxon[]
   taxonForm: TaxonForm
@@ -20,6 +31,7 @@ type Props = {
   createTaxon: (event: FormEvent) => Promise<void>
   updateTaxon: (event: FormEvent) => Promise<void>
   deleteTaxon: (id: string) => Promise<void>
+  saveTaxonLevelDetails: (taxonId: string, levelDetails: TaxonDetailsDraft) => Promise<void>
 }
 
 export function TaxonsCrudPanel({
@@ -31,11 +43,14 @@ export function TaxonsCrudPanel({
   createTaxon,
   updateTaxon,
   deleteTaxon,
+  saveTaxonLevelDetails,
 }: Props) {
   const [level, setLevel] = useState('')
   const [query, setQuery] = useState('')
   const [appliedLevel, setAppliedLevel] = useState('')
   const [appliedQuery, setAppliedQuery] = useState('')
+  const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
+  const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
 
   const filteredTaxons = useMemo(() => {
     const value = appliedQuery.trim().toLowerCase()
@@ -77,6 +92,81 @@ export function TaxonsCrudPanel({
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
     })
+  }
+
+  function openDetailsModal(taxon: Taxon) {
+    setModalTaxon(taxon)
+    setModalDraft({
+      subfamily: {
+        description: taxon.levelDetails.subfamily.description ?? '',
+        criteria: taxon.levelDetails.subfamily.criteria.map((criterion) => criterion.label),
+      },
+      genus: {
+        description: taxon.levelDetails.genus.description ?? '',
+        criteria: taxon.levelDetails.genus.criteria.map((criterion) => criterion.label),
+      },
+      species: {
+        description: taxon.levelDetails.species.description ?? '',
+        criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
+      },
+    })
+  }
+
+  function closeDetailsModal() {
+    setModalTaxon(null)
+    setModalDraft(null)
+  }
+
+  function updateLevelDescription(levelKey: keyof TaxonDetailsDraft, value: string) {
+    if (!modalDraft) return
+    setModalDraft({
+      ...modalDraft,
+      [levelKey]: {
+        ...modalDraft[levelKey],
+        description: value,
+      },
+    })
+  }
+
+  function updateCriterion(levelKey: keyof TaxonDetailsDraft, index: number, value: string) {
+    if (!modalDraft) return
+    const nextCriteria = [...modalDraft[levelKey].criteria]
+    nextCriteria[index] = value
+    setModalDraft({
+      ...modalDraft,
+      [levelKey]: {
+        ...modalDraft[levelKey],
+        criteria: nextCriteria,
+      },
+    })
+  }
+
+  function addCriterion(levelKey: keyof TaxonDetailsDraft) {
+    if (!modalDraft) return
+    setModalDraft({
+      ...modalDraft,
+      [levelKey]: {
+        ...modalDraft[levelKey],
+        criteria: [...modalDraft[levelKey].criteria, ''],
+      },
+    })
+  }
+
+  function removeCriterion(levelKey: keyof TaxonDetailsDraft, index: number) {
+    if (!modalDraft) return
+    setModalDraft({
+      ...modalDraft,
+      [levelKey]: {
+        ...modalDraft[levelKey],
+        criteria: modalDraft[levelKey].criteria.filter((_, currentIndex) => currentIndex !== index),
+      },
+    })
+  }
+
+  async function saveDetailsModal() {
+    if (!modalTaxon || !modalDraft) return
+    await saveTaxonLevelDetails(modalTaxon.id, modalDraft)
+    closeDetailsModal()
   }
 
   return (
@@ -133,6 +223,7 @@ export function TaxonsCrudPanel({
                 <th className="p-2">Sous-genre</th>
                 <th className="p-2">Groupe d'espèces</th>
                 <th className="p-2">Espèce</th>
+                <th className="p-2">Détails</th>
                 <th className="p-2">Actions</th>
               </tr>
             </thead>
@@ -145,6 +236,11 @@ export function TaxonsCrudPanel({
                   <td className="p-2">{taxon.subgenus ?? '-'}</td>
                   <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
                   <td className="p-2">{taxon.species}</td>
+                  <td className="p-2">
+                    <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
+                      Ouvrir
+                    </button>
+                  </td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <button className="rounded bg-slate-100 px-2 py-1 text-slate-700" type="button" title="Modifier" onClick={() => loadTaxonInForm(taxon)}>
@@ -161,6 +257,68 @@ export function TaxonsCrudPanel({
           </table>
         </div>
       </div>
+
+      {modalTaxon && modalDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-900">
+                Critères et description — {modalTaxon.genus} {modalTaxon.species}
+              </h3>
+              <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal}>
+                Fermer
+              </button>
+            </div>
+
+            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => {
+              const levelLabel = levelKey === 'subfamily' ? `Sous-famille (${modalTaxon.subfamily})` : levelKey === 'genus' ? `Genre (${modalTaxon.genus})` : `Espèce (${modalTaxon.species})`
+              const levelDraft = modalDraft[levelKey]
+
+              return (
+                <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
+                  <p className="font-medium text-slate-800">{levelLabel}</p>
+                  <textarea
+                    className="mt-2 w-full rounded border p-2"
+                    placeholder="Description"
+                    rows={2}
+                    value={levelDraft.description}
+                    onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
+                  />
+
+                  <div className="mt-2 space-y-2">
+                    {levelDraft.criteria.map((criterion, index) => (
+                      <div key={`${levelKey}-${index}`} className="flex gap-2">
+                        <input
+                          className="flex-1 rounded border p-2"
+                          placeholder="Critère"
+                          value={criterion}
+                          onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
+                        />
+                        <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" onClick={() => removeCriterion(levelKey, index)}>
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={() => addCriterion(levelKey)}>
+                    + Ajouter un critère
+                  </button>
+                </div>
+              )
+            })}
+
+            <div className="mt-2 flex justify-end gap-2">
+              <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>
+                Annuler
+              </button>
+              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => void saveDetailsModal()}>
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

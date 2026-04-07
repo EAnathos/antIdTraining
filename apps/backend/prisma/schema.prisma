@@ -16,6 +16,12 @@ enum ReferenceType {
   MYRMECOLOGY
 }
 
+enum TaxonLevel {
+  SUBFAMILY
+  GENUS
+  SPECIES
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -42,6 +48,34 @@ model Taxon {
   @@index([genus])
   @@index([species])
   @@unique([subfamily, tribe, genus, species])
+}
+
+model TaxonLevelProfile {
+  id        String   @id @default(cuid())
+  level     TaxonLevel
+  value     String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  criteria TaxonLevelCriterion[]
+
+  @@unique([level, value])
+  @@index([level])
+  @@index([value])
+}
+
+model TaxonLevelCriterion {
+  id        String   @id @default(cuid())
+  profileId String
+  label     String
+  position  Int
+  createdAt DateTime @default(now())
+
+  profile TaxonLevelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, position])
 }
 
 model ObservationEntry {

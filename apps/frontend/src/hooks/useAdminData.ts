@@ -3,6 +3,12 @@ import type { FormEvent } from 'react'
 import { api, apiBaseUrl } from '../lib/api'
 import type { Entry, ReferenceItem, Taxon } from '../types/models'
 
+type LevelDetailsDraft = {
+  subfamily: { description: string; criteria: string[] }
+  genus: { description: string; criteria: string[] }
+  species: { description: string; criteria: string[] }
+}
+
 export function useAdminData(token: string | null) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
@@ -138,6 +144,41 @@ export function useAdminData(token: string | null) {
     }
   }
 
+  async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft) {
+    const found = taxons.find((taxon) => taxon.id === taxonId)
+    if (!found) return
+
+    setMessage('')
+    try {
+      await adminApi.put(`/taxons/${taxonId}`, {
+        subfamily: found.subfamily,
+        tribe: found.tribe,
+        genus: found.genus,
+        subgenus: found.subgenus,
+        speciesGroup: found.speciesGroup,
+        species: found.species,
+        levelDetails: {
+          subfamily: {
+            description: levelDetails.subfamily.description.trim() || null,
+            criteria: levelDetails.subfamily.criteria.map((value) => value.trim()).filter(Boolean),
+          },
+          genus: {
+            description: levelDetails.genus.description.trim() || null,
+            criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
+          },
+          species: {
+            description: levelDetails.species.description.trim() || null,
+            criteria: levelDetails.species.criteria.map((value) => value.trim()).filter(Boolean),
+          },
+        },
+      })
+      await loadAll()
+      setMessage('Critères et descriptions mis à jour.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Mise à jour des critères impossible')
+    }
+  }
+
   async function createReference(event: FormEvent) {
     event.preventDefault()
     await adminApi.post('/references', {
@@ -207,6 +248,7 @@ export function useAdminData(token: string | null) {
     createTaxon,
     updateTaxon,
     deleteTaxon,
+    saveTaxonLevelDetails,
 
     // References
     references,
