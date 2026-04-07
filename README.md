@@ -26,6 +26,10 @@ Services disponibles:
 - OpenAPI JSON: http://localhost:4000/api/openapi.json
 - PostgreSQL: localhost:5432 (db: `antidtraining`, user: `postgres`, pass: `postgres`)
 
+Variables backend importantes:
+- `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` sont obligatoires
+- `CORS_ORIGINS` permet de limiter les origines autorisées
+
 À l'initialisation du conteneur backend:
 - `prisma generate`
 - `prisma db push`

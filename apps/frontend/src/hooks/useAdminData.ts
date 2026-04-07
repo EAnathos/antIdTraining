@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, apiBaseUrl } from '../lib/api'
+import { api, createAuthApi } from '../lib/api'
 import type { Entry, ReferenceItem, Taxon } from '../types/models'
 
 type LevelDetailsDraft = {
@@ -8,6 +8,9 @@ type LevelDetailsDraft = {
   genus: { description: string; criteria: string[] }
   species: { description: string; criteria: string[] }
 }
+
+const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
+const MAX_ENTRY_IMAGES = 3
 
 export function useAdminData(token: string | null) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
@@ -21,29 +24,38 @@ export function useAdminData(token: string | null) {
   const [referenceForm, setReferenceForm] = useState({ title: '', description: '', type: 'WEBSITE' as 'WEBSITE' | 'MYRMECOLOGY', url: '' })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ taxonId: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
 
-  const adminApi = api.create({
-    baseURL: `${apiBaseUrl}/admin`,
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const adminApi = createAuthApi(token)
 
-  async function loadAll() {
+  async function refreshAll() {
     const [taxonRes, refRes, entryRes] = await Promise.all([
       api.get<Taxon[]>('/taxons'),
       api.get<ReferenceItem[]>('/references'),
       adminApi.get<Entry[]>('/entries'),
     ])
+
     setTaxons(taxonRes.data)
     setReferences(refRes.data)
     setEntries(entryRes.data)
   }
 
+  async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
+    setMessage('')
+    try {
+      await action()
+      await refreshAll()
+      setMessage(successMessage)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : failureMessage)
+    }
+  }
+
   useEffect(() => {
-    void loadAll()
-  }, [])
+    void refreshAll()
+  }, [token])
 
   // Sync taxon form when selectedTaxonId changes
   useEffect(() => {
@@ -83,7 +95,9 @@ export function useAdminData(token: string | null) {
       const found = entries.find((x) => x.id === selectedEntryId)
       if (found) {
         setEntryForm({
-          taxonId: found.taxonId,
+          subfamily: found.subfamily,
+          genus: found.genus ?? '',
+          species: found.species ?? '',
           department: found.department,
           observedAt: found.observedAt.slice(0, 10),
           biotope: found.biotope,
@@ -95,8 +109,7 @@ export function useAdminData(token: string | null) {
 
   async function createTaxon(event: FormEvent) {
     event.preventDefault()
-    setMessage('')
-    try {
+    await runAdminAction(async () => {
       await adminApi.post('/taxons', {
         subfamily: taxonForm.subfamily.trim(),
         tribe: taxonForm.tribe.trim() || null,
@@ -106,18 +119,13 @@ export function useAdminData(token: string | null) {
         species: taxonForm.species.trim(),
       })
       setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
-      await loadAll()
-      setMessage('Taxon créé.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Création du taxon impossible')
-    }
+    }, 'Taxon créé.', 'Création du taxon impossible')
   }
 
   async function updateTaxon(event: FormEvent) {
     event.preventDefault()
     if (!selectedTaxonId) return
-    setMessage('')
-    try {
+    await runAdminAction(async () => {
       await adminApi.put(`/taxons/${selectedTaxonId}`, {
         subfamily: taxonForm.subfamily.trim(),
         tribe: taxonForm.tribe.trim() || null,
@@ -126,30 +134,20 @@ export function useAdminData(token: string | null) {
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
       })
-      await loadAll()
-      setMessage('Taxon modifié.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Modification du taxon impossible')
-    }
+    }, 'Taxon modifié.', 'Modification du taxon impossible')
   }
 
   async function deleteTaxon(id: string) {
-    setMessage('')
-    try {
+    await runAdminAction(async () => {
       await adminApi.delete(`/taxons/${id}`)
-      await loadAll()
-      setMessage('Taxon supprimé.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Suppression du taxon impossible')
-    }
+    }, 'Taxon supprimé.', 'Suppression du taxon impossible')
   }
 
   async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
 
-    setMessage('')
-    try {
+    await runAdminAction(async () => {
       await adminApi.put(`/taxons/${taxonId}`, {
         subfamily: found.subfamily,
         tribe: found.tribe,
@@ -172,44 +170,60 @@ export function useAdminData(token: string | null) {
           },
         },
       })
-      await loadAll()
-      setMessage('Critères et descriptions mis à jour.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Mise à jour des critères impossible')
-    }
+    }, 'Critères et descriptions mis à jour.', 'Mise à jour des critères impossible')
   }
 
   async function createReference(event: FormEvent) {
     event.preventDefault()
-    await adminApi.post('/references', {
-      ...referenceForm,
-      description: referenceForm.description || null,
-      url: referenceForm.url || null,
-    })
-    setReferenceForm({ title: '', description: '', type: 'WEBSITE', url: '' })
-    await loadAll()
+    await runAdminAction(async () => {
+      await adminApi.post('/references', {
+        ...referenceForm,
+        description: referenceForm.description || null,
+        url: referenceForm.url || null,
+      })
+      setReferenceForm({ title: '', description: '', type: 'WEBSITE', url: '' })
+    }, 'Référence créée.', 'Création de la référence impossible')
   }
 
   async function updateReference(event: FormEvent) {
     event.preventDefault()
     if (!selectedReferenceId) return
-    await adminApi.put(`/references/${selectedReferenceId}`, {
-      ...referenceForm,
-      description: referenceForm.description || null,
-      url: referenceForm.url || null,
-    })
-    await loadAll()
+    await runAdminAction(async () => {
+      await adminApi.put(`/references/${selectedReferenceId}`, {
+        ...referenceForm,
+        description: referenceForm.description || null,
+        url: referenceForm.url || null,
+      })
+    }, 'Référence modifiée.', 'Modification de la référence impossible')
   }
 
   async function deleteReference(id: string) {
-    await adminApi.delete(`/references/${id}`)
-    await loadAll()
+    await runAdminAction(async () => {
+      await adminApi.delete(`/references/${id}`)
+    }, 'Référence supprimée.', 'Suppression de la référence impossible')
   }
 
   async function createEntry(event: FormEvent) {
     event.preventDefault()
+    if (entryFiles) {
+      if (entryFiles.length > MAX_ENTRY_IMAGES) {
+        setMessage('Vous pouvez envoyer 3 images maximum.')
+        return
+      }
+
+      const oversizedFile = Array.from(entryFiles).find((file) => file.size > MAX_ENTRY_IMAGE_SIZE_BYTES)
+      if (oversizedFile) {
+        setMessage(`Le fichier "${oversizedFile.name}" dépasse 8 Mo.`)
+        return
+      }
+    }
+
     const formData = new FormData()
-    formData.append('taxonId', entryForm.taxonId)
+    const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
+    const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
+    formData.append('taxonLevel', taxonLevel)
+    formData.append('taxonValue', taxonValue)
+    formData.append('taxonGenus', entryForm.genus || '')
     formData.append('department', entryForm.department)
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
@@ -217,22 +231,52 @@ export function useAdminData(token: string | null) {
     if (entryFiles) {
       Array.from(entryFiles).forEach((file) => formData.append('images', file))
     }
-    await adminApi.post('/entries', formData)
-    setEntryForm({ taxonId: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
-    setEntryFiles(null)
-    await loadAll()
+    setMessage('')
+    try {
+      await adminApi.post('/entries', formData)
+      setEntryForm({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+      setEntryFiles(null)
+      await refreshAll()
+      setMessage('Entrée créée.')
+    } catch (error) {
+      const errorWithStatus = error as Error & { status?: number }
+      if (errorWithStatus.status === 413) {
+        setMessage('Fichiers trop volumineux (limite serveur dépassée).')
+        return
+      }
+
+      setMessage(error instanceof Error ? error.message : 'Création de l’entrée impossible')
+    }
   }
 
   async function updateEntry(event: FormEvent) {
     event.preventDefault()
     if (!selectedEntryId) return
-    await adminApi.put(`/entries/${selectedEntryId}`, entryForm)
-    await loadAll()
+    await runAdminAction(async () => {
+      const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
+      const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
+      await adminApi.put(`/entries/${selectedEntryId}`, {
+        taxonLevel,
+        taxonValue,
+        taxonGenus: entryForm.genus || '',
+        department: entryForm.department,
+        observedAt: entryForm.observedAt,
+        biotope: entryForm.biotope,
+        photoCredit: entryForm.photoCredit,
+      })
+      setSelectedEntryId('')
+      setEntryFiles(null)
+    }, 'Entrée modifiée.', 'Modification de l’entrée impossible')
   }
 
   async function deleteEntry(id: string) {
-    await adminApi.delete(`/entries/${id}`)
-    await loadAll()
+    await runAdminAction(async () => {
+      await adminApi.delete(`/entries/${id}`)
+      if (selectedEntryId === id) {
+        setSelectedEntryId('')
+        setEntryFiles(null)
+      }
+    }, 'Entrée supprimée.', 'Suppression de l’entrée impossible')
   }
 
   return {

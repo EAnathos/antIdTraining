@@ -12,11 +12,37 @@ import { referencesRouter } from './routes/references.js'
 import { taxonsRouter } from './routes/taxons.js'
 import { requireAdmin, requireAuth } from './middleware/auth.js'
 
+function parseCorsOrigins(value: string | undefined) {
+  const defaults = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080']
+
+  const rawOrigins = value
+    ? value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : []
+
+  return rawOrigins.length > 0 ? rawOrigins : defaults
+}
+
 const app = express()
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const uploadsPath = path.resolve(currentDir, '../uploads')
+const corsOrigins = parseCorsOrigins(process.env.CORS_ORIGINS)
 
-app.use(cors())
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || corsOrigins.includes(origin)) {
+        callback(null, true)
+        return
+      }
+
+      callback(null, false)
+    },
+    credentials: false,
+  }),
+)
 app.use(express.json())
 app.use('/uploads', express.static(uploadsPath))
 

@@ -34,20 +34,30 @@ export type ReferenceItem = {
 
 export type Entry = {
   id: string
-  taxonId: string
+  taxonId: string | null
+  taxonLevel: 'SUBFAMILY' | 'GENUS' | 'SPECIES'
+  taxonValue: string
+  subfamily: string
+  genus: string | null
+  species: string | null
   department: string
   observedAt: string
   biotope: string
   photoCredit: string
-  taxon: Taxon
   images: { id: string; imageUrl: string }[]
 }
 
 export type GameQuestion = {
   level: 'easy' | 'medium' | 'hard'
   entryId: string
-  image: string | null
+  images: string[]
   prompt: string
+  details?: {
+    department: string
+    observedAt: string
+    biotope: string
+    photoCredit: string
+  }
   choices: string[] | { subfamily: string[]; genus?: string[]; species?: string[] }
   answer: { subfamily?: string; genus?: string; species?: string }
 }

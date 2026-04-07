@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
+import { ScientificTaxonName } from '../../lib/taxonDisplay'
 
 type TaxonForm = {
   subfamily: string
@@ -45,16 +46,14 @@ export function TaxonsCrudPanel({
   deleteTaxon,
   saveTaxonLevelDetails,
 }: Props) {
-  const [level, setLevel] = useState('')
+  const [level, setLevel] = useState('genus')
   const [query, setQuery] = useState('')
-  const [appliedLevel, setAppliedLevel] = useState('')
-  const [appliedQuery, setAppliedQuery] = useState('')
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
 
   const filteredTaxons = useMemo(() => {
-    const value = appliedQuery.trim().toLowerCase()
-    const currentLevel = appliedLevel
+    const value = query.trim().toLowerCase()
+    const currentLevel = level
 
     if (!value) return taxons
 
@@ -66,12 +65,7 @@ export function TaxonsCrudPanel({
       const haystack = [taxon.subfamily, taxon.genus, taxon.species].join(' ').toLowerCase()
       return haystack.includes(value)
     })
-  }, [appliedLevel, appliedQuery, taxons])
-
-  function applySearch() {
-    setAppliedLevel(level)
-    setAppliedQuery(query)
-  }
+  }, [level, query, taxons])
 
   function submitTaxon(event: FormEvent) {
     return selectedTaxonId ? updateTaxon(event) : createTaxon(event)
@@ -169,6 +163,13 @@ export function TaxonsCrudPanel({
     closeDetailsModal()
   }
 
+  async function handleDeleteTaxon(id: string) {
+    if (!window.confirm('Confirmer la suppression de ce taxon ?')) {
+      return
+    }
+    await deleteTaxon(id)
+  }
+
   return (
     <div className="mt-3 space-y-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -196,21 +197,15 @@ export function TaxonsCrudPanel({
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          <select className="rounded-lg border border-slate-300 p-2" value={level} onChange={(e) => setLevel(e.target.value)}>
-            <option value="">Tous niveaux</option>
-            <option value="subfamily">Sous-famille</option>
+          <select className="h-10 w-44 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700" value={level} onChange={(e) => setLevel(e.target.value)}>
             <option value="genus">Genre</option>
-            <option value="species">Espèce</option>
           </select>
           <input
-            className="rounded-lg border border-slate-300 p-2"
+            className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Recherche"
           />
-          <button className="rounded-lg bg-slate-900 px-3 py-2 text-white" type="button" onClick={applySearch}>
-            Rechercher
-          </button>
         </div>
 
         <div className="mt-4 overflow-auto">
@@ -221,7 +216,6 @@ export function TaxonsCrudPanel({
                 <th className="p-2">Tribu</th>
                 <th className="p-2">Genre</th>
                 <th className="p-2">Sous-genre</th>
-                <th className="p-2">Groupe d'espèces</th>
                 <th className="p-2">Espèce</th>
                 <th className="p-2">Détails</th>
                 <th className="p-2">Actions</th>
@@ -229,13 +223,15 @@ export function TaxonsCrudPanel({
             </thead>
             <tbody>
               {filteredTaxons.map((taxon) => (
-                <tr key={taxon.id} className="border-b border-slate-100">
+                <tr
+                  key={taxon.id}
+                  className={`border-b ${selectedTaxonId === taxon.id ? 'border-slate-200 bg-slate-50' : 'border-slate-100'}`}
+                >
                   <td className="p-2">{taxon.subfamily}</td>
                   <td className="p-2">{taxon.tribe ?? '-'}</td>
-                  <td className="p-2">{taxon.genus}</td>
-                  <td className="p-2">{taxon.subgenus ?? '-'}</td>
-                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
-                  <td className="p-2">{taxon.species}</td>
+                  <td className="p-2"><em>{taxon.genus}</em></td>
+                  <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
+                  <td className="p-2"><em>{taxon.species}</em></td>
                   <td className="p-2">
                     <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
                       Ouvrir
@@ -246,7 +242,7 @@ export function TaxonsCrudPanel({
                       <button className="rounded bg-slate-100 px-2 py-1 text-slate-700" type="button" title="Modifier" onClick={() => loadTaxonInForm(taxon)}>
                         ✏️
                       </button>
-                      <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => deleteTaxon(taxon.id)}>
+                      <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => void handleDeleteTaxon(taxon.id)}>
                         🗑️
                       </button>
                     </div>
@@ -263,7 +259,7 @@ export function TaxonsCrudPanel({
           <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-900">
-                Critères et description — {modalTaxon.genus} {modalTaxon.species}
+                Critères et description — <ScientificTaxonName taxon={modalTaxon} />
               </h3>
               <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal}>
                 Fermer
@@ -271,12 +267,19 @@ export function TaxonsCrudPanel({
             </div>
 
             {(['subfamily', 'genus', 'species'] as const).map((levelKey) => {
-              const levelLabel = levelKey === 'subfamily' ? `Sous-famille (${modalTaxon.subfamily})` : levelKey === 'genus' ? `Genre (${modalTaxon.genus})` : `Espèce (${modalTaxon.species})`
               const levelDraft = modalDraft[levelKey]
 
               return (
                 <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-800">{levelLabel}</p>
+                  <p className="font-medium text-slate-800">
+                    {levelKey === 'subfamily' ? (
+                      <>Sous-famille ({modalTaxon.subfamily})</>
+                    ) : levelKey === 'genus' ? (
+                      <>Genre (<em>{modalTaxon.genus}</em>)</>
+                    ) : (
+                      <>Espèce (<em>{modalTaxon.species}</em>)</>
+                    )}
+                  </p>
                   <textarea
                     className="mt-2 w-full rounded border p-2"
                     placeholder="Description"

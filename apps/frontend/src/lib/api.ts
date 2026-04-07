@@ -52,6 +52,20 @@ function createApiClient(baseURL: string, defaultHeaders: Record<string, string>
       throw error
     }
 
+    if (response.status === 204) {
+      return { data: undefined as unknown }
+    }
+
+    const contentLength = response.headers.get('content-length')
+    if (contentLength === '0') {
+      return { data: undefined as unknown }
+    }
+
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!contentType.includes('application/json')) {
+      return { data: undefined as unknown }
+    }
+
     const data = await response.json()
     return { data }
   }
@@ -76,3 +90,10 @@ function createApiClient(baseURL: string, defaultHeaders: Record<string, string>
 }
 
 export const api = createApiClient(apiBaseUrl)
+
+export function createAuthApi(token: string | null) {
+  return api.create({
+    baseURL: `${apiBaseUrl}/admin`,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+}

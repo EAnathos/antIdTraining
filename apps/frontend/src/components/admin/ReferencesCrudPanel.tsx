@@ -60,6 +60,13 @@ export function ReferencesCrudPanel({
     })
   }
 
+  async function handleDeleteReference(id: string) {
+    if (!window.confirm('Confirmer la suppression de cette référence ?')) {
+      return
+    }
+    await deleteReference(id)
+  }
+
   return (
     <div className="mt-3 space-y-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -92,11 +99,19 @@ export function ReferencesCrudPanel({
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
-        <input className="w-full rounded border p-2" placeholder="Rechercher une référence" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input
+          className="w-full rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
+          placeholder="Rechercher une référence"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
 
         <ul className="mt-3 space-y-2 text-sm">
           {filteredReferences.map((reference) => (
-            <li key={reference.id} className="flex items-center justify-between gap-3 rounded border p-2">
+            <li
+              key={reference.id}
+              className={`flex items-center justify-between gap-3 rounded border p-2 ${selectedReferenceId === reference.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}
+            >
               <button className="flex-1 text-left" type="button" onClick={() => loadReferenceInForm(reference)}>
                 {reference.title} ({reference.type})
               </button>
@@ -104,7 +119,7 @@ export function ReferencesCrudPanel({
                 <button className="rounded bg-slate-100 px-2 py-1 text-slate-700" type="button" title="Modifier" onClick={() => loadReferenceInForm(reference)}>
                   ✏️
                 </button>
-                <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => deleteReference(reference.id)}>
+                <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => void handleDeleteReference(reference.id)}>
                   🗑️
                 </button>
               </div>

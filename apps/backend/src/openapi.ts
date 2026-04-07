@@ -511,9 +511,11 @@ export const openApiDocument = {
             'multipart/form-data': {
               schema: {
                 type: 'object',
-                required: ['taxonId', 'department', 'observedAt', 'biotope', 'photoCredit'],
+                required: ['taxonLevel', 'taxonValue', 'department', 'observedAt', 'biotope', 'photoCredit'],
                 properties: {
-                  taxonId: { type: 'string' },
+                  taxonLevel: { type: 'string', enum: ['SUBFAMILY', 'GENUS', 'SPECIES'] },
+                  taxonValue: { type: 'string' },
+                  taxonGenus: { type: 'string', nullable: true, description: 'Optionnel; recommandé si taxonLevel=SPECIES' },
                   department: { type: 'string' },
                   observedAt: { type: 'string', format: 'date' },
                   biotope: { type: 'string' },
@@ -531,7 +533,9 @@ export const openApiDocument = {
                 },
               },
               example: {
-                taxonId: 'cmxTaxon123',
+                taxonLevel: 'GENUS',
+                taxonValue: 'Camponotus',
+                taxonGenus: null,
                 department: '13',
                 observedAt: '2026-04-07',
                 biotope: 'Garrigue',
@@ -547,7 +551,12 @@ export const openApiDocument = {
               'application/json': {
                 example: {
                   id: 'cmxEntry123',
-                  taxonId: 'cmxTaxon123',
+                  taxonId: null,
+                  taxonLevel: 'GENUS',
+                  taxonValue: 'Camponotus',
+                  subfamily: 'Formicinae',
+                  genus: 'Camponotus',
+                  species: null,
                   department: '13',
                   observedAt: '2026-04-07T00:00:00.000Z',
                   biotope: 'Garrigue',
@@ -572,9 +581,11 @@ export const openApiDocument = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['taxonId', 'department', 'observedAt', 'biotope', 'photoCredit'],
+                required: ['taxonLevel', 'taxonValue', 'department', 'observedAt', 'biotope', 'photoCredit'],
                 properties: {
-                  taxonId: { type: 'string' },
+                  taxonLevel: { type: 'string', enum: ['SUBFAMILY', 'GENUS', 'SPECIES'] },
+                  taxonValue: { type: 'string' },
+                  taxonGenus: { type: 'string', nullable: true, description: 'Optionnel; recommandé si taxonLevel=SPECIES' },
                   department: { type: 'string' },
                   observedAt: { type: 'string', format: 'date' },
                   biotope: { type: 'string' },
@@ -582,7 +593,9 @@ export const openApiDocument = {
                 },
               },
               example: {
-                taxonId: 'cmxTaxon123',
+                taxonLevel: 'SPECIES',
+                taxonValue: 'rufibarbis',
+                taxonGenus: 'Formica',
                 department: '34',
                 observedAt: '2026-04-08',
                 biotope: 'Forêt de pins',

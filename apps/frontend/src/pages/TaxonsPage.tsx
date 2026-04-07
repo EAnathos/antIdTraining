@@ -10,7 +10,7 @@ type SelectedDetail = {
 
 export function TaxonsPage() {
   const [taxons, setTaxons] = useState<Taxon[]>([])
-  const [level, setLevel] = useState('')
+  const [level, setLevel] = useState<'subfamily' | 'genus' | 'species'>('genus')
   const [query, setQuery] = useState('')
   const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null)
 
@@ -21,27 +21,23 @@ export function TaxonsPage() {
 
   useEffect(() => {
     void load()
-  }, [])
+  }, [level, query])
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Taxons enregistrés</h2>
       <div className="mt-3 flex flex-wrap gap-2">
-        <select className="rounded-lg border border-slate-300 p-2" value={level} onChange={(e) => setLevel(e.target.value)}>
-          <option value="">Tous niveaux</option>
+        <select className="h-10 w-44 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700" value={level} onChange={(e) => setLevel(e.target.value as 'subfamily' | 'genus' | 'species')}>
           <option value="subfamily">Sous-famille</option>
           <option value="genus">Genre</option>
           <option value="species">Espèce</option>
         </select>
         <input
-          className="rounded-lg border border-slate-300 p-2"
+          className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Recherche"
         />
-        <button className="rounded-lg bg-slate-900 px-3 py-2 text-white" onClick={load}>
-          Rechercher
-        </button>
       </div>
 
       <div className="mt-4 overflow-auto">
@@ -52,7 +48,6 @@ export function TaxonsPage() {
               <th className="p-2">Tribu</th>
               <th className="p-2">Genre</th>
               <th className="p-2">Sous-genre</th>
-              <th className="p-2">Groupe d'espèces</th>
               <th className="p-2">Espèce</th>
             </tr>
           </thead>
@@ -87,11 +82,10 @@ export function TaxonsPage() {
                         })
                       }
                     >
-                      {taxon.genus}
+                      <em>{taxon.genus}</em>
                     </button>
                   </td>
-                  <td className="p-2">{taxon.subgenus ?? '-'}</td>
-                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
+                  <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
                   <td className="p-2">
                     <button
                       className="text-indigo-700 underline underline-offset-2"
@@ -104,7 +98,7 @@ export function TaxonsPage() {
                         })
                       }
                     >
-                      {taxon.species}
+                      <em>{taxon.species}</em>
                     </button>
                   </td>
                 </tr>
@@ -118,7 +112,7 @@ export function TaxonsPage() {
           <div className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <p className="font-medium text-slate-900">
-                {selectedDetail.level === 'subfamily' ? 'Sous-famille' : selectedDetail.level === 'genus' ? 'Genre' : 'Espèce'} : {selectedDetail.value}
+                {selectedDetail.level === 'subfamily' ? 'Sous-famille' : selectedDetail.level === 'genus' ? 'Genre' : 'Espèce'} : {selectedDetail.level === 'subfamily' ? selectedDetail.value : <em>{selectedDetail.value}</em>}
               </p>
               <button className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700" type="button" onClick={() => setSelectedDetail(null)}>
                 Fermer

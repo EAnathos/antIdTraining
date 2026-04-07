@@ -3,10 +3,20 @@ import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { api } from '../lib/api'
 
+const ADMIN_TOKEN_KEY = 'adminToken'
+
+function getAdminToken() {
+  return sessionStorage.getItem(ADMIN_TOKEN_KEY)
+}
+
+function setAdminToken(token: string) {
+  sessionStorage.setItem(ADMIN_TOKEN_KEY, token)
+}
+
 export function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loggedIn, setLoggedIn] = useState(Boolean(localStorage.getItem('adminToken')))
+  const [loggedIn, setLoggedIn] = useState(Boolean(getAdminToken()))
   const [error, setError] = useState('')
 
   async function onSubmit(event: FormEvent) {
@@ -17,7 +27,7 @@ export function AdminLoginPage() {
         setError('Compte non administrateur')
         return
       }
-      localStorage.setItem('adminToken', data.token)
+      setAdminToken(data.token)
       setLoggedIn(true)
     } catch {
       setError('Identifiants invalides')

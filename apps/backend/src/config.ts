@@ -2,9 +2,18 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+function requiredEnv(name: string) {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} manquant dans les variables d'environnement`)
+  }
+
+  return value
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
-  jwtSecret: process.env.JWT_SECRET ?? 'change-me',
-  adminEmail: process.env.ADMIN_EMAIL ?? 'admin@antid.local',
-  adminPassword: process.env.ADMIN_PASSWORD ?? 'admin123',
+  jwtSecret: requiredEnv('JWT_SECRET'),
+  adminEmail: requiredEnv('ADMIN_EMAIL'),
+  adminPassword: requiredEnv('ADMIN_PASSWORD'),
 }

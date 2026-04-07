@@ -80,7 +80,12 @@ model TaxonLevelCriterion {
 
 model ObservationEntry {
   id           String   @id @default(cuid())
-  taxonId      String
+  taxonId      String?
+  taxonLevel   TaxonLevel
+  taxonValue   String
+  subfamily    String
+  genus        String?
+  species      String?
   department   String
   observedAt   DateTime
   biotope      String
@@ -88,9 +93,14 @@ model ObservationEntry {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  taxon Taxon @relation(fields: [taxonId], references: [id], onDelete: Cascade)
+  taxon Taxon? @relation(fields: [taxonId], references: [id], onDelete: SetNull)
   images EntryImage[]
 
+  @@index([taxonLevel])
+  @@index([taxonValue])
+  @@index([subfamily])
+  @@index([genus])
+  @@index([species])
   @@index([department])
   @@index([observedAt])
 }

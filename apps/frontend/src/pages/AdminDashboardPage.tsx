@@ -7,8 +7,24 @@ import { TaxonsCrudPanel } from '../components/admin/TaxonsCrudPanel'
 import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
 import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 
+const ADMIN_TOKEN_KEY = 'adminToken'
+
+function getAdminToken() {
+  return sessionStorage.getItem(ADMIN_TOKEN_KEY)
+}
+
+function clearAdminToken() {
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+}
+
+const adminSections: { id: AdminSection; label: string }[] = [
+  { id: 'taxons', label: 'Taxons' },
+  { id: 'references', label: 'Références' },
+  { id: 'entries', label: 'Entrées' },
+]
+
 export function AdminDashboardPage() {
-  const token = localStorage.getItem('adminToken')
+  const token = getAdminToken()
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
 
@@ -23,9 +39,15 @@ export function AdminDashboardPage() {
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="hidden flex-wrap gap-2 md:flex">
-          <button className={`rounded-lg px-3 py-2 text-sm ${section === 'taxons' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setSection('taxons')}>Taxons</button>
-          <button className={`rounded-lg px-3 py-2 text-sm ${section === 'references' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setSection('references')}>Références</button>
-          <button className={`rounded-lg px-3 py-2 text-sm ${section === 'entries' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setSection('entries')}>Entrées</button>
+          {adminSections.map((item) => (
+            <button
+              key={item.id}
+              className={`rounded-lg px-3 py-2 text-sm ${section === item.id ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
+              onClick={() => setSection(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         <AdminMobileMenu
@@ -38,7 +60,7 @@ export function AdminDashboardPage() {
         <button
           className="rounded-lg bg-red-600 px-3 py-2 text-sm text-white"
           onClick={() => {
-            localStorage.removeItem('adminToken')
+            clearAdminToken()
             window.location.href = '/admin/login'
           }}
         >

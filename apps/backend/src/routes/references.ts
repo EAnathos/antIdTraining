@@ -35,14 +35,30 @@ referencesRouter.put('/:id', async (req, res) => {
     return res.status(400).json({ message: 'Payload invalide' })
   }
 
-  const updated = await prisma.reference.update({
-    where: { id: req.params.id },
-    data: parsed.data,
-  })
-  return res.json(updated)
+  try {
+    const updated = await prisma.reference.update({
+      where: { id: req.params.id },
+      data: parsed.data,
+    })
+    return res.json(updated)
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ message: 'Référence introuvable' })
+    }
+
+    throw error
+  }
 })
 
 referencesRouter.delete('/:id', async (req, res) => {
-  await prisma.reference.delete({ where: { id: req.params.id } })
-  return res.status(204).send()
+  try {
+    await prisma.reference.delete({ where: { id: req.params.id } })
+    return res.status(204).send()
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ message: 'Référence introuvable' })
+    }
+
+    throw error
+  }
 })
