@@ -1,13 +1,22 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
 
-const EASY_SUBFAMILIES = [
-  'Formicinae',
-  'Dolichoderinae',
-  'Myrmicinae',
-  'Ponerinae',
-  'Leptanillinae',
-]
+type GameLevel = 'easy' | 'medium' | 'hard'
+
+function normalizeGameLevel(value: unknown): GameLevel {
+  const level = String(value ?? 'easy').toLowerCase()
+  if (level === 'medium' || level === 'hard') {
+    return level
+  }
+
+  return 'easy'
+}
+
+function toDbGameDifficulty(level: GameLevel): 'EASY' | 'MEDIUM' | 'HARD' {
+  if (level === 'medium') return 'MEDIUM'
+  if (level === 'hard') return 'HARD'
+  return 'EASY'
+}
 
 function randomPick<T>(arr: T[]) {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -25,7 +34,7 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
 export const gameRouter = Router()
 
 gameRouter.get('/question', async (req, res) => {
-  const level = String(req.query.level ?? 'easy')
+  const level = normalizeGameLevel(req.query.level)
 
   const entries = await prisma.observationEntry.findMany({
     include: { images: true },
@@ -39,13 +48,27 @@ gameRouter.get('/question', async (req, res) => {
     const entry = randomPick(entries)
     const images = entry.images.map((item) => item.imageUrl)
 
-    const availableSubfamilies = uniqueShuffled(entries.map((item) => item.subfamily))
-    const fallbackWrongChoices = EASY_SUBFAMILIES.filter((item) => item !== entry.subfamily)
-    const choices = buildChoices(entry.subfamily, [...availableSubfamilies, ...fallbackWrongChoices], 5)
+    const subfamilies = await prisma.taxon.findMany({
+      select: { subfamily: true },
+      distinct: ['subfamily'],
+      orderBy: { subfamily: 'asc' },
+    })
+
+    const availableSubfamilies = subfamilies.map((item) => item.subfamily)
+    const fallbackSubfamilies = uniqueShuffled(entries.map((item) => item.subfamily))
+    const choices = buildChoices(entry.subfamily, availableSubfamilies.length ? availableSubfamilies : fallbackSubfamilies, 5)
+
+    const session = await prisma.gameSession.create({
+      data: {
+        level: toDbGameDifficulty(level),
+        entryId: entry.id,
+      },
+    })
 
     return res.json({
       level,
       entryId: entry.id,
+      sessionId: session.id,
       images,
       prompt: 'Identifier la sous-famille',
       details: {
@@ -62,7 +85,7 @@ gameRouter.get('/question', async (req, res) => {
   const allTaxons = await prisma.taxon.findMany()
 
   if (level === 'medium') {
-    const mediumEntries = entries.filter((entry) => entry.taxonLevel === 'GENUS' && !!entry.genus)
+    const mediumEntries = entries.filter((entry) => !!entry.genus)
     if (!mediumEntries.length) {
       return res.status(404).json({ message: 'Aucune entrée disponible pour le niveau moyen.' })
     }
@@ -86,9 +109,17 @@ gameRouter.get('/question', async (req, res) => {
 
     const genusChoices = buildChoices(entry.genus!, [...genusCandidates.slice(0, 2), ...genusWrong], 6)
 
+    const session = await prisma.gameSession.create({
+      data: {
+        level: toDbGameDifficulty(level),
+        entryId: entry.id,
+      },
+    })
+
     return res.json({
       level,
       entryId: entry.id,
+      sessionId: session.id,
       images,
       prompt: 'Identifier la sous-famille puis le genre',
       details: {
@@ -140,9 +171,17 @@ gameRouter.get('/question', async (req, res) => {
   ).slice(0, 4)
   const speciesChoices = buildChoices(entry.species!, [...speciesCandidates.slice(0, 2), ...speciesWrong], 6)
 
+  const session = await prisma.gameSession.create({
+    data: {
+      level: toDbGameDifficulty(level),
+      entryId: entry.id,
+    },
+  })
+
   return res.json({
     level: 'hard',
     entryId: entry.id,
+    sessionId: session.id,
     images,
     prompt: "Identifier la sous-famille, le genre et l'espèce",
     details: {
@@ -165,11 +204,12 @@ gameRouter.get('/question', async (req, res) => {
 })
 
 gameRouter.post('/validate', async (req, res) => {
-  const { level, selected, answer, entryId } = req.body as {
+  const { level, selected, answer, entryId, sessionId } = req.body as {
     level: 'easy' | 'medium' | 'hard'
     selected: { subfamily?: string; genus?: string; species?: string }
     answer: { subfamily?: string; genus?: string; species?: string }
     entryId?: string
+    sessionId?: string
   }
 
   if (!entryId && !answer?.subfamily) {
@@ -184,6 +224,36 @@ gameRouter.post('/validate', async (req, res) => {
 
   if (entryId && !entry) {
     return res.status(404).json({ message: 'Entrée introuvable pour cette question.' })
+  }
+
+  const session = sessionId
+    ? await prisma.gameSession.findUnique({
+        where: { id: sessionId },
+      })
+    : null
+
+  if (sessionId && !session) {
+    return res.status(404).json({ message: 'Session de jeu introuvable.' })
+  }
+
+  const requestedLevel = normalizeGameLevel(level)
+  const shouldPersistFinalResult = !!session && session.level === toDbGameDifficulty(requestedLevel)
+
+  async function persistFinalResult(correct: boolean) {
+    if (!shouldPersistFinalResult || !session) {
+      return
+    }
+
+    await prisma.gameSession.updateMany({
+      where: {
+        id: session.id,
+        finalCorrect: null,
+      },
+      data: {
+        finalCorrect: correct,
+        validatedAt: new Date(),
+      },
+    })
   }
 
   const resolvedAnswer = {
@@ -208,14 +278,38 @@ gameRouter.post('/validate', async (req, res) => {
       })
     : null
 
+  const genusProfile = resolvedAnswer.genus
+    ? await prisma.taxonLevelProfile.findUnique({
+        where: {
+          level_value: {
+            level: 'GENUS',
+            value: resolvedAnswer.genus,
+          },
+        },
+        include: {
+          criteria: {
+            orderBy: { position: 'asc' },
+          },
+        },
+      })
+    : null
+
   const identification = {
-    subfamily: resolvedAnswer.subfamily ?? null,
-    description: subfamilyProfile?.description ?? null,
-    criteria: (subfamilyProfile?.criteria ?? []).map((criterion) => criterion.label),
+    subfamily: {
+      value: resolvedAnswer.subfamily ?? null,
+      description: subfamilyProfile?.description ?? null,
+      criteria: (subfamilyProfile?.criteria ?? []).map((criterion) => criterion.label),
+    },
+    genus: {
+      value: resolvedAnswer.genus ?? null,
+      description: genusProfile?.description ?? null,
+      criteria: (genusProfile?.criteria ?? []).map((criterion) => criterion.label),
+    },
   }
 
   const subfamilyOk = selected.subfamily === resolvedAnswer.subfamily
   if (!subfamilyOk) {
+    await persistFinalResult(false)
     return res.json({
       correct: false,
       reason: 'Sous-famille incorrecte',
@@ -224,6 +318,7 @@ gameRouter.post('/validate', async (req, res) => {
   }
 
   if (level === 'easy') {
+    await persistFinalResult(true)
     return res.json({
       correct: true,
       identification,
@@ -232,6 +327,7 @@ gameRouter.post('/validate', async (req, res) => {
 
   const genusOk = selected.genus === resolvedAnswer.genus
   if (!genusOk) {
+    await persistFinalResult(false)
     return res.json({
       correct: false,
       reason: 'Genre incorrect',
@@ -240,6 +336,7 @@ gameRouter.post('/validate', async (req, res) => {
   }
 
   if (level === 'medium') {
+    await persistFinalResult(true)
     return res.json({
       correct: true,
       identification,
@@ -248,6 +345,7 @@ gameRouter.post('/validate', async (req, res) => {
 
   const speciesOk = selected.species === resolvedAnswer.species
   if (!speciesOk) {
+    await persistFinalResult(false)
     return res.json({
       correct: false,
       reason: 'Espèce incorrecte',
@@ -255,6 +353,7 @@ gameRouter.post('/validate', async (req, res) => {
     })
   }
 
+  await persistFinalResult(true)
   return res.json({
     correct: true,
     identification,

@@ -40,6 +40,10 @@ export function TaxonsPage() {
         />
       </div>
 
+      <p className="mt-3 text-sm text-slate-600">
+        {taxons.length} entrée{taxons.length > 1 ? 's' : ''} trouvée{taxons.length > 1 ? 's' : ''}
+      </p>
+
       <div className="mt-4 overflow-auto">
         <table className="min-w-full text-left text-sm">
           <thead>

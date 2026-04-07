@@ -5,10 +5,12 @@ import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
 import { authRouter } from './routes/auth.js'
+import { databaseRouter } from './routes/database.js'
 import { entriesRouter } from './routes/entries.js'
 import { gameRouter } from './routes/game.js'
 import { openApiDocument } from './openapi.js'
 import { referencesRouter } from './routes/references.js'
+import { statsRouter } from './routes/stats.js'
 import { taxonsRouter } from './routes/taxons.js'
 import { requireAdmin, requireAuth } from './middleware/auth.js'
 
@@ -85,6 +87,8 @@ app.use('/api/references', referencesRouter)
 app.use('/api/admin/entries', requireAuth, requireAdmin, entriesRouter)
 app.use('/api/admin/taxons', requireAuth, requireAdmin, taxonsRouter)
 app.use('/api/admin/references', requireAuth, requireAdmin, referencesRouter)
+app.use('/api/admin/stats', requireAuth, requireAdmin, statsRouter)
+app.use('/api/admin/database', requireAuth, requireAdmin, databaseRouter)
 
 app.listen(config.port, () => {
   console.log(`API démarrée sur http://localhost:${config.port}`)

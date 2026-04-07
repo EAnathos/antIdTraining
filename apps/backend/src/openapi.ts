@@ -122,9 +122,11 @@ export const openApiDocument = {
       },
       GameValidateInput: {
         type: 'object',
-        required: ['level', 'selected', 'answer'],
+        required: ['level', 'selected'],
         properties: {
           level: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+          sessionId: { type: 'string' },
+          entryId: { type: 'string' },
           selected: {
             type: 'object',
             properties: {
@@ -140,6 +142,28 @@ export const openApiDocument = {
               genus: { type: 'string' },
               species: { type: 'string' },
             },
+          },
+        },
+      },
+      GameLevelStats: {
+        type: 'object',
+        required: ['level', 'launchedCount', 'finalizedCount', 'finalCorrectCount', 'finalCorrectRate'],
+        properties: {
+          level: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+          launchedCount: { type: 'integer', minimum: 0 },
+          finalizedCount: { type: 'integer', minimum: 0 },
+          finalCorrectCount: { type: 'integer', minimum: 0 },
+          finalCorrectRate: { type: 'number', minimum: 0, maximum: 100 },
+        },
+      },
+      GameStatsResponse: {
+        type: 'object',
+        required: ['period', 'levels'],
+        properties: {
+          period: { type: 'string', enum: ['7d', '30d', 'all'] },
+          levels: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/GameLevelStats' },
           },
         },
       },
@@ -230,8 +254,15 @@ export const openApiDocument = {
                     value: {
                       level: 'easy',
                       entryId: 'cmx123',
-                      image: '/uploads/1712485342000-photo.jpg',
+                      sessionId: 'cmxSessEasy1',
+                      images: ['/uploads/1712485342000-photo.jpg', '/uploads/1712485342001-photo.jpg'],
                       prompt: 'Identifier la sous-famille',
+                      details: {
+                        department: '53 - Mayenne',
+                        observedAt: '2026-04-07T09:00:00.000Z',
+                        biotope: 'Lisière forestière',
+                        photoCredit: 'Jean Dupont',
+                      },
                       choices: ['Myrmicinae', 'Formicinae', 'Ponerinae', 'Dolichoderinae', 'Leptanillinae'],
                       answer: { subfamily: 'Myrmicinae' },
                     },
@@ -240,8 +271,15 @@ export const openApiDocument = {
                     value: {
                       level: 'medium',
                       entryId: 'cmx124',
-                      image: '/uploads/1712485342001-photo.jpg',
+                      sessionId: 'cmxSessMedium1',
+                      images: ['/uploads/1712485342001-photo.jpg'],
                       prompt: 'Identifier la sous-famille puis le genre',
+                      details: {
+                        department: '13 - Bouches-du-Rhône',
+                        observedAt: '2026-04-07T09:00:00.000Z',
+                        biotope: 'Prairie sèche',
+                        photoCredit: 'Marie Martin',
+                      },
                       choices: {
                         subfamily: ['Myrmicinae', 'Formicinae', 'Ponerinae'],
                         genus: ['Pheidole', 'Messor', 'Camponotus'],
@@ -253,8 +291,15 @@ export const openApiDocument = {
                     value: {
                       level: 'hard',
                       entryId: 'cmx125',
-                      image: '/uploads/1712485342002-photo.jpg',
+                      sessionId: 'cmxSessHard1',
+                      images: ['/uploads/1712485342002-photo.jpg'],
                       prompt: "Identifier la sous-famille, le genre et l'espèce",
+                      details: {
+                        department: '34 - Hérault',
+                        observedAt: '2026-04-07T09:00:00.000Z',
+                        biotope: 'Garrigue',
+                        photoCredit: 'Paul Durand',
+                      },
                       choices: {
                         subfamily: ['Myrmicinae', 'Formicinae', 'Ponerinae'],
                         genus: ['Pheidole', 'Messor', 'Camponotus'],
@@ -290,12 +335,9 @@ export const openApiDocument = {
               schema: { $ref: '#/components/schemas/GameValidateInput' },
               example: {
                 level: 'hard',
+                sessionId: 'cmxSessHard1',
+                entryId: 'cmx125',
                 selected: {
-                  subfamily: 'Myrmicinae',
-                  genus: 'Pheidole',
-                  species: 'pallidula',
-                },
-                answer: {
                   subfamily: 'Myrmicinae',
                   genus: 'Pheidole',
                   species: 'pallidula',
@@ -310,9 +352,122 @@ export const openApiDocument = {
             content: {
               'application/json': {
                 examples: {
-                  success: { value: { correct: true } },
-                  failure: { value: { correct: false, reason: 'Sous-famille incorrecte' } },
+                  success: {
+                    value: {
+                      correct: true,
+                      identification: {
+                        subfamily: 'Myrmicinae',
+                        description: 'Sous-famille caractérisée par un pédoncule en deux segments.',
+                        criteria: ['Pétiole + postpétiole distincts'],
+                      },
+                    },
+                  },
+                  failure: {
+                    value: {
+                      correct: false,
+                      reason: 'Sous-famille incorrecte',
+                      identification: {
+                        subfamily: 'Myrmicinae',
+                        description: 'Sous-famille caractérisée par un pédoncule en deux segments.',
+                        criteria: ['Pétiole + postpétiole distincts'],
+                      },
+                    },
+                  },
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/taxons/subfamilies': {
+      get: {
+        tags: ['Taxons'],
+        summary: 'Liste les sous-familles distinctes',
+        responses: {
+          200: {
+            description: 'Liste triée des sous-familles',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                example: ['Dolichoderinae', 'Formicinae', 'Myrmicinae', 'Ponerinae'],
+              },
+            },
+          },
+        },
+      },
+    },
+    '/taxons/genera': {
+      get: {
+        tags: ['Taxons'],
+        summary: 'Liste les genres distincts pour une sous-famille',
+        parameters: [
+          {
+            in: 'query',
+            name: 'subfamily',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Liste triée des genres',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                example: ['Camponotus', 'Formica', 'Lasius'],
+              },
+            },
+          },
+          400: {
+            description: 'Paramètre manquant',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorMessage' },
+                example: { message: 'Paramètre subfamily requis.' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/taxons/species': {
+      get: {
+        tags: ['Taxons'],
+        summary: 'Liste les espèces distinctes pour un genre',
+        parameters: [
+          {
+            in: 'query',
+            name: 'genus',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Liste triée des espèces',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                example: ['niger', 'platythorax'],
+              },
+            },
+          },
+          400: {
+            description: 'Paramètre manquant',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorMessage' },
+                example: { message: 'Paramètre genus requis.' },
               },
             },
           },
@@ -615,6 +770,124 @@ export const openApiDocument = {
         parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
         responses: {
           204: { description: 'Entrée supprimée' },
+        },
+      },
+    },
+    '/admin/stats/game': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Statistiques des parties par niveau',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: 'query',
+            name: 'period',
+            required: false,
+            schema: { type: 'string', enum: ['7d', '30d', 'all'] },
+            description: 'Fenêtre temporelle des statistiques (défaut: all).',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Statistiques renvoyées',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GameStatsResponse' },
+                example: {
+                  period: '30d',
+                  levels: [
+                    {
+                      level: 'easy',
+                      launchedCount: 18,
+                      finalizedCount: 17,
+                      finalCorrectCount: 13,
+                      finalCorrectRate: 76.5,
+                    },
+                    {
+                      level: 'medium',
+                      launchedCount: 9,
+                      finalizedCount: 9,
+                      finalCorrectCount: 4,
+                      finalCorrectRate: 44.4,
+                    },
+                    {
+                      level: 'hard',
+                      launchedCount: 0,
+                      finalizedCount: 0,
+                      finalCorrectCount: 0,
+                      finalCorrectRate: 0,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          401: { description: 'Non autorisé' },
+          403: { description: 'Accès administrateur requis' },
+        },
+      },
+    },
+    '/admin/database/export': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Exporte la base de données (JSON)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Snapshot de la base',
+            content: {
+              'application/json': {
+                example: {
+                  version: '1',
+                  exportedAt: '2026-04-07T16:00:00.000Z',
+                  data: {
+                    taxons: [],
+                    taxonLevelProfiles: [],
+                    taxonLevelCriteria: [],
+                    references: [],
+                    observationEntries: [],
+                    entryImages: [],
+                    gameSessions: [],
+                  },
+                },
+              },
+            },
+          },
+          401: { description: 'Non autorisé' },
+          403: { description: 'Accès administrateur requis' },
+        },
+      },
+    },
+    '/admin/database/import': {
+      post: {
+        tags: ['Admin'],
+        summary: 'Importe un snapshot de base (remplacement complet)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              example: {
+                version: '1',
+                exportedAt: '2026-04-07T16:00:00.000Z',
+                data: {
+                  taxons: [],
+                  taxonLevelProfiles: [],
+                  taxonLevelCriteria: [],
+                  references: [],
+                  observationEntries: [],
+                  entryImages: [],
+                  gameSessions: [],
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Import terminé' },
+          400: { description: 'Payload invalide' },
+          401: { description: 'Non autorisé' },
+          403: { description: 'Accès administrateur requis' },
         },
       },
     },

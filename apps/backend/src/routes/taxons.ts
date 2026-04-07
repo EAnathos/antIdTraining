@@ -90,6 +90,58 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', valu
 
 export const taxonsRouter = Router()
 
+taxonsRouter.get('/subfamilies', async (_req, res) => {
+  const subfamilies = await prisma.taxon.findMany({
+    select: { subfamily: true },
+    distinct: ['subfamily'],
+    orderBy: { subfamily: 'asc' },
+  })
+
+  return res.json(subfamilies.map((item) => item.subfamily))
+})
+
+taxonsRouter.get('/genera', async (req, res) => {
+  const subfamily = String(req.query.subfamily ?? '').trim()
+  if (!subfamily) {
+    return res.status(400).json({ message: 'Paramètre subfamily requis.' })
+  }
+
+  const genera = await prisma.taxon.findMany({
+    where: {
+      subfamily: {
+        equals: subfamily,
+        mode: 'insensitive',
+      },
+    },
+    select: { genus: true },
+    distinct: ['genus'],
+    orderBy: { genus: 'asc' },
+  })
+
+  return res.json(genera.map((item) => item.genus))
+})
+
+taxonsRouter.get('/species', async (req, res) => {
+  const genus = String(req.query.genus ?? '').trim()
+  if (!genus) {
+    return res.status(400).json({ message: 'Paramètre genus requis.' })
+  }
+
+  const species = await prisma.taxon.findMany({
+    where: {
+      genus: {
+        equals: genus,
+        mode: 'insensitive',
+      },
+    },
+    select: { species: true },
+    distinct: ['species'],
+    orderBy: { species: 'asc' },
+  })
+
+  return res.json(species.map((item) => item.species))
+})
+
 taxonsRouter.get('/', async (req, res) => {
   const level = String(req.query.level ?? '').toLowerCase()
   const q = String(req.query.q ?? '').trim()

@@ -13,54 +13,68 @@ export function AdminMobileMenu({
   section,
   setSection,
 }: Props) {
+  const sectionLabelById: Record<AdminSection, string> = {
+    taxons: 'Taxons',
+    references: 'Références',
+    entries: 'Entrées',
+    stats: 'Statistiques',
+    database: 'Base de données',
+  }
+
+  const sectionOptions: { id: AdminSection; label: string }[] = [
+    { id: 'taxons', label: 'Taxons' },
+    { id: 'references', label: 'Références' },
+    { id: 'entries', label: 'Entrées' },
+    { id: 'stats', label: 'Statistiques' },
+    { id: 'database', label: 'Base de données' },
+  ]
+
   return (
-    <>
+    <div className="relative md:hidden">
       <button
-        className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:hidden"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
         onClick={() => setAdminMenuOpen((open) => !open)}
       >
-        ☰ Menu admin
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 6h18" />
+          <path d="M3 12h18" />
+          <path d="M3 18h18" />
+        </svg>
+        <span className="font-medium">{sectionLabelById[section]}</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {adminMenuOpen ? <path d="m18 15-6-6-6 6" /> : <path d="m6 9 6 6 6-6" />}
+        </svg>
       </button>
 
       {adminMenuOpen && (
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:hidden">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Section</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className={`rounded-lg px-3 py-2 text-sm ${section === 'taxons' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
-                onClick={() => {
-                  setSection('taxons')
-                  setAdminMenuOpen(false)
-                }}
-              >
-                Taxons
-              </button>
-              <button
-                className={`rounded-lg px-3 py-2 text-sm ${section === 'references' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
-                onClick={() => {
-                  setSection('references')
-                  setAdminMenuOpen(false)
-                }}
-              >
-                Références
-              </button>
-              <button
-                className={`rounded-lg px-3 py-2 text-sm ${section === 'entries' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
-                onClick={() => {
-                  setSection('entries')
-                  setAdminMenuOpen(false)
-                }}
-              >
-                Entrées
-              </button>
+        <>
+          <button
+            type="button"
+            aria-label="Fermer le menu admin"
+            className="fixed inset-0 z-10 bg-transparent"
+            onClick={() => setAdminMenuOpen(false)}
+          />
+
+          <div className="absolute left-0 top-full z-20 mt-2 w-64 max-w-[calc(100vw-2rem)] space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+            <p className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Section</p>
+
+            <div className="space-y-1">
+              {sectionOptions.map((option) => (
+                <button
+                  key={option.id}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-sm ${section === option.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
+                  onClick={() => {
+                    setSection(option.id)
+                    setAdminMenuOpen(false)
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
-
-        </div>
+        </>
       )}
-
-      <p className="text-sm text-slate-600 md:hidden">Vue: {section}</p>
-    </>
+    </div>
   )
 }

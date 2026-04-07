@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { ReferenceItem } from '../../types/models'
+import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
 type ReferenceForm = {
   title: string
@@ -116,12 +117,8 @@ export function ReferencesCrudPanel({
                 {reference.title} ({reference.type})
               </button>
               <div className="flex items-center gap-2">
-                <button className="rounded bg-slate-100 px-2 py-1 text-slate-700" type="button" title="Modifier" onClick={() => loadReferenceInForm(reference)}>
-                  ✏️
-                </button>
-                <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => void handleDeleteReference(reference.id)}>
-                  🗑️
-                </button>
+                <AdminIconButton title="Modifier" onClick={() => loadReferenceInForm(reference)} icon={<EditIcon />} />
+                <AdminIconButton title="Supprimer" tone="danger" onClick={() => void handleDeleteReference(reference.id)} icon={<TrashIcon />} />
               </div>
             </li>
           ))}

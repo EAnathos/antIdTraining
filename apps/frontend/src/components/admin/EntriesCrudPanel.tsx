@@ -1,6 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { Entry, Taxon } from '../../types/models'
+import { api } from '../../lib/api'
+import type { Entry } from '../../types/models'
+import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
 const departmentOptions = [
   { code: '01', name: 'Ain' },
@@ -145,7 +147,7 @@ type EntryForm = {
 
 type Props = {
   entries: Entry[]
-  taxons: Taxon[]
+  subfamilies: string[]
   entryForm: EntryForm
   setEntryForm: (value: EntryForm) => void
   selectedEntryId: string
@@ -158,7 +160,7 @@ type Props = {
 
 export function EntriesCrudPanel({
   entries,
-  taxons,
+  subfamilies,
   entryForm,
   setEntryForm,
   selectedEntryId,
@@ -169,42 +171,99 @@ export function EntriesCrudPanel({
   deleteEntry,
 }: Props) {
   const [query, setQuery] = useState('')
-  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
+  const [previewImage, setPreviewImage] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [generaOptions, setGeneraOptions] = useState<string[]>([])
+  const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
   const formContainerRef = useRef<HTMLDivElement | null>(null)
 
-  const taxonOptionsByLevel = useMemo(() => {
-    const subfamilies = Array.from(new Set(taxons.map((taxon) => taxon.subfamily))).sort((a, b) => a.localeCompare(b))
-    const generaBySubfamily = new Map<string, string[]>()
-    const speciesByGenus = new Map<string, string[]>()
+  function openPreview(images: string[], index: number, alt: string) {
+    if (!images.length) return
+    setPreviewImage({ images, index, alt })
+  }
 
-    taxons.forEach((taxon) => {
-      const genera = generaBySubfamily.get(taxon.subfamily) ?? []
-      if (!genera.includes(taxon.genus)) {
-        genera.push(taxon.genus)
+  function showPreviousPreviewImage() {
+    setPreviewImage((current) => {
+      if (!current || current.images.length <= 1) return current
+      return {
+        ...current,
+        index: (current.index - 1 + current.images.length) % current.images.length,
       }
-      generaBySubfamily.set(taxon.subfamily, genera)
+    })
+  }
 
-      const current = speciesByGenus.get(taxon.genus) ?? []
-      if (!current.includes(taxon.species)) {
-        current.push(taxon.species)
+  function showNextPreviewImage() {
+    setPreviewImage((current) => {
+      if (!current || current.images.length <= 1) return current
+      return {
+        ...current,
+        index: (current.index + 1) % current.images.length,
       }
-      speciesByGenus.set(taxon.genus, current)
     })
+  }
 
-    generaBySubfamily.forEach((values, subfamily) => {
-      generaBySubfamily.set(subfamily, values.sort((a, b) => a.localeCompare(b)))
-    })
+  useEffect(() => {
+    let cancelled = false
 
-    speciesByGenus.forEach((values, genus) => {
-      speciesByGenus.set(genus, values.sort((a, b) => a.localeCompare(b)))
-    })
-
-    return {
-      subfamilies,
-      generaBySubfamily,
-      SPECIES_BY_GENUS: speciesByGenus,
+    if (!entryForm.subfamily) {
+      setGeneraOptions([])
+      return () => {
+        cancelled = true
+      }
     }
-  }, [taxons])
+
+    void api
+      .get<string[]>('/taxons/genera', {
+        params: {
+          subfamily: entryForm.subfamily,
+        },
+      })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setGeneraOptions(data)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setGeneraOptions([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [entryForm.subfamily])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!entryForm.genus) {
+      setSpeciesOptions([])
+      return () => {
+        cancelled = true
+      }
+    }
+
+    void api
+      .get<string[]>('/taxons/species', {
+        params: {
+          genus: entryForm.genus,
+        },
+      })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setSpeciesOptions(data)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSpeciesOptions([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [entryForm.genus])
 
   async function handleDeleteEntry(id: string) {
     if (!window.confirm('Confirmer la suppression de cette entrée ?')) {
@@ -258,7 +317,7 @@ export function EntriesCrudPanel({
             required
           >
             <option value="">Sous-famille</option>
-            {taxonOptionsByLevel.subfamilies.map((value) => (
+            {subfamilies.map((value) => (
               <option key={value} value={value}>{value}</option>
             ))}
           </select>
@@ -269,7 +328,7 @@ export function EntriesCrudPanel({
             disabled={!entryForm.subfamily}
           >
             <option value="">Genre (optionnel)</option>
-            {(taxonOptionsByLevel.generaBySubfamily.get(entryForm.subfamily) ?? []).map((value) => (
+            {generaOptions.map((value) => (
               <option key={value} value={value}>{value}</option>
             ))}
           </select>
@@ -280,7 +339,7 @@ export function EntriesCrudPanel({
             disabled={!entryForm.genus}
           >
             <option value="">Espèce (optionnel)</option>
-            {(taxonOptionsByLevel.SPECIES_BY_GENUS.get(entryForm.genus) ?? []).map((value) => (
+            {speciesOptions.map((value) => (
               <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
             ))}
           </select>
@@ -349,28 +408,17 @@ export function EntriesCrudPanel({
                   <span className="block text-xs text-slate-600">Crédit photo: {entry.photoCredit}</span>
                 </button>
                 <div className="flex items-center gap-2">
-                  <button
-                    className="rounded bg-slate-100 px-2 py-1 text-slate-700"
-                    type="button"
+                  <AdminIconButton
                     title="Modifier"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      loadEntryInForm(entry)
-                    }}
-                  >
-                  ✏️
-                  </button>
-                  <button
-                    className="rounded bg-red-100 px-2 py-1 text-red-700"
-                    type="button"
+                    onClick={() => loadEntryInForm(entry)}
+                    icon={<EditIcon />}
+                  />
+                  <AdminIconButton
                     title="Supprimer"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      void handleDeleteEntry(entry.id)
-                    }}
-                  >
-                  🗑️
-                  </button>
+                    tone="danger"
+                    onClick={() => void handleDeleteEntry(entry.id)}
+                    icon={<TrashIcon />}
+                  />
                 </div>
               </div>
 
@@ -383,12 +431,7 @@ export function EntriesCrudPanel({
                       alt={entry.taxonValue}
                       className="h-16 w-16 cursor-zoom-in rounded border object-cover"
                       loading="lazy"
-                      onClick={() =>
-                        setPreviewImage({
-                          src: image.imageUrl,
-                          alt: entry.taxonValue,
-                        })
-                      }
+                      onClick={() => openPreview(entry.images.map((entryImage) => entryImage.imageUrl), entry.images.findIndex((entryImage) => entryImage.id === image.id), entry.taxonValue)}
                     />
                   ))}
                 </div>
@@ -411,11 +454,40 @@ export function EntriesCrudPanel({
             >
               Fermer
             </button>
+
+            <button
+              type="button"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={showPreviousPreviewImage}
+              disabled={previewImage.images.length <= 1}
+              aria-label="Image précédente"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={showNextPreviewImage}
+              disabled={previewImage.images.length <= 1}
+              aria-label="Image suivante"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+
             <img
-              src={previewImage.src}
+              src={previewImage.images[previewImage.index]}
               alt={previewImage.alt}
               className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
             />
+
+            <p className="mt-2 text-center text-xs text-slate-200">
+              Image {previewImage.index + 1}/{previewImage.images.length}
+            </p>
           </div>
         </div>
       )}

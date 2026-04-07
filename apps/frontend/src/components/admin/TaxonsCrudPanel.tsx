@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
+import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
 type TaxonForm = {
   subfamily: string
@@ -198,7 +199,9 @@ export function TaxonsCrudPanel({
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
         <div className="mt-3 flex flex-wrap gap-2">
           <select className="h-10 w-44 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700" value={level} onChange={(e) => setLevel(e.target.value)}>
+            <option value="subfamily">Sous-famille</option>
             <option value="genus">Genre</option>
+            <option value="species">Espèce</option>
           </select>
           <input
             className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
@@ -207,6 +210,10 @@ export function TaxonsCrudPanel({
             placeholder="Recherche"
           />
         </div>
+
+        <p className="mt-3 text-sm text-slate-600">
+          {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
+        </p>
 
         <div className="mt-4 overflow-auto">
           <table className="min-w-full text-left text-sm">
@@ -239,12 +246,8 @@ export function TaxonsCrudPanel({
                   </td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
-                      <button className="rounded bg-slate-100 px-2 py-1 text-slate-700" type="button" title="Modifier" onClick={() => loadTaxonInForm(taxon)}>
-                        ✏️
-                      </button>
-                      <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" title="Supprimer" onClick={() => void handleDeleteTaxon(taxon.id)}>
-                        🗑️
-                      </button>
+                      <AdminIconButton title="Modifier" onClick={() => loadTaxonInForm(taxon)} icon={<EditIcon />} />
+                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => void handleDeleteTaxon(taxon.id)} icon={<TrashIcon />} />
                     </div>
                   </td>
                 </tr>
@@ -277,7 +280,7 @@ export function TaxonsCrudPanel({
                     ) : levelKey === 'genus' ? (
                       <>Genre (<em>{modalTaxon.genus}</em>)</>
                     ) : (
-                      <>Espèce (<em>{modalTaxon.species}</em>)</>
+                      <>Espèce (<em>{modalTaxon.genus}</em> <em>{modalTaxon.species}</em>)</>
                     )}
                   </p>
                   <textarea
@@ -297,9 +300,7 @@ export function TaxonsCrudPanel({
                           value={criterion}
                           onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
                         />
-                        <button className="rounded bg-red-100 px-2 py-1 text-red-700" type="button" onClick={() => removeCriterion(levelKey, index)}>
-                          🗑️
-                        </button>
+                        <AdminIconButton title="Supprimer" tone="danger" onClick={() => removeCriterion(levelKey, index)} icon={<TrashIcon />} />
                       </div>
                     ))}
                   </div>

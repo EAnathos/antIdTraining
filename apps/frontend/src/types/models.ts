@@ -50,6 +50,7 @@ export type Entry = {
 export type GameQuestion = {
   level: 'easy' | 'medium' | 'hard'
   entryId: string
+  sessionId: string
   images: string[]
   prompt: string
   details?: {
@@ -62,5 +63,15 @@ export type GameQuestion = {
   answer: { subfamily?: string; genus?: string; species?: string }
 }
 
+export type GameLevelStats = {
+  level: 'easy' | 'medium' | 'hard'
+  launchedCount: number
+  finalizedCount: number
+  finalCorrectCount: number
+  finalCorrectRate: number
+}
+
+export type GameStatsPeriod = '7d' | '30d' | 'all'
+
 export type CrudMode = 'create' | 'update' | 'delete'
-export type AdminSection = 'taxons' | 'references' | 'entries'
+export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database'

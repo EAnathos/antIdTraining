@@ -6,6 +6,8 @@ import { AdminMobileMenu } from '../components/admin/AdminMobileMenu'
 import { TaxonsCrudPanel } from '../components/admin/TaxonsCrudPanel'
 import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
 import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
+import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
+import { StatsPanel } from '../components/admin/StatsPanel'
 
 const ADMIN_TOKEN_KEY = 'adminToken'
 
@@ -21,6 +23,8 @@ const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'taxons', label: 'Taxons' },
   { id: 'references', label: 'Références' },
   { id: 'entries', label: 'Entrées' },
+  { id: 'stats', label: 'Statistiques' },
+  { id: 'database', label: 'Base de données' },
 ]
 
 export function AdminDashboardPage() {
@@ -105,7 +109,7 @@ export function AdminDashboardPage() {
         {section === 'entries' && (
           <EntriesCrudPanel
             entries={data.entries}
-            taxons={data.taxons}
+            subfamilies={data.subfamilies}
             entryForm={data.entryForm}
             setEntryForm={data.setEntryForm}
             selectedEntryId={data.selectedEntryId}
@@ -114,6 +118,21 @@ export function AdminDashboardPage() {
             createEntry={data.createEntry}
             updateEntry={data.updateEntry}
             deleteEntry={data.deleteEntry}
+          />
+        )}
+
+        {section === 'stats' && (
+          <StatsPanel
+            stats={data.gameStats}
+            period={data.statsPeriod}
+            setPeriod={data.setStatsPeriod}
+          />
+        )}
+
+        {section === 'database' && (
+          <DatabaseToolsPanel
+            exportDatabase={data.exportDatabase}
+            importDatabase={data.importDatabase}
           />
         )}
       </div>

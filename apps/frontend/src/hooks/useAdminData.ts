@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, createAuthApi } from '../lib/api'
-import type { Entry, ReferenceItem, Taxon } from '../types/models'
+import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon } from '../types/models'
 
 type LevelDetailsDraft = {
   subfamily: { description: string; criteria: string[] }
@@ -14,8 +14,11 @@ const MAX_ENTRY_IMAGES = 3
 
 export function useAdminData(token: string | null) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
+  const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
+  const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
+  const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
 
   const [taxonForm, setTaxonForm] = useState({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
@@ -31,15 +34,21 @@ export function useAdminData(token: string | null) {
   const adminApi = createAuthApi(token)
 
   async function refreshAll() {
-    const [taxonRes, refRes, entryRes] = await Promise.all([
+    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes] = await Promise.all([
       api.get<Taxon[]>('/taxons'),
+      api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
       adminApi.get<Entry[]>('/entries'),
+      adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>('/stats/game', {
+        params: { period: statsPeriod },
+      }),
     ])
 
     setTaxons(taxonRes.data)
+    setSubfamilies(subfamilyRes.data)
     setReferences(refRes.data)
     setEntries(entryRes.data)
+    setGameStats(statsRes.data.levels)
   }
 
   async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
@@ -55,7 +64,7 @@ export function useAdminData(token: string | null) {
 
   useEffect(() => {
     void refreshAll()
-  }, [token])
+  }, [token, statsPeriod])
 
   // Sync taxon form when selectedTaxonId changes
   useEffect(() => {
@@ -279,12 +288,50 @@ export function useAdminData(token: string | null) {
     }, 'Entrée supprimée.', 'Suppression de l’entrée impossible')
   }
 
+  async function exportDatabase() {
+    setMessage('')
+    try {
+      const { data } = await adminApi.get<unknown>('/database/export')
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const dateTag = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+$/, '')
+      link.href = url
+      link.download = `ant-id-training-db-${dateTag}.json`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      setMessage('Export de la base terminé.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Export de la base impossible')
+    }
+  }
+
+  async function importDatabase(file: File) {
+    setMessage('')
+
+    let payload: unknown
+    try {
+      const content = await file.text()
+      payload = JSON.parse(content) as unknown
+    } catch {
+      setMessage('Fichier JSON invalide.')
+      return
+    }
+
+    await runAdminAction(async () => {
+      await adminApi.post('/database/import', payload)
+    }, 'Base importée.', 'Import de la base impossible')
+  }
+
   return {
     message,
     setMessage,
 
     // Taxons
     taxons,
+    subfamilies,
     taxonForm,
     setTaxonForm,
     selectedTaxonId,
@@ -306,6 +353,9 @@ export function useAdminData(token: string | null) {
 
     // Entries
     entries,
+    gameStats,
+    statsPeriod,
+    setStatsPeriod,
     entryForm,
     setEntryForm,
     entryFiles,
@@ -315,5 +365,7 @@ export function useAdminData(token: string | null) {
     createEntry,
     updateEntry,
     deleteEntry,
+    exportDatabase,
+    importDatabase,
   }
 }
