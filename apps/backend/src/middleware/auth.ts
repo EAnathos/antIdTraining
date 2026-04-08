@@ -46,10 +46,13 @@ export function getJwtPayload(token: string) {
 }
 
 export function getAdminCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const sameSite: 'none' | 'lax' = isProduction ? 'none' : 'lax'
+
   return {
     httpOnly: true,
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    sameSite,
+    secure: isProduction,
     path: '/',
     maxAge: 12 * 60 * 60 * 1000,
   }
