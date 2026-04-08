@@ -1,15 +1,60 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
-import type { Taxon, TaxonLevelDetail } from '../types/models'
+import type { ReferenceItem, Taxon, TaxonLevelDetail } from '../types/models'
 
 type SelectedDetail = {
+  taxon: Taxon
   level: 'subfamily' | 'genus' | 'species'
   value: string
   detail: TaxonLevelDetail
 }
 
+const monthLabels = [
+  'Janvier',
+  'Février',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Août',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Décembre',
+] as const
+
+function getReferenceHref(reference: ReferenceItem) {
+  if (!reference.url) {
+    return null
+  }
+
+  if (reference.type === 'MYRMECOLOGY' && !reference.url.startsWith('http://') && !reference.url.startsWith('https://')) {
+    return `https://doi.org/${reference.url}`
+  }
+
+  return reference.url
+}
+
+function isMonthInRange(month: number, startMonth: number | null, endMonth: number | null) {
+  if (!startMonth || !endMonth) {
+    return false
+  }
+
+  return month >= startMonth && month <= endMonth
+}
+
+function isRangeEndpoint(month: number, startMonth: number | null, endMonth: number | null) {
+  if (!startMonth || !endMonth) {
+    return false
+  }
+
+  return month === startMonth || month === endMonth
+}
+
 export function TaxonsPage() {
   const [taxons, setTaxons] = useState<Taxon[]>([])
+  const [references, setReferences] = useState<ReferenceItem[]>([])
   const [level, setLevel] = useState<'subfamily' | 'genus' | 'species'>('genus')
   const [query, setQuery] = useState('')
   const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null)
@@ -22,6 +67,18 @@ export function TaxonsPage() {
   useEffect(() => {
     void load()
   }, [level, query])
+
+  useEffect(() => {
+    api.get<ReferenceItem[]>('/references').then((res) => setReferences(res.data))
+  }, [])
+
+  const linkedReferences = useMemo(() => {
+    if (!selectedDetail) {
+      return []
+    }
+
+    return references.filter((reference) => reference.taxons.some((taxon) => taxon.id === selectedDetail.taxon.id))
+  }, [references, selectedDetail])
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -52,6 +109,7 @@ export function TaxonsPage() {
               <th className="p-2">Tribu</th>
               <th className="p-2">Genre</th>
               <th className="p-2">Sous-genre</th>
+              <th className="p-2">Groupe d'espèce</th>
               <th className="p-2">Espèce</th>
             </tr>
           </thead>
@@ -64,6 +122,7 @@ export function TaxonsPage() {
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
+                          taxon,
                           level: 'subfamily',
                           value: taxon.subfamily,
                           detail: taxon.levelDetails.subfamily,
@@ -80,6 +139,7 @@ export function TaxonsPage() {
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
+                          taxon,
                           level: 'genus',
                           value: taxon.genus,
                           detail: taxon.levelDetails.genus,
@@ -90,12 +150,14 @@ export function TaxonsPage() {
                     </button>
                   </td>
                   <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
+                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
                   <td className="p-2">
                     <button
                       className="text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
+                          taxon,
                           level: 'species',
                           value: taxon.species,
                           detail: taxon.levelDetails.species,
@@ -135,6 +197,66 @@ export function TaxonsPage() {
               </ul>
             ) : (
               <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+            )}
+
+            {selectedDetail.level === 'species' && (
+              <>
+                <p className="mt-3 font-medium text-slate-800">Période d'essaimage</p>
+                <div className="mt-2 space-y-2">
+                  <div className="grid grid-cols-12 justify-items-center gap-2">
+                    {monthLabels.map((month, index) => {
+                      const monthValue = index + 1
+                      return (
+                        <span
+                          key={month}
+                          className={`shrink-0 rounded-full border ${
+                            isRangeEndpoint(monthValue, selectedDetail.taxon.swarmingStartMonth, selectedDetail.taxon.swarmingEndMonth)
+                              ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
+                              : isMonthInRange(monthValue, selectedDetail.taxon.swarmingStartMonth, selectedDetail.taxon.swarmingEndMonth)
+                                ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
+                                : 'h-4 w-4 border-slate-500 bg-slate-300'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
+                    {monthLabels.map((month) => (
+                      <span key={`label-${month}`} className="w-6 text-center">{month.slice(0, 1)}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedDetail.taxon.swarmingStartMonth && selectedDetail.taxon.swarmingEndMonth ? (
+                  <p className="mt-1 text-slate-700">
+                    {monthLabels[selectedDetail.taxon.swarmingStartMonth - 1]} à {monthLabels[selectedDetail.taxon.swarmingEndMonth - 1]}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-slate-700">Aucune période d'essaimage renseignée pour cette espèce.</p>
+                )}
+              </>
+            )}
+
+            <p className="mt-3 font-medium text-slate-800">Références liées</p>
+            {linkedReferences.length > 0 ? (
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                {linkedReferences.map((reference) => {
+                  const href = getReferenceHref(reference)
+                  return (
+                    <li key={reference.id}>
+                      {href ? (
+                        <a className="text-indigo-700 underline" href={href} target="_blank" rel="noreferrer">
+                          {reference.title}
+                        </a>
+                      ) : (
+                        reference.title
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p className="mt-1 text-slate-700">Aucune référence liée.</p>
             )}
           </div>
         </div>

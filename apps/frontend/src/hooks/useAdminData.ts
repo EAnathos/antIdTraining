@@ -9,10 +9,15 @@ type LevelDetailsDraft = {
   species: { description: string; criteria: string[] }
 }
 
+type SwarmingPeriodDraft = {
+  swarmingStartMonth: number | null
+  swarmingEndMonth: number | null
+}
+
 const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_ENTRY_IMAGES = 3
 
-export function useAdminData(token: string | null) {
+export function useAdminData(token: string | null, onUnauthorized?: () => void) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
@@ -24,14 +29,42 @@ export function useAdminData(token: string | null) {
   const [taxonForm, setTaxonForm] = useState({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
   const [selectedTaxonId, setSelectedTaxonId] = useState('')
 
-  const [referenceForm, setReferenceForm] = useState({ title: '', description: '', type: 'WEBSITE' as 'WEBSITE' | 'MYRMECOLOGY', url: '' })
+  const [referenceForm, setReferenceForm] = useState({
+    title: '',
+    authors: '',
+    description: '',
+    type: 'WEBSITE' as 'WEBSITE' | 'MYRMECOLOGY',
+    url: '',
+    taxonIds: [] as string[],
+  })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
   const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
 
-  const adminApi = createAuthApi(token)
+  const adminApi = createAuthApi(token, onUnauthorized)
+
+  function isUnauthorizedError(error: unknown) {
+    return typeof error === 'object' && error !== null && 'status' in error && (error as { status?: number }).status === 401
+  }
+
+  function parseAuthors(raw: string[] | string) {
+    const values = Array.isArray(raw)
+      ? raw
+      : raw
+          .split(/\n/)
+          .map((value) => value.trim())
+          .filter(Boolean)
+
+    return Array.from(
+      new Set(
+        values
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    )
+  }
 
   async function refreshAll() {
     const [taxonRes, subfamilyRes, refRes, entryRes, statsRes] = await Promise.all([
@@ -58,12 +91,20 @@ export function useAdminData(token: string | null) {
       await refreshAll()
       setMessage(successMessage)
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        return
+      }
       setMessage(error instanceof Error ? error.message : failureMessage)
     }
   }
 
   useEffect(() => {
-    void refreshAll()
+    void refreshAll().catch((error) => {
+      if (isUnauthorizedError(error)) {
+        return
+      }
+      setMessage(error instanceof Error ? error.message : 'Chargement des données impossible')
+    })
   }, [token, statsPeriod])
 
   // Sync taxon form when selectedTaxonId changes
@@ -90,9 +131,11 @@ export function useAdminData(token: string | null) {
       if (found) {
         setReferenceForm({
           title: found.title,
+          authors: found.authors.join('\n'),
           description: found.description ?? '',
           type: found.type,
           url: found.url ?? '',
+          taxonIds: found.taxons.map((taxon) => taxon.id),
         })
       }
     }
@@ -152,7 +195,7 @@ export function useAdminData(token: string | null) {
     }, 'Taxon supprimé.', 'Suppression du taxon impossible')
   }
 
-  async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft) {
+  async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft, swarmingPeriod: SwarmingPeriodDraft) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
 
@@ -164,6 +207,8 @@ export function useAdminData(token: string | null) {
         subgenus: found.subgenus,
         speciesGroup: found.speciesGroup,
         species: found.species,
+        swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
+        swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,
@@ -186,11 +231,14 @@ export function useAdminData(token: string | null) {
     event.preventDefault()
     await runAdminAction(async () => {
       await adminApi.post('/references', {
-        ...referenceForm,
+        title: referenceForm.title,
+        authors: parseAuthors(referenceForm.authors),
         description: referenceForm.description || null,
+        type: referenceForm.type,
         url: referenceForm.url || null,
+        taxonIds: referenceForm.taxonIds,
       })
-      setReferenceForm({ title: '', description: '', type: 'WEBSITE', url: '' })
+      setReferenceForm({ title: '', authors: '', description: '', type: 'WEBSITE', url: '', taxonIds: [] })
     }, 'Référence créée.', 'Création de la référence impossible')
   }
 
@@ -199,9 +247,12 @@ export function useAdminData(token: string | null) {
     if (!selectedReferenceId) return
     await runAdminAction(async () => {
       await adminApi.put(`/references/${selectedReferenceId}`, {
-        ...referenceForm,
+        title: referenceForm.title,
+        authors: parseAuthors(referenceForm.authors),
         description: referenceForm.description || null,
+        type: referenceForm.type,
         url: referenceForm.url || null,
+        taxonIds: referenceForm.taxonIds,
       })
     }, 'Référence modifiée.', 'Modification de la référence impossible')
   }
@@ -210,6 +261,68 @@ export function useAdminData(token: string | null) {
     await runAdminAction(async () => {
       await adminApi.delete(`/references/${id}`)
     }, 'Référence supprimée.', 'Suppression de la référence impossible')
+  }
+
+  async function saveReferenceAuthorsAndTaxons(authors: string[], taxonIds: string[]) {
+    if (!selectedReferenceId) {
+      setReferenceForm({
+        ...referenceForm,
+        authors: authors.join('\n'),
+        taxonIds,
+      })
+      return true
+    }
+
+    setMessage('')
+    try {
+      await adminApi.put(`/references/${selectedReferenceId}`, {
+        title: referenceForm.title,
+        authors: parseAuthors(authors),
+        description: referenceForm.description || null,
+        type: referenceForm.type,
+        url: referenceForm.url || null,
+        taxonIds,
+      })
+
+      setReferenceForm({
+        ...referenceForm,
+        authors: authors.join('\n'),
+        taxonIds,
+      })
+      await refreshAll()
+      setMessage('Référence modifiée.')
+      return true
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Modification de la référence impossible')
+      return false
+    }
+  }
+
+  async function saveReferenceAuthorsAndTaxonsById(referenceId: string, authors: string[], taxonIds: string[]) {
+    const target = references.find((reference) => reference.id === referenceId)
+    if (!target) {
+      setMessage('Référence introuvable')
+      return false
+    }
+
+    setMessage('')
+    try {
+      await adminApi.put(`/references/${referenceId}`, {
+        title: target.title,
+        authors: parseAuthors(authors),
+        description: target.description,
+        type: target.type,
+        url: target.url,
+        taxonIds,
+      })
+
+      await refreshAll()
+      setMessage('Référence modifiée.')
+      return true
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Modification de la référence impossible')
+      return false
+    }
   }
 
   async function createEntry(event: FormEvent) {
@@ -350,6 +463,8 @@ export function useAdminData(token: string | null) {
     createReference,
     updateReference,
     deleteReference,
+    saveReferenceAuthorsAndTaxons,
+    saveReferenceAuthorsAndTaxonsById,
 
     // Entries
     entries,

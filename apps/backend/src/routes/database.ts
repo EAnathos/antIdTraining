@@ -19,6 +19,8 @@ const databaseSnapshotSchema = z.object({
         subgenus: z.string().nullable(),
         speciesGroup: z.string().nullable(),
         species: z.string(),
+        swarmingStartMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
+        swarmingEndMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
         createdAt: z.coerce.date(),
         updatedAt: z.coerce.date(),
       }),
@@ -46,6 +48,7 @@ const databaseSnapshotSchema = z.object({
       z.object({
         id: z.string(),
         title: z.string(),
+        authors: z.array(z.string()).optional().default([]),
         description: z.string().nullable(),
         type: referenceTypeSchema,
         url: z.string().nullable(),
@@ -53,6 +56,12 @@ const databaseSnapshotSchema = z.object({
         updatedAt: z.coerce.date(),
       }),
     ),
+    referenceTaxons: z.array(
+      z.object({
+        referenceId: z.string(),
+        taxonId: z.string(),
+      }),
+    ).optional().default([]),
     observationEntries: z.array(
       z.object({
         id: z.string(),
@@ -99,6 +108,7 @@ databaseRouter.get('/export', async (_req, res) => {
     taxonLevelProfiles,
     taxonLevelCriteria,
     references,
+    referenceTaxons,
     observationEntries,
     entryImages,
     gameSessions,
@@ -106,11 +116,24 @@ databaseRouter.get('/export', async (_req, res) => {
     prisma.taxon.findMany({ orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }, { species: 'asc' }] }),
     prisma.taxonLevelProfile.findMany({ orderBy: [{ level: 'asc' }, { value: 'asc' }] }),
     prisma.taxonLevelCriterion.findMany({ orderBy: [{ profileId: 'asc' }, { position: 'asc' }] }),
-    prisma.reference.findMany({ orderBy: [{ type: 'asc' }, { title: 'asc' }] }),
+    prisma.reference.findMany({
+      include: { taxons: { select: { id: true } } },
+      orderBy: [{ type: 'asc' }, { title: 'asc' }],
+    }),
+    prisma.reference.findMany({
+      include: { taxons: { select: { id: true } } },
+    }),
     prisma.observationEntry.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.entryImage.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.gameSession.findMany({ orderBy: { createdAt: 'asc' } }),
   ])
+
+  const flattenedReferenceTaxons = referenceTaxons.flatMap((reference) =>
+    reference.taxons.map((taxon) => ({
+      referenceId: reference.id,
+      taxonId: taxon.id,
+    })),
+  )
 
   return res.json({
     version: '1',
@@ -119,7 +142,17 @@ databaseRouter.get('/export', async (_req, res) => {
       taxons,
       taxonLevelProfiles,
       taxonLevelCriteria,
-      references,
+      references: references.map((reference) => ({
+        id: reference.id,
+        title: reference.title,
+        authors: reference.authors,
+        description: reference.description,
+        type: reference.type,
+        url: reference.url,
+        createdAt: reference.createdAt,
+        updatedAt: reference.updatedAt,
+      })),
+      referenceTaxons: flattenedReferenceTaxons,
       observationEntries,
       entryImages,
       gameSessions,
@@ -160,6 +193,33 @@ databaseRouter.post('/import', async (req, res) => {
       await tx.reference.createMany({ data: snapshot.data.references })
     }
 
+    if (snapshot.data.referenceTaxons.length > 0) {
+      const taxonIds = new Set(snapshot.data.taxons.map((taxon) => taxon.id))
+      const referenceIds = new Set(snapshot.data.references.map((reference) => reference.id))
+
+      const referenceTaxonMap = new Map<string, string[]>()
+      snapshot.data.referenceTaxons.forEach(({ referenceId, taxonId }) => {
+        if (!referenceIds.has(referenceId) || !taxonIds.has(taxonId)) {
+          return
+        }
+
+        const current = referenceTaxonMap.get(referenceId) ?? []
+        current.push(taxonId)
+        referenceTaxonMap.set(referenceId, current)
+      })
+
+      for (const [referenceId, linkedTaxonIds] of referenceTaxonMap.entries()) {
+        await tx.reference.update({
+          where: { id: referenceId },
+          data: {
+            taxons: {
+              connect: linkedTaxonIds.map((taxonId) => ({ id: taxonId })),
+            },
+          },
+        })
+      }
+    }
+
     if (snapshot.data.observationEntries.length > 0) {
       await tx.observationEntry.createMany({ data: snapshot.data.observationEntries })
     }
@@ -180,6 +240,7 @@ databaseRouter.post('/import', async (req, res) => {
       taxonLevelProfiles: snapshot.data.taxonLevelProfiles.length,
       taxonLevelCriteria: snapshot.data.taxonLevelCriteria.length,
       references: snapshot.data.references.length,
+      referenceTaxons: snapshot.data.referenceTaxons.length,
       observationEntries: snapshot.data.observationEntries.length,
       entryImages: snapshot.data.entryImages.length,
       gameSessions: snapshot.data.gameSessions.length,

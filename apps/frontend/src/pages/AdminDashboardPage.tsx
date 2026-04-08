@@ -32,11 +32,16 @@ export function AdminDashboardPage() {
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
 
+  function logoutToLogin() {
+    clearAdminToken()
+    window.location.href = '/admin/login'
+  }
+
   if (!token) {
     return <Navigate to="/admin/login" replace />
   }
 
-  const data = useAdminData(token)
+  const data = useAdminData(token, logoutToLogin)
 
 
   return (
@@ -63,10 +68,7 @@ export function AdminDashboardPage() {
 
         <button
           className="rounded-lg bg-red-600 px-3 py-2 text-sm text-white"
-          onClick={() => {
-            clearAdminToken()
-            window.location.href = '/admin/login'
-          }}
+          onClick={logoutToLogin}
         >
           Déconnexion
         </button>
@@ -96,6 +98,7 @@ export function AdminDashboardPage() {
         {section === 'references' && (
           <ReferencesCrudPanel
             references={data.references}
+            taxons={data.taxons}
             referenceForm={data.referenceForm}
             setReferenceForm={data.setReferenceForm}
             selectedReferenceId={data.selectedReferenceId}
@@ -103,6 +106,8 @@ export function AdminDashboardPage() {
             createReference={data.createReference}
             updateReference={data.updateReference}
             deleteReference={data.deleteReference}
+            saveReferenceAuthorsAndTaxons={data.saveReferenceAuthorsAndTaxons}
+            saveReferenceAuthorsAndTaxonsById={data.saveReferenceAuthorsAndTaxonsById}
           />
         )}
 

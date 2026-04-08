@@ -17,6 +17,8 @@ export type Taxon = {
   subgenus: string | null
   speciesGroup: string | null
   species: string
+  swarmingStartMonth: number | null
+  swarmingEndMonth: number | null
   levelDetails: {
     subfamily: TaxonLevelDetail
     genus: TaxonLevelDetail
@@ -27,9 +29,19 @@ export type Taxon = {
 export type ReferenceItem = {
   id: string
   title: string
+  authors: string[]
   description: string | null
   type: 'WEBSITE' | 'MYRMECOLOGY'
   url: string | null
+  taxons: {
+    id: string
+    subfamily: string
+    tribe: string | null
+    genus: string
+    subgenus: string | null
+    speciesGroup: string | null
+    species: string
+  }[]
 }
 
 export type Entry = {

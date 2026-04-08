@@ -14,6 +14,8 @@ const taxonSchema = z.object({
   subgenus: z.string().optional().nullable(),
   speciesGroup: z.string().optional().nullable(),
   species: z.string().min(1),
+  swarmingStartMonth: z.number().int().min(1).max(12).optional().nullable(),
+  swarmingEndMonth: z.number().int().min(1).max(12).optional().nullable(),
   levelDetails: z
     .object({
       subfamily: levelDetailSchema.optional(),
@@ -38,6 +40,8 @@ function normalizeTaxonData(data: z.infer<typeof taxonSchema>) {
     subgenus: data.subgenus?.trim() ? capitalizeWords(data.subgenus) : null,
     speciesGroup: data.speciesGroup?.trim() ? data.speciesGroup.trim().toLowerCase() : null,
     species: data.species.trim().toLowerCase(),
+    swarmingStartMonth: data.swarmingStartMonth ?? null,
+    swarmingEndMonth: data.swarmingEndMonth ?? null,
     levelDetails: data.levelDetails,
   }
 }
@@ -164,7 +168,14 @@ taxonsRouter.get('/', async (req, res) => {
 
   const taxons = await prisma.taxon.findMany({
     where,
-    orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }, { species: 'asc' }],
+    orderBy: [
+      { subfamily: 'asc' },
+      { tribe: 'asc' },
+      { genus: 'asc' },
+      { subgenus: 'asc' },
+      { speciesGroup: 'asc' },
+      { species: 'asc' },
+    ],
   })
 
   const subfamilies = [...new Set(taxons.map((taxon) => taxon.subfamily))]
@@ -231,6 +242,8 @@ taxonsRouter.post('/', async (req, res) => {
         subgenus: normalized.subgenus,
         speciesGroup: normalized.speciesGroup,
         species: normalized.species,
+        swarmingStartMonth: normalized.swarmingStartMonth,
+        swarmingEndMonth: normalized.swarmingEndMonth,
       },
     })
 
@@ -265,6 +278,8 @@ taxonsRouter.put('/:id', async (req, res) => {
         subgenus: normalized.subgenus,
         speciesGroup: normalized.speciesGroup,
         species: normalized.species,
+        swarmingStartMonth: normalized.swarmingStartMonth,
+        swarmingEndMonth: normalized.swarmingEndMonth,
       },
     })
 

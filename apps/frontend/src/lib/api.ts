@@ -13,7 +13,17 @@ interface RequestMethods {
   delete<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
 }
 
-function createApiClient(baseURL: string, defaultHeaders: Record<string, string> = {}): RequestMethods & { create: (config: { baseURL?: string; headers?: Record<string, string> }) => RequestMethods } {
+type ApiClientConfig = {
+  baseURL?: string
+  headers?: Record<string, string>
+  onUnauthorized?: () => void
+}
+
+function createApiClient(
+  baseURL: string,
+  defaultHeaders: Record<string, string> = {},
+  onUnauthorized?: () => void,
+): RequestMethods & { create: (config: ApiClientConfig) => RequestMethods } {
   const makeRequest = async (method: string, url: string, body?: unknown, config?: RequestConfig) => {
     const fullUrl = new URL(`${baseURL}${url}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
 
@@ -37,6 +47,10 @@ function createApiClient(baseURL: string, defaultHeaders: Record<string, string>
     })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        onUnauthorized?.()
+      }
+
       let message = `HTTP ${response.status}`
       try {
         const payload = (await response.json()) as { message?: string }
@@ -84,16 +98,21 @@ function createApiClient(baseURL: string, defaultHeaders: Record<string, string>
       return makeRequest('DELETE', url, undefined, config)
     },
     create(newConfig) {
-      return createApiClient(newConfig.baseURL ?? baseURL, newConfig.headers ?? defaultHeaders)
+      return createApiClient(
+        newConfig.baseURL ?? baseURL,
+        newConfig.headers ?? defaultHeaders,
+        newConfig.onUnauthorized ?? onUnauthorized,
+      )
     },
   }
 }
 
 export const api = createApiClient(apiBaseUrl)
 
-export function createAuthApi(token: string | null) {
+export function createAuthApi(token: string | null, onUnauthorized?: () => void) {
   return api.create({
     baseURL: `${apiBaseUrl}/admin`,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    onUnauthorized,
   })
 }

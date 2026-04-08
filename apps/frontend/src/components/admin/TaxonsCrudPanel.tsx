@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
@@ -24,6 +24,11 @@ type TaxonDetailsDraft = {
   species: LevelDetailDraft
 }
 
+type SwarmingPeriodDraft = {
+  swarmingStartMonth: number | null
+  swarmingEndMonth: number | null
+}
+
 type Props = {
   taxons: Taxon[]
   taxonForm: TaxonForm
@@ -33,8 +38,23 @@ type Props = {
   createTaxon: (event: FormEvent) => Promise<void>
   updateTaxon: (event: FormEvent) => Promise<void>
   deleteTaxon: (id: string) => Promise<void>
-  saveTaxonLevelDetails: (taxonId: string, levelDetails: TaxonDetailsDraft) => Promise<void>
+  saveTaxonLevelDetails: (taxonId: string, levelDetails: TaxonDetailsDraft, swarmingPeriod: SwarmingPeriodDraft) => Promise<void>
 }
+
+const monthOptions = [
+  { value: 1, label: 'Janvier' },
+  { value: 2, label: 'Février' },
+  { value: 3, label: 'Mars' },
+  { value: 4, label: 'Avril' },
+  { value: 5, label: 'Mai' },
+  { value: 6, label: 'Juin' },
+  { value: 7, label: 'Juillet' },
+  { value: 8, label: 'Août' },
+  { value: 9, label: 'Septembre' },
+  { value: 10, label: 'Octobre' },
+  { value: 11, label: 'Novembre' },
+  { value: 12, label: 'Décembre' },
+] as const
 
 export function TaxonsCrudPanel({
   taxons,
@@ -51,6 +71,9 @@ export function TaxonsCrudPanel({
   const [query, setQuery] = useState('')
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
+  const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
+  const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
+  const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
 
   const filteredTaxons = useMemo(() => {
     const value = query.trim().toLowerCase()
@@ -91,6 +114,10 @@ export function TaxonsCrudPanel({
 
   function openDetailsModal(taxon: Taxon) {
     setModalTaxon(taxon)
+    setSwarmingDraft({
+      swarmingStartMonth: taxon.swarmingStartMonth,
+      swarmingEndMonth: taxon.swarmingEndMonth,
+    })
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
@@ -110,7 +137,66 @@ export function TaxonsCrudPanel({
   function closeDetailsModal() {
     setModalTaxon(null)
     setModalDraft(null)
+    setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })
+    setIsSelectingSwarmingRange(false)
+    setSelectionAnchorMonth(null)
   }
+
+  function updateSwarmingRange(anchorMonth: number, currentMonth: number) {
+    setSwarmingDraft({
+      swarmingStartMonth: Math.min(anchorMonth, currentMonth),
+      swarmingEndMonth: Math.max(anchorMonth, currentMonth),
+    })
+  }
+
+  function beginSwarmingRangeSelection(month: number) {
+    setIsSelectingSwarmingRange(true)
+    setSelectionAnchorMonth(month)
+    updateSwarmingRange(month, month)
+  }
+
+  function continueSwarmingRangeSelection(month: number) {
+    if (!isSelectingSwarmingRange || selectionAnchorMonth === null) {
+      return
+    }
+    updateSwarmingRange(selectionAnchorMonth, month)
+  }
+
+  function endSwarmingRangeSelection() {
+    setIsSelectingSwarmingRange(false)
+    setSelectionAnchorMonth(null)
+  }
+
+  function isMonthInSelectedRange(month: number) {
+    if (swarmingDraft.swarmingStartMonth === null || swarmingDraft.swarmingEndMonth === null) {
+      return false
+    }
+    return month >= swarmingDraft.swarmingStartMonth && month <= swarmingDraft.swarmingEndMonth
+  }
+
+  function isMonthRangeEndpoint(month: number) {
+    if (swarmingDraft.swarmingStartMonth === null || swarmingDraft.swarmingEndMonth === null) {
+      return false
+    }
+
+    return month === swarmingDraft.swarmingStartMonth || month === swarmingDraft.swarmingEndMonth
+  }
+
+  useEffect(() => {
+    if (!isSelectingSwarmingRange) {
+      return
+    }
+
+    const stopSelection = () => {
+      setIsSelectingSwarmingRange(false)
+      setSelectionAnchorMonth(null)
+    }
+
+    window.addEventListener('pointerup', stopSelection)
+    return () => {
+      window.removeEventListener('pointerup', stopSelection)
+    }
+  }, [isSelectingSwarmingRange])
 
   function updateLevelDescription(levelKey: keyof TaxonDetailsDraft, value: string) {
     if (!modalDraft) return
@@ -160,7 +246,7 @@ export function TaxonsCrudPanel({
 
   async function saveDetailsModal() {
     if (!modalTaxon || !modalDraft) return
-    await saveTaxonLevelDetails(modalTaxon.id, modalDraft)
+    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft)
     closeDetailsModal()
   }
 
@@ -223,6 +309,7 @@ export function TaxonsCrudPanel({
                 <th className="p-2">Tribu</th>
                 <th className="p-2">Genre</th>
                 <th className="p-2">Sous-genre</th>
+                <th className="p-2">Groupe d'espèce</th>
                 <th className="p-2">Espèce</th>
                 <th className="p-2">Détails</th>
                 <th className="p-2">Actions</th>
@@ -238,6 +325,7 @@ export function TaxonsCrudPanel({
                   <td className="p-2">{taxon.tribe ?? '-'}</td>
                   <td className="p-2"><em>{taxon.genus}</em></td>
                   <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
+                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
                   <td className="p-2"><em>{taxon.species}</em></td>
                   <td className="p-2">
                     <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
@@ -283,6 +371,52 @@ export function TaxonsCrudPanel({
                       <>Espèce (<em>{modalTaxon.genus}</em> <em>{modalTaxon.species}</em>)</>
                     )}
                   </p>
+                  {levelKey === 'species' && (
+                    <div className="mt-3 mb-4 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                        <span>Essaimage :</span>
+                        {swarmingDraft.swarmingStartMonth && swarmingDraft.swarmingEndMonth && (
+                          <>
+                            <span>
+                              {monthOptions[swarmingDraft.swarmingStartMonth - 1].label} à {monthOptions[swarmingDraft.swarmingEndMonth - 1].label}
+                            </span>
+                            <button
+                              className="text-sm underline underline-offset-2"
+                              type="button"
+                              onClick={() => setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })}
+                            >
+                              Réinitialiser
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-12 justify-items-center gap-2">
+                        {monthOptions.map((month) => (
+                          <button
+                            key={month.value}
+                            type="button"
+                            title={month.label}
+                            aria-label={month.label}
+                            onPointerDown={() => beginSwarmingRangeSelection(month.value)}
+                            onPointerEnter={() => continueSwarmingRangeSelection(month.value)}
+                            onPointerUp={endSwarmingRangeSelection}
+                            className={`shrink-0 rounded-full border transition ${
+                              isMonthRangeEndpoint(month.value)
+                                ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
+                                : isMonthInSelectedRange(month.value)
+                                  ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
+                                  : 'h-4 w-4 border-slate-500 bg-slate-300 hover:border-slate-600'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
+                        {monthOptions.map((month) => (
+                          <span key={`label-${month.value}`} className="w-6 text-center">{month.label.slice(0, 1)}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <textarea
                     className="mt-2 w-full rounded border p-2"
                     placeholder="Description"

@@ -45,10 +45,13 @@ model Taxon {
   subgenus     String?
   speciesGroup String?
   species      String
+  swarmingStartMonth Int?
+  swarmingEndMonth   Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   entries ObservationEntry[]
+  references Reference[]
 
   @@index([subfamily])
   @@index([genus])
@@ -139,9 +142,11 @@ model EntryImage {
 model Reference {
   id          String        @id @default(cuid())
   title       String
+  authors     String[]      @default([])
   description String?
   type        ReferenceType
   url         String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  taxons      Taxon[]
 }
