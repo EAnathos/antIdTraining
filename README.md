@@ -72,14 +72,6 @@ En local (modifiable via variables d'environnement):
 
 En production, `ADMIN_EMAIL` et `ADMIN_PASSWORD` doivent être fournis explicitement pour le seed.
 
-## Notes techniques récentes
-
-- API taxons paginée: `GET /api/taxons` renvoie 50 éléments par requête (`offset`, `items`, `hasMore`, `nextOffset`, `total`).
-- Frontend taxons: chargement progressif par requêtes en boucle + virtualisation du tableau pour les grandes listes.
-- PWA: manifest + service worker avec cache offline et stratégie `stale-while-revalidate` pour les assets.
-- Backend: logs structurés JSON par requête (`method`, `path`, `status`, `durationMs`) et gestion centralisée des erreurs.
-- Export/import admin: format ZIP recommandé (snapshot base + dossier `uploads`), JSON toujours supporté pour compatibilité.
-
 ## Convention de messages API
 
 Pour garder une UX cohérente entre backend, frontend admin et OpenAPI:
