@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api } from '../../lib/api'
+import { api, backendOrigin } from '../../lib/api'
 import type { Entry } from '../../types/models'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
@@ -133,6 +133,18 @@ function parseDepartmentInput(value: string) {
   }
 
   return trimmed
+}
+
+function resolveImageUrl(imageUrl: string) {
+  if (!imageUrl) {
+    return imageUrl
+  }
+
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl
+  }
+
+  return `${backendOrigin}${imageUrl}`
 }
 
 type EntryForm = {
@@ -427,11 +439,17 @@ export function EntriesCrudPanel({
                   {entry.images.map((image) => (
                     <img
                       key={image.id}
-                      src={image.imageUrl}
+                      src={resolveImageUrl(image.imageUrl)}
                       alt={entry.taxonValue}
                       className="h-16 w-16 cursor-zoom-in rounded border object-cover"
                       loading="lazy"
-                      onClick={() => openPreview(entry.images.map((entryImage) => entryImage.imageUrl), entry.images.findIndex((entryImage) => entryImage.id === image.id), entry.taxonValue)}
+                      onClick={() =>
+                        openPreview(
+                          entry.images.map((entryImage) => resolveImageUrl(entryImage.imageUrl)),
+                          entry.images.findIndex((entryImage) => entryImage.id === image.id),
+                          entry.taxonValue,
+                        )
+                      }
                     />
                   ))}
                 </div>

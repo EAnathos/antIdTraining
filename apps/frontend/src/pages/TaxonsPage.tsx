@@ -2,6 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
 
+const TAXONS_CACHE_TTL_MS = 5 * 60 * 1000
+const TAXONS_CACHE_PREFIX = 'taxons-page-cache:v1:'
+
+type TaxonsCacheEntry = {
+  savedAt: number
+  items: Taxon[]
+  hasMore: boolean
+}
+
 type SelectedDetail = {
   taxon: Taxon
   level: 'subfamily' | 'genus' | 'species'
@@ -52,6 +61,47 @@ function isRangeEndpoint(month: number, startMonth: number | null, endMonth: num
   return month === startMonth || month === endMonth
 }
 
+function getTaxonsCacheKey(level: 'subfamily' | 'genus' | 'species', query: string) {
+  return `${TAXONS_CACHE_PREFIX}${level}:${encodeURIComponent(query.trim().toLowerCase())}`
+}
+
+function readTaxonsCache(cacheKey: string): TaxonsCacheEntry | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const rawEntry = window.sessionStorage.getItem(cacheKey)
+    if (!rawEntry) {
+      return null
+    }
+
+    const parsed = JSON.parse(rawEntry) as TaxonsCacheEntry
+    const isFresh = Date.now() - parsed.savedAt <= TAXONS_CACHE_TTL_MS
+    if (!isFresh) {
+      window.sessionStorage.removeItem(cacheKey)
+      return null
+    }
+
+    return parsed
+  } catch {
+    window.sessionStorage.removeItem(cacheKey)
+    return null
+  }
+}
+
+function writeTaxonsCache(cacheKey: string, entry: TaxonsCacheEntry) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.sessionStorage.setItem(cacheKey, JSON.stringify(entry))
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
 export function TaxonsPage() {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
@@ -75,11 +125,24 @@ export function TaxonsPage() {
   async function loadAllTaxons() {
     const currentRequestId = requestIdRef.current + 1
     requestIdRef.current = currentRequestId
+    const cacheKey = getTaxonsCacheKey(level, debouncedQuery)
 
     setIsLoadingTaxons(true)
     setIsLoadingMoreTaxons(false)
     setHasMoreTaxons(false)
     setLoadError('')
+
+    const cachedEntry = readTaxonsCache(cacheKey)
+    if (cachedEntry) {
+      if (requestIdRef.current !== currentRequestId) {
+        return
+      }
+
+      setTaxons(cachedEntry.items)
+      setHasMoreTaxons(cachedEntry.hasMore)
+      setIsLoadingTaxons(false)
+      return
+    }
 
     try {
       const firstPage = await api.get<TaxonsPageResponse>('/taxons', { params: { level, q: debouncedQuery, offset: 0 } })
@@ -91,6 +154,7 @@ export function TaxonsPage() {
       setHasMoreTaxons(firstPage.data.hasMore)
       setIsLoadingTaxons(false)
 
+      const allItems = [...firstPage.data.items]
       let offset = firstPage.data.nextOffset
       let hasMore = firstPage.data.hasMore
 
@@ -104,6 +168,7 @@ export function TaxonsPage() {
 
         setTaxons((current) => [...current, ...nextPage.data.items])
         setHasMoreTaxons(nextPage.data.hasMore)
+        allItems.push(...nextPage.data.items)
 
         hasMore = nextPage.data.hasMore
         offset = nextPage.data.nextOffset
@@ -111,6 +176,14 @@ export function TaxonsPage() {
         if (nextPage.data.items.length === 0) {
           break
         }
+      }
+
+      if (requestIdRef.current === currentRequestId) {
+        writeTaxonsCache(cacheKey, {
+          savedAt: Date.now(),
+          items: allItems,
+          hasMore,
+        })
       }
     } catch {
       if (requestIdRef.current !== currentRequestId) {
