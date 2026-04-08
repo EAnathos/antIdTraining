@@ -1,11 +1,11 @@
 import { useState } from 'react'
 
 type Props = {
-  exportDatabase: () => Promise<void>
-  importDatabase: (file: File) => Promise<void>
+  exportDatabaseSnapshot: () => Promise<void>
+  importDatabaseSnapshot: (file: File) => Promise<void>
 }
 
-export function DatabaseToolsPanel({ exportDatabase, importDatabase }: Props) {
+export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnapshot }: Props) {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [confirmReplace, setConfirmReplace] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -14,7 +14,7 @@ export function DatabaseToolsPanel({ exportDatabase, importDatabase }: Props) {
   async function handleExport() {
     setIsExporting(true)
     try {
-      await exportDatabase()
+      await exportDatabaseSnapshot()
     } finally {
       setIsExporting(false)
     }
@@ -27,7 +27,7 @@ export function DatabaseToolsPanel({ exportDatabase, importDatabase }: Props) {
 
     setIsImporting(true)
     try {
-      await importDatabase(importFile)
+      await importDatabaseSnapshot(importFile)
       setImportFile(null)
       setConfirmReplace(false)
     } finally {

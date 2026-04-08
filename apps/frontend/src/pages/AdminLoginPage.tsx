@@ -1,23 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 
-const ADMIN_TOKEN_KEY = 'adminToken'
-
-function getAdminToken() {
-  return sessionStorage.getItem(ADMIN_TOKEN_KEY)
-}
-
-function setAdminToken(token: string) {
-  sessionStorage.setItem(ADMIN_TOKEN_KEY, token)
-}
-
 export function AdminLoginPage() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loggedIn, setLoggedIn] = useState(Boolean(getAdminToken()))
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    api
+      .get<{ userId: string; role: string }>('/auth/me')
+      .then((response) => {
+        if (response.data.role === 'ADMIN') {
+          setLoggedIn(true)
+        }
+      })
+      .catch(() => {
+        // No active admin session.
+      })
+      .finally(() => setCheckingSession(false))
+  }, [])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -27,11 +33,19 @@ export function AdminLoginPage() {
         setError('Compte non administrateur')
         return
       }
-      setAdminToken(data.token)
       setLoggedIn(true)
+      navigate('/admin', { replace: true })
     } catch {
       setError('Identifiants invalides')
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-slate-600">Vérification de la session…</p>
+      </section>
+    )
   }
 
   if (loggedIn) {

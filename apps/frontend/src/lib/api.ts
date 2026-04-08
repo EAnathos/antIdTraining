@@ -40,11 +40,19 @@ function createApiClient(
       ...config?.headers,
     }
 
-    const response = await fetch(fullUrl.toString(), {
-      method,
-      headers,
-      body: body && !(body instanceof FormData) ? JSON.stringify(body) : body instanceof FormData ? body : undefined,
-    })
+    let response: Response
+    try {
+      response = await fetch(fullUrl.toString(), {
+        method,
+        credentials: 'include',
+        headers,
+        body: body && !(body instanceof FormData) ? JSON.stringify(body) : body instanceof FormData ? body : undefined,
+      })
+    } catch {
+      const networkError = new Error('Réseau indisponible ou serveur injoignable.')
+      ;(networkError as Error & { status?: number }).status = 0
+      throw networkError
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -109,10 +117,12 @@ function createApiClient(
 
 export const api = createApiClient(apiBaseUrl)
 
-export function createAuthApi(token: string | null, onUnauthorized?: () => void) {
+export function createAdminApiClient(token: string | null, onUnauthorized?: () => void) {
   return api.create({
     baseURL: `${apiBaseUrl}/admin`,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     onUnauthorized,
   })
 }
+
+export const createAuthApi = createAdminApiClient

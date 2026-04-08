@@ -66,6 +66,27 @@ Backend local: http://localhost:4000
 
 ## Admin initial
 
-Par défaut (modifiable via variables d'environnement):
+En local (modifiable via variables d'environnement):
 - Email: `admin@antid.local`
 - Mot de passe: `admin123`
+
+En production, `ADMIN_EMAIL` et `ADMIN_PASSWORD` doivent être fournis explicitement pour le seed.
+
+## Notes techniques récentes
+
+- API taxons paginée: `GET /api/taxons` renvoie 50 éléments par requête (`offset`, `items`, `hasMore`, `nextOffset`, `total`).
+- Frontend taxons: chargement progressif par requêtes en boucle + virtualisation du tableau pour les grandes listes.
+- PWA: manifest + service worker avec cache offline et stratégie `stale-while-revalidate` pour les assets.
+- Backend: logs structurés JSON par requête (`method`, `path`, `status`, `durationMs`) et gestion centralisée des erreurs.
+
+## Convention de messages API
+
+Pour garder une UX cohérente entre backend, frontend admin et OpenAPI:
+
+- Format: messages d'erreur en français, phrase courte, ponctuation finale (`.`).
+- Validation (`400`): préférer `Requête invalide.` ou `Le paramètre <nom> est ...`.
+- Auth (`401`/`403`): utiliser `Non autorisé.` et `Accès administrateur requis.`.
+- Ressource absente (`404`): utiliser `... introuvable.`.
+- Conflit (`409`): utiliser `Conflit : ...`.
+
+Quand un message change dans le runtime, mettre à jour aussi les exemples/descriptions dans `apps/backend/src/openapi.ts`.

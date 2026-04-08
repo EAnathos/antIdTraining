@@ -7,31 +7,87 @@ type JwtPayload = {
   role: 'ADMIN' | 'USER'
 }
 
+const ADMIN_SESSION_COOKIE = 'adminToken'
+
 declare module 'express-serve-static-core' {
   interface Request {
     user?: JwtPayload
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Non autorisé' })
+function readCookieValue(cookieHeader: string | undefined, cookieName: string) {
+  if (!cookieHeader) {
+    return null
   }
 
-  const token = authHeader.split(' ')[1]
+  for (const cookie of cookieHeader.split(';')) {
+    const [rawName, ...rawValueParts] = cookie.trim().split('=')
+    if (decodeURIComponent(rawName) !== cookieName) {
+      continue
+    }
+
+    return decodeURIComponent(rawValueParts.join('='))
+  }
+
+  return null
+}
+
+export function getAuthToken(req: Request) {
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length)
+  }
+
+  return readCookieValue(req.headers.cookie, ADMIN_SESSION_COOKIE)
+}
+
+export function getJwtPayload(token: string) {
+  return jwt.verify(token, config.jwtSecret) as JwtPayload
+}
+
+export function getAdminCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 12 * 60 * 60 * 1000,
+  }
+}
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = getAuthToken(req)
+  if (!token) {
+    return res.status(401).json({ message: 'Non autorisé.' })
+  }
+
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as JwtPayload
+    const payload = getJwtPayload(token)
     req.user = payload
     next()
   } catch {
-    return res.status(401).json({ message: 'Token invalide' })
+    return res.status(401).json({ message: 'Jeton invalide.' })
   }
+}
+
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = getAuthToken(req)
+  if (!token) {
+    return next()
+  }
+
+  try {
+    req.user = getJwtPayload(token)
+  } catch {
+    // Ignore invalid tokens for optional auth.
+  }
+
+  return next()
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user || req.user.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Accès administrateur requis' })
+    return res.status(403).json({ message: 'Accès administrateur requis.' })
   }
   next()
 }

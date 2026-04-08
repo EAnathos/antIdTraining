@@ -1,9 +1,8 @@
 import { Router } from 'express'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { prisma } from '../prisma.js'
-import { config } from '../config.js'
+import { getAdminCookieOptions, optionalAuth } from '../middleware/auth.js'
+import { AppError } from '../lib/errors.js'
+import { loginAdmin } from '../services/auth.js'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -15,22 +14,25 @@ export const authRouter = Router()
 authRouter.post('/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Payload invalide' })
+    throw new AppError(400, 'Requête invalide.')
   }
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } })
-  if (!user) {
-    return res.status(401).json({ message: 'Identifiants invalides' })
+  const auth = await loginAdmin(parsed.data.email, parsed.data.password)
+
+  res.cookie('adminToken', auth.token, getAdminCookieOptions())
+
+  return res.json({ token: auth.token, role: auth.role })
+})
+
+authRouter.post('/logout', (_req, res) => {
+  res.clearCookie('adminToken', getAdminCookieOptions())
+  return res.status(204).send()
+})
+
+authRouter.get('/me', optionalAuth, (req, res) => {
+  if (!req.user) {
+    throw new AppError(401, 'Non autorisé.')
   }
 
-  const isValid = await bcrypt.compare(parsed.data.password, user.passwordHash)
-  if (!isValid) {
-    return res.status(401).json({ message: 'Identifiants invalides' })
-  }
-
-  const token = jwt.sign({ userId: user.id, role: user.role }, config.jwtSecret, {
-    expiresIn: '12h',
-  })
-
-  return res.json({ token, role: user.role })
+  return res.json({ userId: req.user.userId, role: req.user.role })
 })

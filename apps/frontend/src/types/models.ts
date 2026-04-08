@@ -26,6 +26,15 @@ export type Taxon = {
   }
 }
 
+export type TaxonsPageResponse = {
+  items: Taxon[]
+  offset: number
+  limit: number
+  nextOffset: number
+  hasMore: boolean
+  total: number
+}
+
 export type ReferenceItem = {
   id: string
   title: string

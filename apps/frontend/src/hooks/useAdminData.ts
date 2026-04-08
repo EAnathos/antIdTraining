@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, createAuthApi } from '../lib/api'
-import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon } from '../types/models'
+import { api, createAdminApiClient } from '../lib/api'
+import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 
 type LevelDetailsDraft = {
   subfamily: { description: string; criteria: string[] }
@@ -43,10 +43,28 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
 
-  const adminApi = createAuthApi(token, onUnauthorized)
+  const adminApi = createAdminApiClient(token, onUnauthorized)
 
   function isUnauthorizedError(error: unknown) {
     return typeof error === 'object' && error !== null && 'status' in error && (error as { status?: number }).status === 401
+  }
+
+  function resolveAdminErrorMessage(error: unknown, fallbackMessage: string) {
+    const status = typeof error === 'object' && error !== null && 'status' in error ? (error as { status?: number }).status : undefined
+
+    if (status === 401) {
+      return 'Session administrateur expirée. Merci de vous reconnecter.'
+    }
+
+    if (status === 0) {
+      return 'Réseau indisponible ou serveur injoignable.'
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message
+    }
+
+    return fallbackMessage
   }
 
   function parseAuthors(raw: string[] | string) {
@@ -66,9 +84,28 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     )
   }
 
-  async function refreshAll() {
+  async function loadAdminData() {
+    const listAllTaxons = async () => {
+      const allItems: Taxon[] = []
+      let offset = 0
+      let hasMore = true
+
+      while (hasMore) {
+        const { data } = await api.get<TaxonsPageResponse>('/taxons', { params: { offset } })
+        allItems.push(...data.items)
+        hasMore = data.hasMore
+        offset = data.nextOffset
+
+        if (data.items.length === 0) {
+          break
+        }
+      }
+
+      return allItems
+    }
+
     const [taxonRes, subfamilyRes, refRes, entryRes, statsRes] = await Promise.all([
-      api.get<Taxon[]>('/taxons'),
+      listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
       adminApi.get<Entry[]>('/entries'),
@@ -77,7 +114,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       }),
     ])
 
-    setTaxons(taxonRes.data)
+    setTaxons(taxonRes)
     setSubfamilies(subfamilyRes.data)
     setReferences(refRes.data)
     setEntries(entryRes.data)
@@ -88,22 +125,24 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await action()
-      await refreshAll()
+      await loadAdminData()
       setMessage(successMessage)
     } catch (error) {
       if (isUnauthorizedError(error)) {
+        setMessage(resolveAdminErrorMessage(error, failureMessage))
         return
       }
-      setMessage(error instanceof Error ? error.message : failureMessage)
+      setMessage(resolveAdminErrorMessage(error, failureMessage))
     }
   }
 
   useEffect(() => {
-    void refreshAll().catch((error) => {
+    void loadAdminData().catch((error) => {
       if (isUnauthorizedError(error)) {
+        setMessage(resolveAdminErrorMessage(error, 'Impossible de charger les données.'))
         return
       }
-      setMessage(error instanceof Error ? error.message : 'Chargement des données impossible')
+      setMessage(resolveAdminErrorMessage(error, 'Impossible de charger les données.'))
     })
   }, [token, statsPeriod])
 
@@ -171,7 +210,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: taxonForm.species.trim(),
       })
       setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
-    }, 'Taxon créé.', 'Création du taxon impossible')
+    }, 'Taxon créé.', 'Impossible de créer le taxon.')
   }
 
   async function updateTaxon(event: FormEvent) {
@@ -186,13 +225,13 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
       })
-    }, 'Taxon modifié.', 'Modification du taxon impossible')
+    }, 'Taxon modifié.', 'Impossible de modifier le taxon.')
   }
 
   async function deleteTaxon(id: string) {
     await runAdminAction(async () => {
       await adminApi.delete(`/taxons/${id}`)
-    }, 'Taxon supprimé.', 'Suppression du taxon impossible')
+    }, 'Taxon supprimé.', 'Impossible de supprimer le taxon.')
   }
 
   async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft, swarmingPeriod: SwarmingPeriodDraft) {
@@ -224,7 +263,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           },
         },
       })
-    }, 'Critères et descriptions mis à jour.', 'Mise à jour des critères impossible')
+    }, 'Critères et descriptions mis à jour.', 'Impossible de mettre à jour les critères.')
   }
 
   async function createReference(event: FormEvent) {
@@ -239,7 +278,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonIds: referenceForm.taxonIds,
       })
       setReferenceForm({ title: '', authors: '', description: '', type: 'WEBSITE', url: '', taxonIds: [] })
-    }, 'Référence créée.', 'Création de la référence impossible')
+    }, 'Référence créée.', 'Impossible de créer la référence.')
   }
 
   async function updateReference(event: FormEvent) {
@@ -254,13 +293,13 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         url: referenceForm.url || null,
         taxonIds: referenceForm.taxonIds,
       })
-    }, 'Référence modifiée.', 'Modification de la référence impossible')
+    }, 'Référence modifiée.', 'Impossible de modifier la référence.')
   }
 
   async function deleteReference(id: string) {
     await runAdminAction(async () => {
       await adminApi.delete(`/references/${id}`)
-    }, 'Référence supprimée.', 'Suppression de la référence impossible')
+    }, 'Référence supprimée.', 'Impossible de supprimer la référence.')
   }
 
   async function saveReferenceAuthorsAndTaxons(authors: string[], taxonIds: string[]) {
@@ -289,11 +328,11 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         authors: authors.join('\n'),
         taxonIds,
       })
-      await refreshAll()
+      await loadAdminData()
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Modification de la référence impossible')
+      setMessage(resolveAdminErrorMessage(error, 'Impossible de modifier la référence.'))
       return false
     }
   }
@@ -301,7 +340,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function saveReferenceAuthorsAndTaxonsById(referenceId: string, authors: string[], taxonIds: string[]) {
     const target = references.find((reference) => reference.id === referenceId)
     if (!target) {
-      setMessage('Référence introuvable')
+      setMessage('Référence introuvable.')
       return false
     }
 
@@ -316,11 +355,11 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonIds,
       })
 
-      await refreshAll()
+      await loadAdminData()
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Modification de la référence impossible')
+      setMessage(resolveAdminErrorMessage(error, 'Impossible de modifier la référence.'))
       return false
     }
   }
@@ -358,7 +397,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       await adminApi.post('/entries', formData)
       setEntryForm({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
       setEntryFiles(null)
-      await refreshAll()
+      await loadAdminData()
       setMessage('Entrée créée.')
     } catch (error) {
       const errorWithStatus = error as Error & { status?: number }
@@ -367,7 +406,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         return
       }
 
-      setMessage(error instanceof Error ? error.message : 'Création de l’entrée impossible')
+      setMessage(resolveAdminErrorMessage(error, 'Impossible de créer l’entrée.'))
     }
   }
 
@@ -388,7 +427,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       })
       setSelectedEntryId('')
       setEntryFiles(null)
-    }, 'Entrée modifiée.', 'Modification de l’entrée impossible')
+    }, 'Entrée modifiée.', 'Impossible de modifier l’entrée.')
   }
 
   async function deleteEntry(id: string) {
@@ -398,10 +437,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         setSelectedEntryId('')
         setEntryFiles(null)
       }
-    }, 'Entrée supprimée.', 'Suppression de l’entrée impossible')
+    }, 'Entrée supprimée.', 'Impossible de supprimer l’entrée.')
   }
 
-  async function exportDatabase() {
+  async function exportDatabaseSnapshot() {
     setMessage('')
     try {
       const { data } = await adminApi.get<unknown>('/database/export')
@@ -417,11 +456,11 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       URL.revokeObjectURL(url)
       setMessage('Export de la base terminé.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Export de la base impossible')
+      setMessage(resolveAdminErrorMessage(error, 'Impossible d’exporter la base.'))
     }
   }
 
-  async function importDatabase(file: File) {
+  async function importDatabaseSnapshot(file: File) {
     setMessage('')
 
     let payload: unknown
@@ -435,7 +474,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
     await runAdminAction(async () => {
       await adminApi.post('/database/import', payload)
-    }, 'Base importée.', 'Import de la base impossible')
+    }, 'Base importée.', 'Impossible d’importer la base.')
   }
 
   return {
@@ -480,7 +519,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     createEntry,
     updateEntry,
     deleteEntry,
-    exportDatabase,
-    importDatabase,
+    exportDatabaseSnapshot,
+    importDatabaseSnapshot,
   }
 }

@@ -4,6 +4,8 @@ import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
+import { AppError } from '../lib/errors.js'
+import { resolveEntryTaxonSelection } from '../services/entries.js'
 
 const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
@@ -14,119 +16,6 @@ const entrySchema = z.object({
   biotope: z.string().min(1),
   photoCredit: z.string().min(1),
 })
-
-function parseSpeciesTaxonValue(taxonValue: string) {
-  const normalized = taxonValue.trim().replace(/\s+/g, ' ')
-  const separatorIndex = normalized.indexOf(' ')
-
-  if (separatorIndex <= 0 || separatorIndex >= normalized.length - 1) {
-    return null
-  }
-
-  const genus = normalized.slice(0, separatorIndex)
-  const species = normalized.slice(separatorIndex + 1)
-  if (!genus || !species) {
-    return null
-  }
-
-  return { genus, species }
-}
-
-function resolveSpeciesSelection(input: z.infer<typeof entrySchema>) {
-  const explicitGenus = input.taxonGenus?.trim()
-  if (explicitGenus) {
-    return {
-      genus: explicitGenus,
-      species: input.taxonValue.trim(),
-    }
-  }
-
-  return parseSpeciesTaxonValue(input.taxonValue)
-}
-
-async function resolveTaxonSelection(input: z.infer<typeof entrySchema>) {
-  if (input.taxonLevel === 'SUBFAMILY') {
-    const match = await prisma.taxon.findFirst({
-      where: {
-        subfamily: {
-          equals: input.taxonValue.trim(),
-          mode: 'insensitive',
-        },
-      },
-      orderBy: { genus: 'asc' },
-    })
-
-    if (!match) {
-      return null
-    }
-
-    return {
-      taxonId: null,
-      taxonLevel: 'SUBFAMILY' as const,
-      taxonValue: match.subfamily,
-      subfamily: match.subfamily,
-      genus: null,
-      species: null,
-    }
-  }
-
-  if (input.taxonLevel === 'GENUS') {
-    const match = await prisma.taxon.findFirst({
-      where: {
-        genus: {
-          equals: input.taxonValue.trim(),
-          mode: 'insensitive',
-        },
-      },
-      orderBy: [{ subfamily: 'asc' }, { species: 'asc' }],
-    })
-
-    if (!match) {
-      return null
-    }
-
-    return {
-      taxonId: match.id,
-      taxonLevel: 'GENUS' as const,
-      taxonValue: match.genus,
-      subfamily: match.subfamily,
-      genus: match.genus,
-      species: null,
-    }
-  }
-
-  const speciesSelection = resolveSpeciesSelection(input)
-  if (!speciesSelection) {
-    return null
-  }
-
-  const match = await prisma.taxon.findFirst({
-    where: {
-      genus: {
-        equals: speciesSelection.genus,
-        mode: 'insensitive',
-      },
-      species: {
-        equals: speciesSelection.species,
-        mode: 'insensitive',
-      },
-    },
-    orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }],
-  })
-
-  if (!match) {
-    return null
-  }
-
-  return {
-    taxonId: match.id,
-    taxonLevel: 'SPECIES' as const,
-    taxonValue: `${match.genus} ${match.species}`,
-    subfamily: match.subfamily,
-    genus: match.genus,
-    species: match.species,
-  }
-}
 
 export const entriesRouter = Router()
 
@@ -159,12 +48,12 @@ entriesRouter.get('/', async (_req, res) => {
 entriesRouter.post('/', uploadEntryImages, async (req, res) => {
   const parsed = entrySchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Payload invalide' })
+    throw new AppError(400, 'Requête invalide.')
   }
 
-  const taxonSelection = await resolveTaxonSelection(parsed.data)
+  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
   if (!taxonSelection) {
-    return res.status(400).json({ message: 'Taxon introuvable pour ce niveau.' })
+    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
   }
 
   const files = (req.files as Express.Multer.File[] | undefined) ?? []
@@ -192,12 +81,12 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
 entriesRouter.put('/:id', async (req, res) => {
   const parsed = entrySchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Payload invalide' })
+    throw new AppError(400, 'Requête invalide.')
   }
 
-  const taxonSelection = await resolveTaxonSelection(parsed.data)
+  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
   if (!taxonSelection) {
-    return res.status(400).json({ message: 'Taxon introuvable pour ce niveau.' })
+    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
   }
 
   const updateData: Prisma.ObservationEntryUncheckedUpdateInput = {
@@ -208,32 +97,16 @@ entriesRouter.put('/:id', async (req, res) => {
     photoCredit: parsed.data.photoCredit,
   }
 
-  try {
-    const updated = await prisma.observationEntry.update({
-      where: { id: req.params.id },
-      data: updateData,
-      include: { images: true },
-    })
+  const updated = await prisma.observationEntry.update({
+    where: { id: req.params.id },
+    data: updateData,
+    include: { images: true },
+  })
 
-    return res.json(updated)
-  } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
-      return res.status(404).json({ message: 'Entrée introuvable' })
-    }
-
-    throw error
-  }
+  return res.json(updated)
 })
 
 entriesRouter.delete('/:id', async (req, res) => {
-  try {
-    await prisma.observationEntry.delete({ where: { id: req.params.id } })
-    return res.status(204).send()
-  } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
-      return res.status(404).json({ message: 'Entrée introuvable' })
-    }
-
-    throw error
-  }
+  await prisma.observationEntry.delete({ where: { id: req.params.id } })
+  return res.status(204).send()
 })

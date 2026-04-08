@@ -301,18 +301,18 @@ export function TaxonsCrudPanel({
           {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
         </p>
 
-        <div className="mt-4 overflow-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="mt-4 overflow-auto rounded-lg border border-slate-200">
+          <table className="min-w-[900px] w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700">
-                <th className="p-2">Sous-famille</th>
-                <th className="p-2">Tribu</th>
-                <th className="p-2">Genre</th>
-                <th className="p-2">Sous-genre</th>
-                <th className="p-2">Groupe d'espèce</th>
-                <th className="p-2">Espèce</th>
-                <th className="p-2">Détails</th>
-                <th className="p-2">Actions</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Détails</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -321,12 +321,12 @@ export function TaxonsCrudPanel({
                   key={taxon.id}
                   className={`border-b ${selectedTaxonId === taxon.id ? 'border-slate-200 bg-slate-50' : 'border-slate-100'}`}
                 >
-                  <td className="p-2">{taxon.subfamily}</td>
-                  <td className="p-2">{taxon.tribe ?? '-'}</td>
-                  <td className="p-2"><em>{taxon.genus}</em></td>
-                  <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
-                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
-                  <td className="p-2"><em>{taxon.species}</em></td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.subfamily}>{taxon.subfamily}</td>
+                  <td className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.tribe ?? '-'}>{taxon.tribe ?? '-'}</td>
+                  <td className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.genus}><em>{taxon.genus}</em></td>
+                  <td className="max-w-[140px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}>{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.speciesGroup ?? '-'}>{taxon.speciesGroup ?? '-'}</td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.species}><em>{taxon.species}</em></td>
                   <td className="p-2">
                     <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
                       Ouvrir

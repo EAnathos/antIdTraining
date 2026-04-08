@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { AdminSection } from '../types/models'
 import { useAdminData } from '../hooks/useAdminData'
 import { AdminMobileMenu } from '../components/admin/AdminMobileMenu'
@@ -8,16 +8,7 @@ import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
 import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
 import { StatsPanel } from '../components/admin/StatsPanel'
-
-const ADMIN_TOKEN_KEY = 'adminToken'
-
-function getAdminToken() {
-  return sessionStorage.getItem(ADMIN_TOKEN_KEY)
-}
-
-function clearAdminToken() {
-  sessionStorage.removeItem(ADMIN_TOKEN_KEY)
-}
+import { api } from '../lib/api'
 
 const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'taxons', label: 'Taxons' },
@@ -28,21 +19,26 @@ const adminSections: { id: AdminSection; label: string }[] = [
 ]
 
 export function AdminDashboardPage() {
-  const token = getAdminToken()
+  const navigate = useNavigate()
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
 
-  function logoutToLogin() {
-    clearAdminToken()
-    window.location.href = '/admin/login'
+  async function logoutToLogin() {
+    await api.post('/auth/logout').catch(() => undefined)
+    navigate('/admin/login', { replace: true })
   }
 
-  if (!token) {
-    return <Navigate to="/admin/login" replace />
-  }
+  const data = useAdminData(null, () => {
+    void logoutToLogin()
+  })
 
-  const data = useAdminData(token, logoutToLogin)
-
+  const normalizedMessage = data.message.toLowerCase()
+  const isErrorMessage =
+    normalizedMessage.includes('impossible') ||
+    normalizedMessage.includes('introuvable') ||
+    normalizedMessage.includes('invalide') ||
+    normalizedMessage.includes('expirée') ||
+    normalizedMessage.includes('http')
 
   return (
     <section className="space-y-6">
@@ -76,7 +72,7 @@ export function AdminDashboardPage() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         {data.message && (
-          <div className={`mb-4 rounded-lg px-3 py-2 text-sm ${data.message.includes('impossible') || data.message.includes('Payload') || data.message.includes('HTTP') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+          <div className={`mb-4 rounded-lg px-3 py-2 text-sm ${isErrorMessage ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
             {data.message}
           </div>
         )}
@@ -136,8 +132,8 @@ export function AdminDashboardPage() {
 
         {section === 'database' && (
           <DatabaseToolsPanel
-            exportDatabase={data.exportDatabase}
-            importDatabase={data.importDatabase}
+            exportDatabaseSnapshot={data.exportDatabaseSnapshot}
+            importDatabaseSnapshot={data.importDatabaseSnapshot}
           />
         )}
       </div>

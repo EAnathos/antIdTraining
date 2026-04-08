@@ -31,7 +31,7 @@ export const openApiDocument = {
           message: { type: 'string' },
         },
         example: {
-          message: 'Payload invalide',
+          message: 'Requête invalide.',
         },
       },
       TaxonInput: {
@@ -176,7 +176,7 @@ export const openApiDocument = {
         summary: 'Vérifie la disponibilité de l’API',
         responses: {
           200: {
-            description: 'API disponible',
+            description: 'API disponible.',
             content: {
               'application/json': {
                 schema: {
@@ -210,7 +210,7 @@ export const openApiDocument = {
         },
         responses: {
           200: {
-            description: 'Connexion réussie',
+            description: 'Connexion réussie.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/LoginResponse' },
@@ -222,11 +222,11 @@ export const openApiDocument = {
             },
           },
           401: {
-            description: 'Identifiants invalides',
+            description: 'Identifiants invalides.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Identifiants invalides' },
+                example: { message: 'Identifiants invalides.' },
               },
             },
           },
@@ -246,7 +246,7 @@ export const openApiDocument = {
         ],
         responses: {
           200: {
-            description: 'Question renvoyée',
+            description: 'Question renvoyée.',
             content: {
               'application/json': {
                 examples: {
@@ -313,11 +313,11 @@ export const openApiDocument = {
             },
           },
           404: {
-            description: 'Aucune entrée disponible',
+            description: 'Aucune entrée disponible.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Aucune entrée disponible' },
+                example: { message: 'Aucune entrée disponible.' },
               },
             },
           },
@@ -348,7 +348,7 @@ export const openApiDocument = {
         },
         responses: {
           200: {
-            description: 'Résultat de validation',
+            description: 'Résultat de validation.',
             content: {
               'application/json': {
                 examples: {
@@ -386,7 +386,7 @@ export const openApiDocument = {
         summary: 'Liste les sous-familles distinctes',
         responses: {
           200: {
-            description: 'Liste triée des sous-familles',
+            description: 'Liste triée des sous-familles.',
             content: {
               'application/json': {
                 schema: {
@@ -414,7 +414,7 @@ export const openApiDocument = {
         ],
         responses: {
           200: {
-            description: 'Liste triée des genres',
+            description: 'Liste triée des genres.',
             content: {
               'application/json': {
                 schema: {
@@ -426,11 +426,11 @@ export const openApiDocument = {
             },
           },
           400: {
-            description: 'Paramètre manquant',
+            description: 'Le paramètre requis est manquant.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Paramètre subfamily requis.' },
+                example: { message: 'Le paramètre subfamily est requis.' },
               },
             },
           },
@@ -451,7 +451,7 @@ export const openApiDocument = {
         ],
         responses: {
           200: {
-            description: 'Liste triée des espèces',
+            description: 'Liste triée des espèces.',
             content: {
               'application/json': {
                 schema: {
@@ -463,11 +463,11 @@ export const openApiDocument = {
             },
           },
           400: {
-            description: 'Paramètre manquant',
+            description: 'Le paramètre requis est manquant.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Paramètre genus requis.' },
+                example: { message: 'Le paramètre genus est requis.' },
               },
             },
           },
@@ -484,7 +484,7 @@ export const openApiDocument = {
         ],
         responses: {
           200: {
-            description: 'Liste des taxons',
+            description: 'Liste des taxons.',
             content: {
               'application/json': {
                 schema: {
@@ -515,7 +515,7 @@ export const openApiDocument = {
         summary: 'Liste les références',
         responses: {
           200: {
-            description: 'Liste des références',
+            description: 'Liste des références.',
             content: {
               'application/json': {
                 schema: {
@@ -560,10 +560,10 @@ export const openApiDocument = {
           },
         },
         responses: {
-          201: { description: 'Taxon créé' },
-          400: { description: 'Payload invalide' },
-          401: { description: 'Non autorisé' },
-          403: { description: 'Accès administrateur requis' },
+          201: { description: 'Taxon créé.' },
+          400: { description: 'Requête invalide.' },
+          401: { description: 'Non autorisé.' },
+          403: { description: 'Accès administrateur requis.' },
         },
       },
     },
@@ -582,7 +582,7 @@ export const openApiDocument = {
           },
         },
         responses: {
-          200: { description: 'Taxon mis à jour' },
+          200: { description: 'Taxon mis à jour.' },
         },
       },
       delete: {
@@ -591,7 +591,7 @@ export const openApiDocument = {
         security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
         responses: {
-          204: { description: 'Taxon supprimé' },
+          204: { description: 'Taxon supprimé.' },
         },
       },
     },
@@ -615,7 +615,7 @@ export const openApiDocument = {
           },
         },
         responses: {
-          201: { description: 'Référence créée' },
+          201: { description: 'Référence créée.' },
         },
       },
     },
@@ -634,7 +634,7 @@ export const openApiDocument = {
           },
         },
         responses: {
-          200: { description: 'Référence mise à jour' },
+          200: { description: 'Référence mise à jour.' },
         },
       },
       delete: {
@@ -643,7 +643,7 @@ export const openApiDocument = {
         security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
         responses: {
-          204: { description: 'Référence supprimée' },
+          204: { description: 'Référence supprimée.' },
         },
       },
     },
@@ -653,7 +653,7 @@ export const openApiDocument = {
         summary: 'Liste les entrées d’observation',
         security: [{ bearerAuth: [] }],
         responses: {
-          200: { description: 'Entrées listées' },
+          200: { description: 'Entrées listées.' },
         },
       },
       post: {
@@ -701,7 +701,7 @@ export const openApiDocument = {
         },
         responses: {
           201: {
-            description: 'Entrée créée',
+            description: 'Entrée créée.',
             content: {
               'application/json': {
                 example: {
@@ -760,7 +760,7 @@ export const openApiDocument = {
           },
         },
         responses: {
-          200: { description: 'Entrée mise à jour' },
+          200: { description: 'Entrée mise à jour.' },
         },
       },
       delete: {
@@ -769,7 +769,7 @@ export const openApiDocument = {
         security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
         responses: {
-          204: { description: 'Entrée supprimée' },
+          204: { description: 'Entrée supprimée.' },
         },
       },
     },
@@ -789,7 +789,7 @@ export const openApiDocument = {
         ],
         responses: {
           200: {
-            description: 'Statistiques renvoyées',
+            description: 'Statistiques renvoyées.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/GameStatsResponse' },
@@ -822,8 +822,8 @@ export const openApiDocument = {
               },
             },
           },
-          401: { description: 'Non autorisé' },
-          403: { description: 'Accès administrateur requis' },
+          401: { description: 'Non autorisé.' },
+          403: { description: 'Accès administrateur requis.' },
         },
       },
     },
@@ -834,7 +834,7 @@ export const openApiDocument = {
         security: [{ bearerAuth: [] }],
         responses: {
           200: {
-            description: 'Snapshot de la base',
+            description: 'Snapshot de la base.',
             content: {
               'application/json': {
                 example: {
@@ -853,8 +853,8 @@ export const openApiDocument = {
               },
             },
           },
-          401: { description: 'Non autorisé' },
-          403: { description: 'Accès administrateur requis' },
+          401: { description: 'Non autorisé.' },
+          403: { description: 'Accès administrateur requis.' },
         },
       },
     },
@@ -884,10 +884,10 @@ export const openApiDocument = {
           },
         },
         responses: {
-          200: { description: 'Import terminé' },
-          400: { description: 'Payload invalide' },
-          401: { description: 'Non autorisé' },
-          403: { description: 'Accès administrateur requis' },
+          200: { description: 'Import terminé.' },
+          400: { description: 'Requête invalide.' },
+          401: { description: 'Non autorisé.' },
+          403: { description: 'Accès administrateur requis.' },
         },
       },
     },

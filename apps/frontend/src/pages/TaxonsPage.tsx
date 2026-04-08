@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
-import type { ReferenceItem, Taxon, TaxonLevelDetail } from '../types/models'
+import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
 
 type SelectedDetail = {
   taxon: Taxon
@@ -57,19 +57,121 @@ export function TaxonsPage() {
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [level, setLevel] = useState<'subfamily' | 'genus' | 'species'>('genus')
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null)
+  const [isLoadingTaxons, setIsLoadingTaxons] = useState(true)
+  const [isLoadingReferences, setIsLoadingReferences] = useState(true)
+  const [isLoadingMoreTaxons, setIsLoadingMoreTaxons] = useState(false)
+  const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const requestIdRef = useRef(0)
+  const tableContainerRef = useRef<HTMLDivElement | null>(null)
+  const [tableScrollTop, setTableScrollTop] = useState(0)
+  const [tableViewportHeight, setTableViewportHeight] = useState(560)
 
-  async function load() {
-    const { data } = await api.get<Taxon[]>('/taxons', { params: { level, q: query } })
-    setTaxons(data)
+  const rowHeight = 45
+  const overscan = 10
+
+  async function loadAllTaxons() {
+    const currentRequestId = requestIdRef.current + 1
+    requestIdRef.current = currentRequestId
+
+    setIsLoadingTaxons(true)
+    setIsLoadingMoreTaxons(false)
+    setHasMoreTaxons(false)
+    setLoadError('')
+
+    try {
+      const firstPage = await api.get<TaxonsPageResponse>('/taxons', { params: { level, q: debouncedQuery, offset: 0 } })
+      if (requestIdRef.current !== currentRequestId) {
+        return
+      }
+
+      setTaxons(firstPage.data.items)
+      setHasMoreTaxons(firstPage.data.hasMore)
+      setIsLoadingTaxons(false)
+
+      let offset = firstPage.data.nextOffset
+      let hasMore = firstPage.data.hasMore
+
+      while (hasMore) {
+        setIsLoadingMoreTaxons(true)
+
+        const nextPage = await api.get<TaxonsPageResponse>('/taxons', { params: { level, q: debouncedQuery, offset } })
+        if (requestIdRef.current !== currentRequestId) {
+          return
+        }
+
+        setTaxons((current) => [...current, ...nextPage.data.items])
+        setHasMoreTaxons(nextPage.data.hasMore)
+
+        hasMore = nextPage.data.hasMore
+        offset = nextPage.data.nextOffset
+
+        if (nextPage.data.items.length === 0) {
+          break
+        }
+      }
+    } catch {
+      if (requestIdRef.current !== currentRequestId) {
+        return
+      }
+
+      setTaxons([])
+      setLoadError('Chargement des taxons impossible.')
+    } finally {
+      if (requestIdRef.current === currentRequestId) {
+        setIsLoadingTaxons(false)
+        setIsLoadingMoreTaxons(false)
+      }
+    }
   }
 
   useEffect(() => {
-    void load()
-  }, [level, query])
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [query])
 
   useEffect(() => {
-    api.get<ReferenceItem[]>('/references').then((res) => setReferences(res.data))
+    if (tableContainerRef.current) {
+      setTableViewportHeight(tableContainerRef.current.clientHeight)
+    }
+
+    const handleResize = () => {
+      if (tableContainerRef.current) {
+        setTableViewportHeight(tableContainerRef.current.clientHeight)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0
+      setTableScrollTop(0)
+    }
+  }, [level, debouncedQuery])
+
+  useEffect(() => {
+    void loadAllTaxons()
+  }, [level, debouncedQuery])
+
+  useEffect(() => {
+    setIsLoadingReferences(true)
+    api
+      .get<ReferenceItem[]>('/references')
+      .then((res) => setReferences(res.data))
+      .catch(() => setReferences([]))
+      .finally(() => setIsLoadingReferences(false))
   }, [])
 
   const linkedReferences = useMemo(() => {
@@ -79,6 +181,15 @@ export function TaxonsPage() {
 
     return references.filter((reference) => reference.taxons.some((taxon) => taxon.id === selectedDetail.taxon.id))
   }, [references, selectedDetail])
+
+  const visibleStartIndex = Math.max(Math.floor(tableScrollTop / rowHeight) - overscan, 0)
+  const visibleEndIndex = Math.min(
+    taxons.length,
+    Math.ceil((tableScrollTop + tableViewportHeight) / rowHeight) + overscan,
+  )
+  const visibleTaxons = taxons.slice(visibleStartIndex, visibleEndIndex)
+  const topSpacerHeight = visibleStartIndex * rowHeight
+  const bottomSpacerHeight = Math.max((taxons.length - visibleEndIndex) * rowHeight, 0)
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -101,24 +212,44 @@ export function TaxonsPage() {
         {taxons.length} entrée{taxons.length > 1 ? 's' : ''} trouvée{taxons.length > 1 ? 's' : ''}
       </p>
 
-      <div className="mt-4 overflow-auto">
-        <table className="min-w-full text-left text-sm">
+      {loadError && <p className="mt-2 text-sm text-red-600">{loadError}</p>}
+
+      {isLoadingTaxons && (
+        <div className="mt-4 space-y-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={`taxons-skeleton-${index}`} className="h-10 animate-pulse rounded-lg bg-slate-100" />
+          ))}
+        </div>
+      )}
+
+      {!isLoadingTaxons && (
+      <div
+        ref={tableContainerRef}
+        className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200"
+        onScroll={(event) => setTableScrollTop(event.currentTarget.scrollTop)}
+      >
+        <table className="min-w-[760px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-700">
-              <th className="p-2">Sous-famille</th>
-              <th className="p-2">Tribu</th>
-              <th className="p-2">Genre</th>
-              <th className="p-2">Sous-genre</th>
-              <th className="p-2">Groupe d'espèce</th>
-              <th className="p-2">Espèce</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
+              <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
             </tr>
           </thead>
           <tbody>
-            {taxons.map((taxon) => (
+            {topSpacerHeight > 0 && (
+              <tr>
+                <td colSpan={6} style={{ height: `${topSpacerHeight}px` }} />
+              </tr>
+            )}
+            {visibleTaxons.map((taxon) => (
                 <tr key={taxon.id} className="border-b border-slate-100">
-                  <td className="p-2">
+                  <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.subfamily}>
                     <button
-                      className="text-indigo-700 underline underline-offset-2"
+                      className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
@@ -132,10 +263,10 @@ export function TaxonsPage() {
                       {taxon.subfamily}
                     </button>
                   </td>
-                  <td className="p-2">{taxon.tribe ?? '-'}</td>
-                  <td className="p-2">
+                  <td className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.tribe ?? '-'}>{taxon.tribe ?? '-'}</td>
+                  <td className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.genus}>
                     <button
-                      className="text-indigo-700 underline underline-offset-2"
+                      className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
@@ -149,11 +280,11 @@ export function TaxonsPage() {
                       <em>{taxon.genus}</em>
                     </button>
                   </td>
-                  <td className="p-2">{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
-                  <td className="p-2">{taxon.speciesGroup ?? '-'}</td>
-                  <td className="p-2">
+                  <td className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}>{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.speciesGroup ?? '-'}>{taxon.speciesGroup ?? '-'}</td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.species}>
                     <button
-                      className="text-indigo-700 underline underline-offset-2"
+                      className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
                         setSelectedDetail({
@@ -169,9 +300,33 @@ export function TaxonsPage() {
                   </td>
                 </tr>
             ))}
+            {bottomSpacerHeight > 0 && (
+              <tr>
+                <td colSpan={6} style={{ height: `${bottomSpacerHeight}px` }} />
+              </tr>
+            )}
+            {taxons.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-4 text-center text-slate-500">
+                  Aucun taxon trouvé.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      )}
+
+      {isLoadingMoreTaxons && (
+        <div className="mt-3 space-y-2">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={`taxons-loading-more-${index}`} className="h-8 animate-pulse rounded-lg bg-slate-100" />
+          ))}
+        </div>
+      )}
+      {!isLoadingTaxons && !isLoadingMoreTaxons && !hasMoreTaxons && taxons.length > 0 && (
+        <p className="mt-3 text-center text-xs text-slate-500">Fin de la liste.</p>
+      )}
 
       {selectedDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setSelectedDetail(null)}>
@@ -238,6 +393,7 @@ export function TaxonsPage() {
             )}
 
             <p className="mt-3 font-medium text-slate-800">Références liées</p>
+            {isLoadingReferences && <p className="mt-1 text-slate-700">Chargement des références…</p>}
             {linkedReferences.length > 0 ? (
               <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
                 {linkedReferences.map((reference) => {

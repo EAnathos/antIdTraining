@@ -56,6 +56,7 @@ export function GamePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [subfamilyOptions, setSubfamilyOptions] = useState<string[]>([])
   const [dynamicGenusOptions, setDynamicGenusOptions] = useState<string[]>([])
+  const [imageLoadFailed, setImageLoadFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +88,7 @@ export function GamePage() {
     setMediumStep('subfamily')
     setCurrentImageIndex(0)
     setDynamicGenusOptions([])
+    setImageLoadFailed(false)
   }
 
   function handleLevelChange(nextLevel: ActiveLevel) {
@@ -109,6 +111,7 @@ export function GamePage() {
       setMediumStep('subfamily')
       setCurrentImageIndex(0)
       setDynamicGenusOptions([])
+      setImageLoadFailed(false)
     } finally {
       setIsLoadingQuestion(false)
     }
@@ -116,11 +119,13 @@ export function GamePage() {
 
   function goToPreviousImage() {
     if (!question || question.images.length <= 1) return
+    setImageLoadFailed(false)
     setCurrentImageIndex((index) => (index - 1 + question.images.length) % question.images.length)
   }
 
   function goToNextImage() {
     if (!question || question.images.length <= 1) return
+    setImageLoadFailed(false)
     setCurrentImageIndex((index) => (index + 1) % question.images.length)
   }
 
@@ -249,11 +254,19 @@ export function GamePage() {
               </button>
 
               <div className="flex justify-center rounded-lg bg-slate-50 p-2">
-                <img
-                  className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
-                  src={`${backendOrigin}${question.images[currentImageIndex]}`}
-                  alt={`Spécimen ${currentImageIndex + 1}`}
-                />
+                {imageLoadFailed ? (
+                  <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-center text-slate-600">
+                    Impossible de charger cette image. Passe à la suivante ou recharge la question.
+                  </div>
+                ) : (
+                  <img
+                    className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
+                    src={`${backendOrigin}${question.images[currentImageIndex]}`}
+                    alt={`Spécimen ${currentImageIndex + 1}`}
+                    onError={() => setImageLoadFailed(true)}
+                    onLoad={() => setImageLoadFailed(false)}
+                  />
+                )}
               </div>
 
               <button
