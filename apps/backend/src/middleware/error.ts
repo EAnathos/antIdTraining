@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import multer from 'multer'
 import { ZodError } from 'zod'
 import { AppError, isErrorWithCode } from '../lib/errors.js'
 
@@ -9,6 +10,14 @@ export function notFoundHandler(_req: Request, res: Response) {
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (error instanceof AppError) {
     return res.status(error.status).json({ message: error.message })
+  }
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ message: 'Archive trop volumineuse.' })
+    }
+
+    return res.status(400).json({ message: 'Requête invalide.' })
   }
 
   if (error instanceof ZodError) {

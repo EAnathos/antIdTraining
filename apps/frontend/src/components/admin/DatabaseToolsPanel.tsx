@@ -40,7 +40,7 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       <h3 className="text-lg font-semibold text-slate-900">Export / Import base de données</h3>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm text-slate-700">Télécharge un snapshot JSON complet de la base.</p>
+        <p className="text-sm text-slate-700">Télécharge une archive ZIP contenant la base et les images.</p>
         <button
           type="button"
           className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
@@ -54,12 +54,12 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
         <p className="text-sm font-medium text-amber-900">Import (remplacement complet)</p>
         <p className="mt-1 text-sm text-amber-800">
-          Cette action supprime les données actuelles et restaure le contenu du fichier JSON.
+          Cette action supprime les données actuelles et restaure le contenu du fichier sélectionné (ZIP recommandé, JSON compatible).
         </p>
 
         <input
           type="file"
-          accept="application/json,.json"
+          accept="application/zip,.zip,application/json,.json"
           className="mt-3 block w-full rounded-lg border border-amber-300 bg-white p-2 text-sm"
           onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
         />

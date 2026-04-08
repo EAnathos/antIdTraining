@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, createAdminApiClient } from '../lib/api'
+import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 
 type LevelDetailsDraft = {
@@ -443,18 +443,35 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function exportDatabaseSnapshot() {
     setMessage('')
     try {
-      const { data } = await adminApi.get<unknown>('/database/export')
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const response = await fetch(`${apiBaseUrl}/admin/database/export/bundle`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`
+        try {
+          const payload = (await response.json()) as { message?: string }
+          if (payload.message) {
+            message = payload.message
+          }
+        } catch {
+          // Ignore non-JSON error bodies.
+        }
+        throw new Error(message)
+      }
+
+      const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       const dateTag = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+$/, '')
       link.href = url
-      link.download = `ant-id-training-db-${dateTag}.json`
+      link.download = `ant-id-training-bundle-${dateTag}.zip`
       document.body.appendChild(link)
       link.click()
       link.remove()
       URL.revokeObjectURL(url)
-      setMessage('Export de la base terminé.')
+      setMessage('Export de la base et des images terminé.')
     } catch (error) {
       setMessage(resolveAdminErrorMessage(error, 'Impossible d’exporter la base.'))
     }
@@ -462,6 +479,21 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
   async function importDatabaseSnapshot(file: File) {
     setMessage('')
+
+    if (file.name.toLowerCase().endsWith('.zip')) {
+      try {
+        const formData = new FormData()
+        formData.append('bundle', file)
+        const { data } = await adminApi.post<{ imagesRestored?: number }>('/database/import/bundle', formData)
+        await loadAdminData()
+
+        const restoredCount = typeof data?.imagesRestored === 'number' ? data.imagesRestored : 0
+        setMessage(`Base et images importées (${restoredCount} image${restoredCount > 1 ? 's' : ''} restaurée${restoredCount > 1 ? 's' : ''}).`)
+      } catch (error) {
+        setMessage(resolveAdminErrorMessage(error, 'Impossible d’importer l’archive.'))
+      }
+      return
+    }
 
     let payload: unknown
     try {

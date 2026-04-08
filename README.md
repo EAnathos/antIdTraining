@@ -78,6 +78,7 @@ En production, `ADMIN_EMAIL` et `ADMIN_PASSWORD` doivent être fournis explicite
 - Frontend taxons: chargement progressif par requêtes en boucle + virtualisation du tableau pour les grandes listes.
 - PWA: manifest + service worker avec cache offline et stratégie `stale-while-revalidate` pour les assets.
 - Backend: logs structurés JSON par requête (`method`, `path`, `status`, `durationMs`) et gestion centralisée des erreurs.
+- Export/import admin: format ZIP recommandé (snapshot base + dossier `uploads`), JSON toujours supporté pour compatibilité.
 
 ## Convention de messages API
 

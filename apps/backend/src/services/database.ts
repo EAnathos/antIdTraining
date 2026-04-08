@@ -1,6 +1,11 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import AdmZip from 'adm-zip'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
+import { AppError } from '../lib/errors.js'
 
 const referenceTypeSchema = z.enum(['WEBSITE', 'MYRMECOLOGY'])
 const taxonLevelSchema = z.enum(['SUBFAMILY', 'GENUS', 'SPECIES'])
@@ -117,6 +122,19 @@ export const databaseSnapshotSchema = z.object({
 })
 
 export type DatabaseSnapshot = z.infer<typeof databaseSnapshotSchema>
+
+function getUploadsDirPath() {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url))
+  return path.resolve(currentDir, '../../uploads')
+}
+
+function ensureUploadsDir() {
+  const uploadsDir = getUploadsDirPath()
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true })
+  }
+  return uploadsDir
+}
 
 export async function getDatabaseSnapshot() {
   const [
@@ -252,5 +270,95 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       entryImages: snapshot.data.entryImages.length,
       gameSessions: snapshot.data.gameSessions.length,
     },
+  }
+}
+
+export async function createDatabaseBundleArchive() {
+  const snapshot = await getDatabaseSnapshot()
+  const zip = new AdmZip()
+
+  zip.addFile('snapshot.json', Buffer.from(JSON.stringify(snapshot, null, 2), 'utf8'))
+
+  const uploadsDir = ensureUploadsDir()
+  if (fs.existsSync(uploadsDir)) {
+    const entries = fs.readdirSync(uploadsDir)
+    if (entries.length > 0) {
+      zip.addLocalFolder(uploadsDir, 'uploads')
+    }
+  }
+
+  return zip.toBuffer()
+}
+
+function restoreUploadsFromArchive(zip: AdmZip) {
+  const uploadEntries = zip
+    .getEntries()
+    .filter((entry) => !entry.isDirectory && entry.entryName.startsWith('uploads/'))
+
+  if (uploadEntries.length === 0) {
+    return 0
+  }
+
+  const uploadsDir = getUploadsDirPath()
+  fs.mkdirSync(uploadsDir, { recursive: true })
+
+  const existingFiles = fs.readdirSync(uploadsDir)
+  for (const fileName of existingFiles) {
+    fs.rmSync(path.join(uploadsDir, fileName), { recursive: true, force: true })
+  }
+
+  for (const entry of uploadEntries) {
+    const fileName = path.basename(entry.entryName)
+    if (!fileName) {
+      continue
+    }
+
+    fs.writeFileSync(path.join(uploadsDir, fileName), entry.getData())
+  }
+
+  return uploadEntries.length
+}
+
+export async function importDatabaseBundleArchive(bundleBuffer: Buffer) {
+  let zip: AdmZip
+  try {
+    zip = new AdmZip(bundleBuffer)
+  } catch {
+    throw new AppError(400, 'Archive ZIP invalide.')
+  }
+
+  const entries = zip.getEntries().filter((entry) => !entry.isDirectory)
+  const snapshotEntry =
+    entries.find((entry) => path.basename(entry.entryName).toLowerCase() === 'snapshot.json') ??
+    entries.find((entry) => entry.entryName.toLowerCase().endsWith('.json'))
+
+  if (!snapshotEntry) {
+    throw new AppError(400, 'Archive invalide : fichier JSON introuvable.')
+  }
+
+  let rawSnapshot: unknown
+  try {
+    rawSnapshot = JSON.parse(snapshotEntry.getData().toString('utf8')) as unknown
+  } catch {
+    throw new AppError(400, 'Archive invalide : snapshot.json illisible.')
+  }
+
+  const parsedSnapshot = databaseSnapshotSchema.safeParse(rawSnapshot)
+  if (!parsedSnapshot.success) {
+    throw new AppError(400, 'Archive invalide : snapshot JSON non conforme.')
+  }
+
+  const imported = await importDatabaseSnapshot(parsedSnapshot.data)
+
+  let imagesRestored = 0
+  try {
+    imagesRestored = restoreUploadsFromArchive(zip)
+  } catch {
+    throw new AppError(500, 'Base importée, mais restauration des images impossible.')
+  }
+
+  return {
+    ...imported,
+    imagesRestored,
   }
 }
