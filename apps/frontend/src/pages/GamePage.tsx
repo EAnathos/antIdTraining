@@ -118,13 +118,13 @@ export function GamePage() {
   }
 
   function goToPreviousImage() {
-    if (!question || question.images.length <= 1) return
+    if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
     setImageLoadFailed(false)
     setCurrentImageIndex((index) => (index - 1 + question.images.length) % question.images.length)
   }
 
   function goToNextImage() {
-    if (!question || question.images.length <= 1) return
+    if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
     setImageLoadFailed(false)
     setCurrentImageIndex((index) => (index + 1) % question.images.length)
   }
@@ -132,13 +132,17 @@ export function GamePage() {
   const fallbackSubfamilyChoices = question
     ? Array.isArray(question.choices)
       ? question.choices
-      : question.choices.subfamily ?? []
-    : []
+      : Array.isArray(question.choices?.subfamily)
+        ? question.choices.subfamily
+        : []
+    : [];
 
-  const subfamilyChoices = subfamilyOptions.length > 0 ? subfamilyOptions : fallbackSubfamilyChoices
+  const subfamilyChoices = Array.isArray(subfamilyOptions) && subfamilyOptions.length > 0 ? subfamilyOptions : fallbackSubfamilyChoices;
 
-  const fallbackGenusChoices = question && !Array.isArray(question.choices) ? question.choices.genus ?? [] : []
-  const genusChoices = dynamicGenusOptions.length > 0 ? dynamicGenusOptions : fallbackGenusChoices
+  const fallbackGenusChoices = question && !Array.isArray(question.choices) && Array.isArray(question.choices?.genus)
+    ? question.choices.genus
+    : [];
+  const genusChoices = Array.isArray(dynamicGenusOptions) && dynamicGenusOptions.length > 0 ? dynamicGenusOptions : fallbackGenusChoices;
 
   async function validateAnswer() {
     if (!question || !selectedSubfamily) return
