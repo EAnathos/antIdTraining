@@ -12,16 +12,21 @@ const loginSchema = z.object({
 export const authRouter = Router()
 
 authRouter.post('/login', async (req, res) => {
-  const parsed = loginSchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
+  try {
+    const parsed = loginSchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
+    }
+
+    const auth = await loginAdmin(parsed.data.email, parsed.data.password)
+
+    res.cookie('adminToken', auth.token, getAdminCookieOptions())
+
+    return res.json({ token: auth.token, role: auth.role })
+  } catch (e) {
+    console.error('Erreur /api/auth/login:', e)
+    res.status(500).json({ message: 'Erreur serveur', error: e instanceof Error ? e.message : String(e) })
   }
-
-  const auth = await loginAdmin(parsed.data.email, parsed.data.password)
-
-  res.cookie('adminToken', auth.token, getAdminCookieOptions())
-
-  return res.json({ token: auth.token, role: auth.role })
 })
 
 authRouter.post('/logout', (_req, res) => {
