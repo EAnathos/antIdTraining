@@ -104,10 +104,12 @@ app.use('/api/game', gameRouter)
 app.use('/api/taxons', publicTaxonsRouter)
 app.use('/api/references', publicReferencesRouter)
 
+import { adminStatsToolsRouter } from './routes/adminStatsTools.js'
 app.use('/api/admin/entries', requireAuth, requireAdmin, entriesRouter)
 app.use('/api/admin/taxons', requireAuth, requireAdmin, adminTaxonsRouter)
 app.use('/api/admin/references', requireAuth, requireAdmin, adminReferencesRouter)
 app.use('/api/admin/stats', requireAuth, requireAdmin, statsRouter)
+app.use('/api/admin/stats-tools', requireAuth, requireAdmin, adminStatsToolsRouter)
 app.use('/api/admin/database', requireAuth, requireAdmin, databaseRouter)
 
 app.use(notFoundHandler)
