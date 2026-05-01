@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express from 'express'
+import compression from 'compression'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
@@ -46,6 +47,7 @@ app.use(
     credentials: true,
   }),
 )
+app.use(compression({ threshold: 1024, level: 6 }))
 app.use(express.json())
 app.use('/uploads', express.static(uploadsPath))
 
