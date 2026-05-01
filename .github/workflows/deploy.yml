@@ -28,8 +28,10 @@ jobs:
       - name: Trigger deploy webhook
         if: success()
         run: |
+          BODY='{"ref":"refs/heads/main"}'
+          SIGNATURE="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac '${{ secrets.WEBHOOK_SECRET }}' | awk '{print $2}')"
           curl -X POST https://ant-id-training.anathos.me/deploy \
             -H "Content-Type: application/json" \
-            -H "X-Hub-Signature-256: sha256=$(echo -n '${{ secrets.WEBHOOK_SECRET }}' | sha256sum | cut -d' ' -f1)" \
-            -d '{"ref":"refs/heads/main"}' \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$BODY" \
             --fail
