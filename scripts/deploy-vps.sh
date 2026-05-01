@@ -13,7 +13,7 @@ git pull --rebase
 printf '\n==> %s\n' "Installation des dépendances"
 npm ci
 
-printf '\n==> %s\n' "Build backend"
+printf '\n==> %s\n' "Génération Prisma + build backend"
 npm run build -w apps/backend
 
 printf '\n==> %s\n' "Build frontend"

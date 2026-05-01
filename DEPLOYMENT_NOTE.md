@@ -33,7 +33,8 @@ bash scripts/deploy-vps.sh
 Le script fait :
 - `git pull --rebase`
 - `npm ci`
-- build backend + frontend
+- génération Prisma + build backend
+- build frontend
 - copie du frontend vers `/var/www/ant-id-training/`
 - redémarrage de `antIdTraining-backend`
 - reload de Nginx

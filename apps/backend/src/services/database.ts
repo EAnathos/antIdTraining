@@ -148,10 +148,6 @@ async function generateMissingResponsiveVariantsFromBaseFile(baseFileName: strin
   let generated = 0
 
   for (const width of RESPONSIVE_IMAGE_WIDTHS) {
-    if (width === 1600) {
-      continue
-    }
-
     const variantFileName = `${stem}-${width}${extension}`
     const variantPath = resolveUploadFilePath(variantFileName)
     if (fs.existsSync(variantPath)) {
@@ -356,7 +352,7 @@ export async function createDatabaseBundleArchive() {
 
   zip.addFile('snapshot.json', Buffer.from(JSON.stringify(snapshot, null, 2), 'utf8'))
 
-  const uploadsDir = ensureUploadsDir()
+  const uploadsDir = ensureUploadsDirOnDisk()
   if (fs.existsSync(uploadsDir)) {
     const entries = fs.readdirSync(uploadsDir)
     if (entries.length > 0) {
