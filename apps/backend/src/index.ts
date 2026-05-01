@@ -49,7 +49,13 @@ app.use(
 )
 app.use(compression({ threshold: 1024, level: 6 }))
 app.use(express.json())
-app.use('/uploads', express.static(uploadsPath))
+app.use(
+  '/uploads',
+  express.static(uploadsPath, {
+    maxAge: '1y',
+    immutable: true,
+  }),
+)
 
 app.use((req, res, next) => {
   const startedAt = process.hrtime.bigint()

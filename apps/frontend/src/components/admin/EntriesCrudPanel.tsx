@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, backendOrigin } from '../../lib/api'
+import { getResponsiveImageProps } from '../../lib/image'
 import type { Entry } from '../../types/models'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
@@ -373,7 +374,7 @@ export function EntriesCrudPanel({
           <input className="rounded border p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => setEntryForm({ ...entryForm, biotope: e.target.value })} required />
           <input className="rounded border p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => setEntryForm({ ...entryForm, photoCredit: e.target.value })} required />
           <div className="space-y-1">
-            <input className="rounded border p-2" type="file" multiple onChange={(e) => setEntryFiles(e.target.files)} />
+            <input className="rounded border p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
             <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu’à 3).</p>
           </div>
           <div className="md:col-span-3 flex flex-wrap gap-2">
@@ -443,6 +444,9 @@ export function EntriesCrudPanel({
                       alt={entry.taxonValue}
                       className="h-16 w-16 cursor-zoom-in rounded border object-cover"
                       loading="lazy"
+                      decoding="async"
+                      width={64}
+                      height={64}
                       onClick={() =>
                         openPreview(
                           entry.images.map((entryImage) => resolveImageUrl(entryImage.imageUrl)),
@@ -498,9 +502,12 @@ export function EntriesCrudPanel({
             </button>
 
             <img
-              src={previewImage.images[previewImage.index]}
+              {...getResponsiveImageProps(previewImage.images[previewImage.index], {
+                sizes: '(max-width: 768px) 90vw, 50vw',
+              })}
               alt={previewImage.alt}
               className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
             />
 
             <p className="mt-2 text-center text-xs text-slate-200">

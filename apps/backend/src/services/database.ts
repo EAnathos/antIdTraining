@@ -2,10 +2,18 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import AdmZip from 'adm-zip'
+import sharp from 'sharp'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
 import { AppError } from '../lib/errors.js'
+import {
+  RESPONSIVE_IMAGE_WIDTHS,
+  ensureUploadsDir as ensureUploadsDirOnDisk,
+  getResponsiveUploadFileNames,
+  listUploadFileNames,
+  resolveUploadFilePath,
+} from '../lib/imageFiles.js'
 
 const referenceTypeSchema = z.enum(['WEBSITE', 'MYRMECOLOGY'])
 const taxonLevelSchema = z.enum(['SUBFAMILY', 'GENUS', 'SPECIES'])
@@ -128,12 +136,81 @@ function getUploadsDirPath() {
   return path.resolve(currentDir, '../../uploads')
 }
 
-function ensureUploadsDir() {
-  const uploadsDir = getUploadsDirPath()
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true })
+async function generateMissingResponsiveVariantsFromBaseFile(baseFileName: string) {
+  const basePath = resolveUploadFilePath(baseFileName)
+  if (!fs.existsSync(basePath)) {
+    return 0
   }
-  return uploadsDir
+
+  const extension = path.extname(baseFileName) || '.webp'
+  const stem = baseFileName.slice(0, -extension.length)
+  const image = sharp(fs.readFileSync(basePath), { animated: false }).rotate()
+  let generated = 0
+
+  for (const width of RESPONSIVE_IMAGE_WIDTHS) {
+    if (width === 1600) {
+      continue
+    }
+
+    const variantFileName = `${stem}-${width}${extension}`
+    const variantPath = resolveUploadFilePath(variantFileName)
+    if (fs.existsSync(variantPath)) {
+      continue
+    }
+
+    await image
+      .clone()
+      .resize({
+        width,
+        height: width,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 78, effort: 6 })
+      .toFile(variantPath)
+
+    generated += 1
+  }
+
+  return generated
+}
+
+export async function cleanupUploadFiles() {
+  const uploadsDirectory = ensureUploadsDirOnDisk()
+  const referencedImages = await prisma.entryImage.findMany({ select: { imageUrl: true } })
+
+  const allowedFiles = new Set<string>()
+  for (const { imageUrl } of referencedImages) {
+    const { baseFileName, variantFileNames } = getResponsiveUploadFileNames(imageUrl)
+    allowedFiles.add(baseFileName)
+    for (const variantFileName of variantFileNames) {
+      allowedFiles.add(variantFileName)
+    }
+  }
+
+  const existingFiles = listUploadFileNames()
+  let deletedFiles = 0
+
+  for (const fileName of existingFiles) {
+    if (allowedFiles.has(fileName)) {
+      continue
+    }
+
+    fs.rmSync(path.join(uploadsDirectory, fileName), { force: true })
+    deletedFiles += 1
+  }
+
+  let generatedVariants = 0
+  for (const { imageUrl } of referencedImages) {
+    const { baseFileName } = getResponsiveUploadFileNames(imageUrl)
+    generatedVariants += await generateMissingResponsiveVariantsFromBaseFile(baseFileName)
+  }
+
+  return {
+    deletedFiles,
+    generatedVariants,
+    referencedImages: referencedImages.length,
+  }
 }
 
 export async function getDatabaseSnapshot() {

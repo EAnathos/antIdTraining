@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
+import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
 
 type GameValidation = {
@@ -128,6 +129,25 @@ export function GamePage() {
     setImageLoadFailed(false)
     setCurrentImageIndex((index) => (index + 1) % question.images.length)
   }
+
+  useEffect(() => {
+    if (!question || !Array.isArray(question.images) || question.images.length <= 1) {
+      return
+    }
+
+    const currentImageUrl = `${backendOrigin}${question.images[currentImageIndex]}`
+    const previousImageUrl = `${backendOrigin}${question.images[(currentImageIndex - 1 + question.images.length) % question.images.length]}`
+    const nextImageUrl = `${backendOrigin}${question.images[(currentImageIndex + 1) % question.images.length]}`
+
+    const preloadCurrent = new Image()
+    preloadCurrent.src = currentImageUrl
+
+    const preloadPrevious = new Image()
+    preloadPrevious.src = previousImageUrl
+
+    const preloadNext = new Image()
+    preloadNext.src = nextImageUrl
+  }, [currentImageIndex, question])
 
   const fallbackSubfamilyChoices = question
     ? Array.isArray(question.choices)
@@ -265,8 +285,12 @@ export function GamePage() {
                 ) : (
                   <img
                     className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
-                    src={`${backendOrigin}${question.images[currentImageIndex]}`}
+                    {...getResponsiveImageProps(question.images[currentImageIndex], {
+                      sizes: '(max-width: 768px) 100vw, 70vw',
+                    })}
                     alt={`Spécimen ${currentImageIndex + 1}`}
+                    loading="eager"
+                    decoding="async"
                     onError={() => setImageLoadFailed(true)}
                     onLoad={() => setImageLoadFailed(false)}
                   />

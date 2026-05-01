@@ -3,13 +3,15 @@ import { useState } from 'react'
 type Props = {
   exportDatabaseSnapshot: () => Promise<void>
   importDatabaseSnapshot: (file: File) => Promise<void>
+  cleanupUploads: () => Promise<void>
 }
 
-export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnapshot }: Props) {
+export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnapshot, cleanupUploads }: Props) {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [confirmReplace, setConfirmReplace] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isCleaningUploads, setIsCleaningUploads] = useState(false)
 
   async function handleExport() {
     setIsExporting(true)
@@ -32,6 +34,15 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       setConfirmReplace(false)
     } finally {
       setIsImporting(false)
+    }
+  }
+
+  async function handleCleanupUploads() {
+    setIsCleaningUploads(true)
+    try {
+      await cleanupUploads()
+    } finally {
+      setIsCleaningUploads(false)
     }
   }
 
@@ -81,6 +92,21 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
           disabled={!importFile || !confirmReplace || isImporting}
         >
           {isImporting ? 'Import en cours...' : 'Importer la base'}
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-medium text-slate-900">Nettoyage des images</p>
+        <p className="mt-1 text-sm text-slate-700">
+          Supprime les fichiers non utilisés dans /uploads et recrée les variantes responsives manquantes pour les images référencées.
+        </p>
+        <button
+          type="button"
+          className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={() => void handleCleanupUploads()}
+          disabled={isCleaningUploads}
+        >
+          {isCleaningUploads ? 'Nettoyage en cours...' : 'Nettoyer /uploads'}
         </button>
       </div>
     </div>

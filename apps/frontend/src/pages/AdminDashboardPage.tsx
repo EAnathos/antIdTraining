@@ -134,6 +134,7 @@ export function AdminDashboardPage() {
           <DatabaseToolsPanel
             exportDatabaseSnapshot={data.exportDatabaseSnapshot}
             importDatabaseSnapshot={data.importDatabaseSnapshot}
+            cleanupUploads={data.cleanupUploads}
           />
         )}
       </div>

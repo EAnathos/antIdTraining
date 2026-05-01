@@ -509,6 +509,18 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }, 'Base importée.', 'Impossible d’importer la base.')
   }
 
+  async function cleanupUploads() {
+    setMessage('')
+    try {
+      const { data } = await adminApi.post<{ deletedFiles: number; generatedVariants: number; referencedImages: number }>('/database/cleanup/uploads')
+      const deletedLabel = data.deletedFiles > 1 ? 'fichiers supprimés' : 'fichier supprimé'
+      const generatedLabel = data.generatedVariants > 1 ? 'variantes générées' : 'variante générée'
+      setMessage(`Nettoyage terminé (${data.deletedFiles} ${deletedLabel}, ${data.generatedVariants} ${generatedLabel} pour ${data.referencedImages} image${data.referencedImages > 1 ? 's' : ''} référencée${data.referencedImages > 1 ? 's' : ''}).`)
+    } catch (error) {
+      setMessage(resolveAdminErrorMessage(error, 'Impossible de nettoyer les images.'))
+    }
+  }
+
   return {
     message,
     setMessage,
@@ -553,5 +565,6 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     deleteEntry,
     exportDatabaseSnapshot,
     importDatabaseSnapshot,
+    cleanupUploads,
   }
 }

@@ -3,6 +3,7 @@ import multer from 'multer'
 import { AppError } from '../lib/errors.js'
 import {
   createDatabaseBundleArchive,
+  cleanupUploadFiles,
   databaseSnapshotSchema,
   getDatabaseSnapshot,
   importDatabaseBundleArchive,
@@ -46,5 +47,10 @@ databaseRouter.post('/import/bundle', bundleUpload.single('bundle'), async (req,
   }
 
   const result = await importDatabaseBundleArchive(file.buffer)
+  return res.json(result)
+})
+
+databaseRouter.post('/cleanup/uploads', async (_req, res) => {
+  const result = await cleanupUploadFiles()
   return res.json(result)
 })
