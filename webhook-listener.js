@@ -1,6 +1,6 @@
-import http from 'http'
-import { spawn } from 'child_process'
-import crypto from 'crypto'
+const http = require('http')
+const { spawn } = require('child_process')
+const crypto = require('crypto')
 
 const GITHUB_SECRET = process.env.WEBHOOK_SECRET || 'your-secret-here'
 const DEPLOY_SCRIPT = '/home/eanathos/antIdTraining/deploy.sh'
