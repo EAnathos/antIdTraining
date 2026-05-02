@@ -39,7 +39,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
 
@@ -185,17 +185,18 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     if (selectedEntryId) {
       const found = entries.find((x) => x.id === selectedEntryId)
       if (found) {
-        setEntryForm({
-          subfamily: found.subfamily,
-          genus: found.genus ?? '',
-          species: found.species ?? '',
-          speciesGroup: found.speciesGroup ?? '',
-          size: found.size ?? '',
-          department: found.department,
-          observedAt: found.observedAt.slice(0, 10),
-          biotope: found.biotope,
-          photoCredit: found.photoCredit,
-        })
+          setEntryForm({
+            subfamily: found.subfamily,
+            genus: found.genus ?? '',
+            subgenus: found.subgenus ?? '',
+            species: found.species ?? '',
+            speciesGroup: found.speciesGroup ?? '',
+            size: found.size ?? '',
+            department: found.department,
+            observedAt: found.observedAt.slice(0, 10),
+            biotope: found.biotope,
+            photoCredit: found.photoCredit,
+          })
       }
     }
   }, [selectedEntryId, entries])
@@ -399,7 +400,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await adminApi.post('/entries', formData)
-      setEntryForm({ subfamily: '', genus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
       setEntryFiles(null)
       await loadAdminData()
       setMessage('Entrée créée.')
