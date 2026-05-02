@@ -360,21 +360,28 @@ export function EntriesCrudPanel({
               <option key={value} value={value}>{value}</option>
             ))}
           </select>
-          <input
+          <select
             className="rounded border p-2"
-            placeholder="Sous-genre (optionnel)"
             value={entryForm.subgenus}
             onChange={(e) => setEntryForm({ ...entryForm, subgenus: e.target.value })}
-            list="subgenus-suggestions"
             disabled={!entryForm.genus}
-          />
-          <input
+          >
+            <option value="">Sous-genre (optionnel)</option>
+            {subgenusOptions.map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+          </select>
+          <select
             className="rounded border p-2"
-            placeholder="groupe d'espèce (optionnel)"
             value={entryForm.speciesGroup}
             onChange={(e) => setEntryForm({ ...entryForm, speciesGroup: e.target.value })}
-            list="species-group-suggestions"
-          />
+            disabled={!entryForm.genus}
+          >
+            <option value="">groupe d'espèce (optionnel)</option>
+            {speciesGroupOptions.map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+          </select>
           <select
             className="rounded border p-2"
             value={entryForm.species}
