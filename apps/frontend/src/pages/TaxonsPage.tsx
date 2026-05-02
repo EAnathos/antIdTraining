@@ -116,8 +116,6 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
-  const [selectedTaxonEntries, setSelectedTaxonEntries] = useState<{ id: string; imageUrl: string }[]>([])
-  const [isLoadingEntries, setIsLoadingEntries] = useState(false)
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
