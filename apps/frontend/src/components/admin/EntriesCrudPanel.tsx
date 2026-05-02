@@ -220,6 +220,25 @@ export function EntriesCrudPanel({
     })
   }
 
+  async function handleSpeciesSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
+    const genus = entryForm.genus
+    setEntryForm({ ...entryForm, species: value })
+
+    if (!value || !genus) return
+
+    try {
+      const { data } = await api.get('/taxons', { params: { level: 'species', q: value } })
+      const items = Array.isArray(data.items) ? data.items : []
+      const match = items.find((t: any) => (t.genus ?? '').toLowerCase() === genus.toLowerCase() && (t.species ?? '').toLowerCase() === value.toLowerCase())
+      if (match) {
+        setEntryForm({ ...entryForm, species: value, subgenus: match.subgenus ?? '', speciesGroup: match.speciesGroup ?? '' })
+      }
+    } catch {
+      // ignore errors — suggestions are optional
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
 
