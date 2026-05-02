@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
-import { createTaxon, deleteTaxon, listGenera, listSpecies, listSubfamilies, listTaxons, listSubgenera, listSpeciesGroups, taxonSchema, updateTaxon } from '../services/taxons.js'
+import { createTaxon, deleteTaxon, getSpeciesMetadata, listGenera, listSpecies, listSubfamilies, listTaxons, listSubgenera, listSpeciesGroups, taxonSchema, updateTaxon } from '../services/taxons.js'
 
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
@@ -28,6 +28,11 @@ publicTaxonsRouter.get('/species-groups', async (req, res) => {
 publicTaxonsRouter.get('/species', async (req, res) => {
   const species = await listSpecies(String(req.query.genus ?? ''))
   return res.json(species)
+})
+
+publicTaxonsRouter.get('/species-metadata', async (req, res) => {
+  const metadata = await getSpeciesMetadata(String(req.query.genus ?? ''), String(req.query.species ?? ''))
+  return res.json(metadata)
 })
 
 publicTaxonsRouter.get('/', async (req, res) => {

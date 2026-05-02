@@ -18,7 +18,6 @@ export type Taxon = {
   subgenus: string | null
   speciesGroup: string | null
   species: string
-  entrySizes: string[]
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
   levelDetails: {

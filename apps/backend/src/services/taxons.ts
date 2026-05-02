@@ -213,6 +213,45 @@ export async function listSpeciesGroups(genus: string) {
   return groups.map((item) => item.speciesGroup).filter(Boolean) as string[]
 }
 
+export async function getSpeciesMetadata(genus: string, species: string) {
+  const normalizedGenus = genus.trim()
+  const normalizedSpecies = species.trim()
+
+  if (!normalizedGenus) {
+    throw new AppError(400, 'Le paramètre genus est requis.')
+  }
+
+  if (!normalizedSpecies) {
+    throw new AppError(400, 'Le paramètre species est requis.')
+  }
+
+  const match = await prisma.taxon.findFirst({
+    where: {
+      genus: {
+        equals: normalizedGenus,
+        mode: 'insensitive',
+      },
+      species: {
+        equals: normalizedSpecies,
+        mode: 'insensitive',
+      },
+    },
+    select: {
+      subgenus: true,
+      speciesGroup: true,
+    },
+    orderBy: [
+      { subgenus: 'asc' },
+      { speciesGroup: 'asc' },
+    ],
+  })
+
+  return {
+    subgenus: match?.subgenus ?? null,
+    speciesGroup: match?.speciesGroup ?? null,
+  }
+}
+
 export async function listTaxons(params: { level?: unknown; q?: unknown; offset?: unknown }) {
   const level = String(params.level ?? '').toLowerCase()
   const rawQuery = String(params.q ?? '')
@@ -251,13 +290,6 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
     where,
     skip: offset,
     take: limit,
-    include: {
-      entries: {
-        select: {
-          size: true,
-        },
-      },
-    },
     orderBy: [
       { subfamily: 'asc' },
       { tribe: 'asc' },
@@ -291,13 +323,6 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
 
   const items = taxons.map((taxon) => ({
     ...taxon,
-    entrySizes: Array.from(
-      new Set(
-        taxon.entries
-          .map((entry) => entry.size?.trim() ?? '')
-          .filter(Boolean),
-      ),
-    ),
     levelDetails: {
       subfamily: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)
         ? {

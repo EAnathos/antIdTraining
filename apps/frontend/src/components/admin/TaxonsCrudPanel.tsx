@@ -30,6 +30,8 @@ type SwarmingPeriodDraft = {
   swarmingEndMonth: number | null
 }
 
+type TaxonDetailLevelKey = keyof TaxonDetailsDraft
+
 type Props = {
   taxons: Taxon[]
   taxonForm: TaxonForm
@@ -259,6 +261,112 @@ export function TaxonsCrudPanel({
     })
   }
 
+  function renderLevelTitle(levelKey: TaxonDetailLevelKey, taxon: Taxon) {
+    if (levelKey === 'subfamily') {
+      return <>Sous-famille ({taxon.subfamily})</>
+    }
+
+    if (levelKey === 'genus') {
+      return <>Genre (<em>{taxon.genus}</em>)</>
+    }
+
+    return <>Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)</>
+  }
+
+  function renderSwarmingSelector() {
+    return (
+      <div className="mt-3 mb-4 space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+          <span>Essaimage :</span>
+          {swarmingDraft.swarmingStartMonth && swarmingDraft.swarmingEndMonth && (
+            <>
+              <span>
+                {monthOptions[swarmingDraft.swarmingStartMonth - 1].label} à {monthOptions[swarmingDraft.swarmingEndMonth - 1].label}
+              </span>
+              <button
+                className="text-sm underline underline-offset-2"
+                type="button"
+                onClick={() => setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })}
+              >
+                Réinitialiser
+              </button>
+            </>
+          )}
+        </div>
+        <div className="grid grid-cols-12 justify-items-center gap-2">
+          {monthOptions.map((month) => (
+            <button
+              key={month.value}
+              type="button"
+              title={month.label}
+              aria-label={month.label}
+              onPointerDown={() => beginSwarmingRangeSelection(month.value)}
+              onPointerEnter={() => continueSwarmingRangeSelection(month.value)}
+              onPointerUp={endSwarmingRangeSelection}
+              className={`shrink-0 rounded-full border transition ${
+                isMonthRangeEndpoint(month.value)
+                  ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
+                  : isMonthInSelectedRange(month.value)
+                    ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
+                    : 'h-4 w-4 border-slate-500 bg-slate-300 hover:border-slate-600'
+              }`}
+            />
+          ))}
+        </div>
+        <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
+          {monthOptions.map((month) => (
+            <span key={`label-${month.value}`} className="w-6 text-center">{month.label.slice(0, 1)}</span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  function renderLevelEditor(levelKey: TaxonDetailLevelKey, levelDraft: LevelDetailDraft, taxon: Taxon) {
+    return (
+      <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
+        <p className="font-medium text-slate-800">
+          {renderLevelTitle(levelKey, taxon)}
+        </p>
+        {levelKey === 'species' && renderSwarmingSelector()}
+        <textarea
+          className="mt-2 w-full rounded border p-2"
+          placeholder="Description"
+          rows={2}
+          value={levelDraft.description}
+          onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
+        />
+
+        {(levelKey === 'genus' || levelKey === 'species') && (
+          <input
+            className="mt-2 w-full rounded border p-2"
+            placeholder="Taille (ex: 2-3 mm)"
+            value={levelDraft.size}
+            onChange={(e) => updateLevelSize(levelKey, e.target.value)}
+          />
+        )}
+
+        <div className="mt-2 space-y-2">
+          {levelDraft.criteria.map((criterion, index) => (
+            <div key={`${levelKey}-${index}`} className="flex gap-2">
+              <input
+                className="flex-1 rounded border p-2"
+                placeholder="Critère"
+                value={criterion}
+                onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
+              />
+              <AdminIconButton title="Supprimer" tone="danger" onClick={() => removeCriterion(levelKey, index)} icon={<TrashIcon />} />
+            </div>
+          ))}
+        </div>
+
+        <button className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={() => addCriterion(levelKey)}>
+          + Ajouter un critère
+        </button>
+      </div>
+    )
+  }
+
   async function saveDetailsModal() {
     if (!modalTaxon || !modalDraft) return
     await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft)
@@ -372,103 +480,7 @@ export function TaxonsCrudPanel({
               </button>
             </div>
 
-            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => {
-              const levelDraft = modalDraft[levelKey]
-
-              return (
-                <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-800">
-                    {levelKey === 'subfamily' ? (
-                      <>Sous-famille ({modalTaxon.subfamily})</>
-                    ) : levelKey === 'genus' ? (
-                      <>Genre (<em>{modalTaxon.genus}</em>)</>
-                    ) : (
-                      <>Espèce (<em>{modalTaxon.genus}</em> <em>{modalTaxon.species}</em>)</>
-                    )}
-                  </p>
-                  {levelKey === 'species' && (
-                    <div className="mt-3 mb-4 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
-                        <span>Essaimage :</span>
-                        {swarmingDraft.swarmingStartMonth && swarmingDraft.swarmingEndMonth && (
-                          <>
-                            <span>
-                              {monthOptions[swarmingDraft.swarmingStartMonth - 1].label} à {monthOptions[swarmingDraft.swarmingEndMonth - 1].label}
-                            </span>
-                            <button
-                              className="text-sm underline underline-offset-2"
-                              type="button"
-                              onClick={() => setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })}
-                            >
-                              Réinitialiser
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-12 justify-items-center gap-2">
-                        {monthOptions.map((month) => (
-                          <button
-                            key={month.value}
-                            type="button"
-                            title={month.label}
-                            aria-label={month.label}
-                            onPointerDown={() => beginSwarmingRangeSelection(month.value)}
-                            onPointerEnter={() => continueSwarmingRangeSelection(month.value)}
-                            onPointerUp={endSwarmingRangeSelection}
-                            className={`shrink-0 rounded-full border transition ${
-                              isMonthRangeEndpoint(month.value)
-                                ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
-                                : isMonthInSelectedRange(month.value)
-                                  ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
-                                  : 'h-4 w-4 border-slate-500 bg-slate-300 hover:border-slate-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
-                        {monthOptions.map((month) => (
-                          <span key={`label-${month.value}`} className="w-6 text-center">{month.label.slice(0, 1)}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <textarea
-                    className="mt-2 w-full rounded border p-2"
-                    placeholder="Description"
-                    rows={2}
-                    value={levelDraft.description}
-                    onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
-                  />
-
-                  {(levelKey === 'genus' || levelKey === 'species') && (
-                    <input
-                      className="mt-2 w-full rounded border p-2"
-                      placeholder="Taille (ex: 2-3 mm)"
-                      value={levelDraft.size}
-                      onChange={(e) => updateLevelSize(levelKey, e.target.value)}
-                    />
-                  )}
-
-                  <div className="mt-2 space-y-2">
-                    {levelDraft.criteria.map((criterion, index) => (
-                      <div key={`${levelKey}-${index}`} className="flex gap-2">
-                        <input
-                          className="flex-1 rounded border p-2"
-                          placeholder="Critère"
-                          value={criterion}
-                          onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
-                        />
-                        <AdminIconButton title="Supprimer" tone="danger" onClick={() => removeCriterion(levelKey, index)} icon={<TrashIcon />} />
-                      </div>
-                    ))}
-                  </div>
-
-                  <button className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={() => addCriterion(levelKey)}>
-                    + Ajouter un critère
-                  </button>
-                </div>
-              )
-            })}
+            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modalDraft[levelKey], modalTaxon))}
 
             <div className="mt-2 flex justify-end gap-2">
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>

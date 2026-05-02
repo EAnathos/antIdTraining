@@ -148,9 +148,7 @@ function resolveImageUrl(imageUrl: string) {
   return `${backendOrigin}${imageUrl}`
 }
 
-type TaxonSuggestion = {
-  genus?: string | null
-  species?: string | null
+type SpeciesMetadata = {
   subgenus?: string | null
   speciesGroup?: string | null
 }
@@ -166,6 +164,19 @@ type EntryForm = {
   observedAt: string
   biotope: string
   photoCredit: string
+}
+
+const emptyEntryForm: EntryForm = {
+  subfamily: '',
+  genus: '',
+  subgenus: '',
+  species: '',
+  speciesGroup: '',
+  size: '',
+  department: '',
+  observedAt: '',
+  biotope: '',
+  photoCredit: '',
 }
 
 type Props = {
@@ -202,6 +213,26 @@ export function EntriesCrudPanel({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formContainerRef = useRef<HTMLDivElement | null>(null)
 
+  function patchEntryForm(patch: Partial<EntryForm>) {
+    setEntryForm({ ...entryForm, ...patch })
+  }
+
+  function renderEntryTaxonLabel(entry: Entry) {
+    if (entry.taxonLevel === 'SPECIES' && entry.genus && entry.species) {
+      return (
+        <>
+          <em>{entry.genus}</em> <em>{entry.species}</em>
+        </>
+      )
+    }
+
+    if (entry.taxonLevel === 'GENUS' && entry.genus) {
+      return <em>{entry.genus}</em>
+    }
+
+    return entry.subfamily
+  }
+
   function openPreview(images: string[], index: number, alt: string) {
     if (!images.length) return
     setPreviewImage({ images, index, alt })
@@ -236,21 +267,15 @@ export function EntriesCrudPanel({
     if (!value || !genus) return
 
     try {
-      const { data } = await api.get<{ items: TaxonSuggestion[] }>('/taxons', { params: { level: 'species', q: value } })
-      const items = data.items ?? []
-      const match = items.find(
-        (taxon) =>
-          (taxon.genus ?? '').toLowerCase() === genus.toLowerCase() &&
-          (taxon.species ?? '').toLowerCase() === value.toLowerCase(),
-      )
+      const { data } = await api.get<SpeciesMetadata>('/taxons/species-metadata', {
+        params: { genus, species: value },
+      })
 
-      if (match) {
-        setEntryForm({
-          ...baseForm,
-          subgenus: match.subgenus ?? '',
-          speciesGroup: match.speciesGroup ?? '',
-        })
-      }
+      setEntryForm({
+        ...baseForm,
+        subgenus: data.subgenus ?? '',
+        speciesGroup: data.speciesGroup ?? '',
+      })
     } catch {
       // ignore errors — suggestions are optional
     }
@@ -348,7 +373,7 @@ export function EntriesCrudPanel({
 
   function resetEntryForm() {
     setSelectedEntryId('')
-    setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+    setEntryForm(emptyEntryForm)
   }
 
   function loadEntryInForm(entry: Entry) {
@@ -377,7 +402,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.subfamily}
-            onChange={(e) => setEntryForm({ ...entryForm, subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
+            onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
             required
           >
             <option value="">Sous-famille</option>
@@ -388,7 +413,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.genus}
-            onChange={(e) => setEntryForm({ ...entryForm, genus: e.target.value, species: '', subgenus: '' })}
+            onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '' })}
             disabled={!entryForm.subfamily}
           >
             <option value="">Genre (optionnel)</option>
@@ -399,7 +424,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.subgenus}
-            onChange={(e) => setEntryForm({ ...entryForm, subgenus: e.target.value })}
+            onChange={(e) => patchEntryForm({ subgenus: e.target.value })}
             disabled={!entryForm.genus}
           >
             <option value="">Sous-genre (optionnel)</option>
@@ -410,7 +435,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.speciesGroup}
-            onChange={(e) => setEntryForm({ ...entryForm, speciesGroup: e.target.value })}
+            onChange={(e) => patchEntryForm({ speciesGroup: e.target.value })}
             disabled={!entryForm.genus}
           >
             <option value="">groupe d'espèce (optionnel)</option>
@@ -433,15 +458,15 @@ export function EntriesCrudPanel({
             className="rounded border p-2"
             placeholder="Taille (ex: 2-3 mm)"
             value={entryForm.size}
-            onChange={(e) => setEntryForm({ ...entryForm, size: e.target.value })}
+            onChange={(e) => patchEntryForm({ size: e.target.value })}
           />
           <input
             className="rounded border p-2"
             list="department-suggestions"
             placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
             value={entryForm.department}
-            onChange={(e) => setEntryForm({ ...entryForm, department: e.target.value })}
-            onBlur={(e) => setEntryForm({ ...entryForm, department: parseDepartmentInput(e.target.value) })}
+            onChange={(e) => patchEntryForm({ department: e.target.value })}
+            onBlur={(e) => patchEntryForm({ department: parseDepartmentInput(e.target.value) })}
             required
           />
           <datalist id="department-suggestions">
@@ -449,19 +474,9 @@ export function EntriesCrudPanel({
               <option key={department.code} value={`${department.code} - ${department.name}`} />
             ))}
           </datalist>
-          <datalist id="subgenus-suggestions">
-            {subgenusOptions.map((value) => (
-              <option key={value} value={value} />
-            ))}
-          </datalist>
-          <datalist id="species-group-suggestions">
-            {speciesGroupOptions.map((value) => (
-              <option key={value} value={value} />
-            ))}
-          </datalist>
-          <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => setEntryForm({ ...entryForm, observedAt: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => setEntryForm({ ...entryForm, biotope: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => setEntryForm({ ...entryForm, photoCredit: e.target.value })} required />
+          <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => patchEntryForm({ observedAt: e.target.value })} required />
+          <input className="rounded border p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => patchEntryForm({ biotope: e.target.value })} required />
+          <input className="rounded border p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => patchEntryForm({ photoCredit: e.target.value })} required />
           <div className="space-y-1">
             <input className="rounded border p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
             <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu’à 3).</p>
@@ -506,15 +521,7 @@ export function EntriesCrudPanel({
             >
               <div className="flex items-start justify-between gap-3">
                 <button className="flex-1 text-left" type="button" onClick={() => loadEntryInForm(entry)}>
-                  {entry.taxonLevel === 'SPECIES' && entry.genus && entry.species ? (
-                    <>
-                      <em>{entry.genus}</em> <em>{entry.species}</em>
-                    </>
-                  ) : entry.taxonLevel === 'GENUS' && entry.genus ? (
-                    <em>{entry.genus}</em>
-                  ) : (
-                    entry.subfamily
-                  )}{' '}
+                  {renderEntryTaxonLabel(entry)}{' '}
                   - {entry.department} - {new Date(entry.observedAt).toLocaleDateString('fr-FR')}
                   <span className="mt-1 block text-xs text-slate-600">Biotope: {entry.biotope}</span>
                   <span className="block text-xs text-slate-600">Crédit photo: {entry.photoCredit}</span>
