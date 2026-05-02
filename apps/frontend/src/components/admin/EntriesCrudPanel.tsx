@@ -151,6 +151,7 @@ function resolveImageUrl(imageUrl: string) {
 type EntryForm = {
   subfamily: string
   genus: string
+  subgenus: string
   species: string
   speciesGroup: string
   size: string
@@ -305,7 +306,7 @@ export function EntriesCrudPanel({
 
   function resetEntryForm() {
     setSelectedEntryId('')
-    setEntryForm({ subfamily: '', genus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+    setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   }
 
   function loadEntryInForm(entry: Entry) {
@@ -313,6 +314,7 @@ export function EntriesCrudPanel({
     setEntryForm({
       subfamily: entry.subfamily,
       genus: entry.genus ?? '',
+      subgenus: entry.subgenus ?? '',
       species: entry.species ?? '',
       speciesGroup: entry.speciesGroup ?? '',
       size: entry.size ?? '',
@@ -344,7 +346,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.genus}
-            onChange={(e) => setEntryForm({ ...entryForm, genus: e.target.value, species: '' })}
+            onChange={(e) => setEntryForm({ ...entryForm, genus: e.target.value, species: '', subgenus: '' })}
             disabled={!entryForm.subfamily}
           >
             <option value="">Genre (optionnel)</option>
@@ -352,6 +354,13 @@ export function EntriesCrudPanel({
               <option key={value} value={value}>{value}</option>
             ))}
           </select>
+          <input
+            className="rounded border p-2"
+            placeholder="Sous-genre (optionnel)"
+            value={entryForm.subgenus}
+            onChange={(e) => setEntryForm({ ...entryForm, subgenus: e.target.value })}
+            disabled={!entryForm.genus}
+          />
           <select
             className="rounded border p-2"
             value={entryForm.species}

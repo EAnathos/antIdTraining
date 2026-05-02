@@ -94,6 +94,7 @@ model ObservationEntry {
   taxonValue   String
   subfamily    String
   genus        String?
+  subgenus     String?
   species      String?
   speciesGroup String?
   size         String?

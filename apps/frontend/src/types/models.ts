@@ -60,6 +60,7 @@ export type Entry = {
   taxonValue: string
   subfamily: string
   genus: string | null
+  subgenus: string | null
   species: string | null
   speciesGroup: string | null
   size: string | null
