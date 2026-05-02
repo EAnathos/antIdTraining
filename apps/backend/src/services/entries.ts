@@ -4,6 +4,8 @@ export type EntryInput = {
   taxonLevel: 'SUBFAMILY' | 'GENUS' | 'SPECIES'
   taxonValue: string
   taxonGenus?: string | null
+  speciesGroup?: string | null
+  size?: string | null
   department: string
   observedAt: Date
   biotope: string

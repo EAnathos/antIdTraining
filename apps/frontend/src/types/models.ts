@@ -61,6 +61,8 @@ export type Entry = {
   subfamily: string
   genus: string | null
   species: string | null
+  speciesGroup: string | null
+  size: string | null
   department: string
   observedAt: string
   biotope: string

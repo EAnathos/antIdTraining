@@ -39,7 +39,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
 
@@ -189,6 +189,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subfamily: found.subfamily,
           genus: found.genus ?? '',
           species: found.species ?? '',
+          speciesGroup: found.speciesGroup ?? '',
+          size: found.size ?? '',
           department: found.department,
           observedAt: found.observedAt.slice(0, 10),
           biotope: found.biotope,
@@ -385,6 +387,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('taxonLevel', taxonLevel)
     formData.append('taxonValue', taxonValue)
     formData.append('taxonGenus', entryForm.genus || '')
+    formData.append('speciesGroup', entryForm.speciesGroup || '')
+    formData.append('size', entryForm.size || '')
     formData.append('department', entryForm.department)
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
@@ -395,7 +399,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await adminApi.post('/entries', formData)
-      setEntryForm({ subfamily: '', genus: '', species: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+      setEntryForm({ subfamily: '', genus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
       setEntryFiles(null)
       await loadAdminData()
       setMessage('Entrée créée.')
@@ -420,6 +424,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonLevel,
         taxonValue,
         taxonGenus: entryForm.genus || '',
+        speciesGroup: entryForm.speciesGroup || '',
+        size: entryForm.size || '',
         department: entryForm.department,
         observedAt: entryForm.observedAt,
         biotope: entryForm.biotope,

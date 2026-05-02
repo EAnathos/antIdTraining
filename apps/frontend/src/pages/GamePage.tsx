@@ -58,6 +58,7 @@ export function GamePage() {
   const [subfamilyOptions, setSubfamilyOptions] = useState<string[]>([])
   const [dynamicGenusOptions, setDynamicGenusOptions] = useState<string[]>([])
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; index: number } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -90,6 +91,7 @@ export function GamePage() {
     setCurrentImageIndex(0)
     setDynamicGenusOptions([])
     setImageLoadFailed(false)
+    setFullscreenImage(null)
   }
 
   function handleLevelChange(nextLevel: ActiveLevel) {
@@ -277,6 +279,18 @@ export function GamePage() {
                 </svg>
               </button>
 
+              <button
+                type="button"
+                onClick={() => setFullscreenImage({ url: question.images[currentImageIndex], index: currentImageIndex })}
+                className="absolute right-12 top-2 z-10 rounded-lg bg-white/90 px-2 py-1 text-sm text-slate-900 shadow-sm hover:bg-white"
+                aria-label="Agrandir l'image"
+                title="Agrandir l'image"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                </svg>
+              </button>
+
               <div className="flex justify-center rounded-lg bg-slate-50 p-2">
                 {imageLoadFailed ? (
                   <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-center text-slate-600">
@@ -284,7 +298,7 @@ export function GamePage() {
                   </div>
                 ) : (
                   <img
-                    className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
+                    className="max-h-[70vh] w-auto max-w-full cursor-zoom-in rounded-lg object-contain"
                     {...getResponsiveImageProps(question.images[currentImageIndex], {
                       sizes: '(max-width: 768px) 100vw, 70vw',
                     })}
@@ -293,6 +307,7 @@ export function GamePage() {
                     decoding="async"
                     onError={() => setImageLoadFailed(true)}
                     onLoad={() => setImageLoadFailed(false)}
+                    onClick={() => setFullscreenImage({ url: question.images[currentImageIndex], index: currentImageIndex })}
                   />
                 )}
               </div>
@@ -481,6 +496,33 @@ export function GamePage() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {fullscreenImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
+              onClick={() => setFullscreenImage(null)}
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+
+            <img
+              {...getResponsiveImageProps(fullscreenImage.url, {
+                sizes: '(max-width: 768px) 95vw, 80vw',
+              })}
+              alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
+            />
+          </div>
         </div>
       )}
     </section>

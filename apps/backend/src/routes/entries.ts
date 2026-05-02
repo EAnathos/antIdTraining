@@ -20,6 +20,8 @@ const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
   taxonValue: z.string().min(1),
   taxonGenus: z.string().optional().nullable(),
+  speciesGroup: z.string().optional().nullable(),
+  size: z.string().optional().nullable(),
   department: z.string().min(1),
   observedAt: z.coerce.date(),
   biotope: z.string().min(1),
@@ -139,6 +141,8 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
       observedAt: parsed.data.observedAt,
       biotope: parsed.data.biotope,
       photoCredit: parsed.data.photoCredit,
+      speciesGroup: parsed.data.speciesGroup ?? undefined,
+      size: parsed.data.size ?? undefined,
     }
 
     const created = await prisma.observationEntry.create({
@@ -178,6 +182,8 @@ entriesRouter.put('/:id', async (req, res) => {
     observedAt: parsed.data.observedAt,
     biotope: parsed.data.biotope,
     photoCredit: parsed.data.photoCredit,
+    speciesGroup: parsed.data.speciesGroup ?? undefined,
+    size: parsed.data.size ?? undefined,
   }
 
   const updated = await prisma.observationEntry.update({

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import { getResponsiveImageProps } from '../lib/image'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
 
 const TAXONS_CACHE_TTL_MS = 5 * 60 * 1000
@@ -114,6 +115,9 @@ export function TaxonsPage() {
   const [isLoadingMoreTaxons, setIsLoadingMoreTaxons] = useState(false)
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [selectedTaxonEntries, setSelectedTaxonEntries] = useState<{ id: string; imageUrl: string }[]>([])
+  const [isLoadingEntries, setIsLoadingEntries] = useState(false)
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -234,6 +238,10 @@ export function TaxonsPage() {
     }
   }, [level, debouncedQuery])
 
+  async function openSelectedDetail(taxon: Taxon, level: 'subfamily' | 'genus' | 'species', value: string, detail: TaxonLevelDetail) {
+    setSelectedDetail({ taxon, level, value, detail })
+  }
+
   useEffect(() => {
     void loadAllTaxons()
   }, [level, debouncedQuery])
@@ -298,10 +306,10 @@ export function TaxonsPage() {
       {!isLoadingTaxons && (
       <div
         ref={tableContainerRef}
-        className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200"
+        className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
         onScroll={(event) => setTableScrollTop(event.currentTarget.scrollTop)}
       >
-        <table className="min-w-[760px] w-full text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-700">
               <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
@@ -325,12 +333,12 @@ export function TaxonsPage() {
                       className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
-                        setSelectedDetail({
+                        openSelectedDetail(
                           taxon,
-                          level: 'subfamily',
-                          value: taxon.subfamily,
-                          detail: taxon.levelDetails.subfamily,
-                        })
+                          'subfamily',
+                          taxon.subfamily,
+                          taxon.levelDetails.subfamily,
+                        )
                       }
                     >
                       {taxon.subfamily}
@@ -342,12 +350,12 @@ export function TaxonsPage() {
                       className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
-                        setSelectedDetail({
+                        openSelectedDetail(
                           taxon,
-                          level: 'genus',
-                          value: taxon.genus,
-                          detail: taxon.levelDetails.genus,
-                        })
+                          'genus',
+                          taxon.genus,
+                          taxon.levelDetails.genus,
+                        )
                       }
                     >
                       <em>{taxon.genus}</em>
@@ -360,12 +368,12 @@ export function TaxonsPage() {
                       className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                       type="button"
                       onClick={() =>
-                        setSelectedDetail({
+                        openSelectedDetail(
                           taxon,
-                          level: 'species',
-                          value: taxon.species,
-                          detail: taxon.levelDetails.species,
-                        })
+                          'species',
+                          taxon.species,
+                          taxon.levelDetails.species,
+                        )
                       }
                     >
                       <em>{taxon.species}</em>
@@ -487,6 +495,33 @@ export function TaxonsPage() {
             ) : (
               <p className="mt-1 text-slate-700">Aucune référence liée.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {fullscreenImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
+              onClick={() => setFullscreenImage(null)}
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+
+            <img
+              {...getResponsiveImageProps(fullscreenImage, {
+                sizes: '(max-width: 768px) 95vw, 80vw',
+              })}
+              alt="Image agrandie"
+              className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
+            />
           </div>
         </div>
       )}

@@ -95,6 +95,8 @@ model ObservationEntry {
   subfamily    String
   genus        String?
   species      String?
+  speciesGroup String?
+  size         String?
   department   String
   observedAt   DateTime
   biotope      String
