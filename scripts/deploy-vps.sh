@@ -16,6 +16,9 @@ npm ci
 printf '\n==> %s\n' "Génération Prisma + build backend"
 npm run build -w apps/backend
 
+printf '\n==> %s\n' "Application des migrations Prisma"
+npx prisma migrate deploy --schema=./apps/backend/prisma/schema.prisma
+
 printf '\n==> %s\n' "Build frontend"
 npm run build -w apps/frontend
 
