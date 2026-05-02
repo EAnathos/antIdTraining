@@ -78,6 +78,7 @@ export type GameQuestion = {
   images: string[]
   prompt: string
   details?: {
+    size: string | null
     department: string
     observedAt: string
     biotope: string

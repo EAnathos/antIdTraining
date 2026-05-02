@@ -332,6 +332,11 @@ export function GamePage() {
 
           {question.details && (
             <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 md:grid-cols-2">
+              {question.details.size && (
+                <p>
+                  <span className="font-semibold">Taille :</span> {question.details.size}
+                </p>
+              )}
               <p>
                 <span className="font-semibold">Département :</span> {formatDepartment(question.details.department)}
               </p>

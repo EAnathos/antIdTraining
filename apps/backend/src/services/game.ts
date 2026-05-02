@@ -74,6 +74,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       subfamily: true,
       genus: true,
       species: true,
+      size: true,
       department: true,
       observedAt: true,
       biotope: true,
@@ -111,6 +112,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       images,
       prompt: 'Identifier la sous-famille',
       details: {
+        size: entry.size,
         department: entry.department,
         observedAt: entry.observedAt.toISOString(),
         biotope: entry.biotope,
@@ -163,6 +165,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       images,
       prompt: 'Identifier la sous-famille puis le genre',
       details: {
+        size: entry.size,
         department: entry.department,
         observedAt: entry.observedAt.toISOString(),
         biotope: entry.biotope,
@@ -225,6 +228,7 @@ export async function getGameQuestion(rawLevel: unknown) {
     images,
     prompt: "Identifier la sous-famille, le genre et l'espèce",
     details: {
+      size: entry.size,
       department: entry.department,
       observedAt: entry.observedAt.toISOString(),
       biotope: entry.biotope,
