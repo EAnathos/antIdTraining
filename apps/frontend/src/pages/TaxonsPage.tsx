@@ -425,12 +425,23 @@ export function TaxonsPage() {
             <p className="mt-3 font-medium text-slate-800">Caractéristiques</p>
             {selectedDetail.detail.criteria.length > 0 ? (
               <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                {selectedDetail.detail.size && (
+                  <li>
+                    Taille : {selectedDetail.detail.size}
+                  </li>
+                )}
                 {selectedDetail.detail.criteria.map((criterion) => (
                   <li key={criterion.id}>{criterion.label}</li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+              selectedDetail.detail.size ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                  <li>Taille : {selectedDetail.detail.size}</li>
+                </ul>
+              ) : (
+                <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+              )
             )}
 
             {selectedDetail.level === 'species' && (

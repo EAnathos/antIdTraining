@@ -6,6 +6,7 @@ import { AppError } from '../lib/errors.js'
 
 const levelDetailSchema = z.object({
   description: z.string().optional().nullable(),
+  size: z.string().optional().nullable(),
   criteria: z.array(z.string()).optional(),
 })
 
@@ -82,6 +83,7 @@ function normalizeLevelDetail(detail?: z.infer<typeof levelDetailSchema>) {
   if (!detail) return null
   return {
     description: detail.description?.trim() || null,
+    size: detail.size?.trim() || null,
     criteria: (detail.criteria ?? []).map((criterion) => criterion.trim()).filter(Boolean),
   }
 }
@@ -100,6 +102,7 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', valu
         level,
         value,
         description: normalizedDetail.description,
+        size: normalizedDetail.size,
         criteria: {
           create: normalizedDetail.criteria.map((label, index) => ({ label, position: index })),
         },
@@ -112,6 +115,7 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', valu
     where: { id: existing.id },
     data: {
       description: normalizedDetail.description,
+      size: normalizedDetail.size,
       criteria: {
         deleteMany: {},
         create: normalizedDetail.criteria.map((label, index) => ({ label, position: index })),
@@ -247,6 +251,13 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
     where,
     skip: offset,
     take: limit,
+    include: {
+      entries: {
+        select: {
+          size: true,
+        },
+      },
+    },
     orderBy: [
       { subfamily: 'asc' },
       { tribe: 'asc' },
@@ -280,25 +291,35 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
 
   const items = taxons.map((taxon) => ({
     ...taxon,
+    entrySizes: Array.from(
+      new Set(
+        taxon.entries
+          .map((entry) => entry.size?.trim() ?? '')
+          .filter(Boolean),
+      ),
+    ),
     levelDetails: {
       subfamily: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)
         ? {
             description: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.description ?? null,
+            size: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.size ?? null,
             criteria: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.criteria ?? [],
           }
-        : { description: null, criteria: [] },
+        : { description: null, size: null, criteria: [] },
       genus: profileByKey.get(`GENUS:${taxon.genus}`)
         ? {
             description: profileByKey.get(`GENUS:${taxon.genus}`)?.description ?? null,
+            size: profileByKey.get(`GENUS:${taxon.genus}`)?.size ?? null,
             criteria: profileByKey.get(`GENUS:${taxon.genus}`)?.criteria ?? [],
           }
-        : { description: null, criteria: [] },
+        : { description: null, size: null, criteria: [] },
       species: profileByKey.get(`SPECIES:${taxon.species}`)
         ? {
             description: profileByKey.get(`SPECIES:${taxon.species}`)?.description ?? null,
+            size: profileByKey.get(`SPECIES:${taxon.species}`)?.size ?? null,
             criteria: profileByKey.get(`SPECIES:${taxon.species}`)?.criteria ?? [],
           }
-        : { description: null, criteria: [] },
+        : { description: null, size: null, criteria: [] },
     },
   }))
 

@@ -6,6 +6,7 @@ export type TaxonCriterion = {
 
 export type TaxonLevelDetail = {
   description: string | null
+  size: string | null
   criteria: TaxonCriterion[]
 }
 
@@ -17,6 +18,7 @@ export type Taxon = {
   subgenus: string | null
   speciesGroup: string | null
   species: string
+  entrySizes: string[]
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
   levelDetails: {

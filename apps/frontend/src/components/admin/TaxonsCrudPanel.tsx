@@ -15,6 +15,7 @@ type TaxonForm = {
 
 type LevelDetailDraft = {
   description: string
+  size: string
   criteria: string[]
 }
 
@@ -121,14 +122,17 @@ export function TaxonsCrudPanel({
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
+        size: taxon.levelDetails.subfamily.size ?? '',
         criteria: taxon.levelDetails.subfamily.criteria.map((criterion) => criterion.label),
       },
       genus: {
         description: taxon.levelDetails.genus.description ?? '',
+        size: taxon.levelDetails.genus.size ?? '',
         criteria: taxon.levelDetails.genus.criteria.map((criterion) => criterion.label),
       },
       species: {
         description: taxon.levelDetails.species.description ?? '',
+        size: taxon.levelDetails.species.size ?? '',
         criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
       },
     })
@@ -218,6 +222,17 @@ export function TaxonsCrudPanel({
       [levelKey]: {
         ...modalDraft[levelKey],
         criteria: nextCriteria,
+      },
+    })
+  }
+
+  function updateLevelSize(levelKey: keyof TaxonDetailsDraft, value: string) {
+    if (!modalDraft) return
+    setModalDraft({
+      ...modalDraft,
+      [levelKey]: {
+        ...modalDraft[levelKey],
+        size: value,
       },
     })
   }
@@ -424,6 +439,15 @@ export function TaxonsCrudPanel({
                     value={levelDraft.description}
                     onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
                   />
+
+                  {(levelKey === 'genus' || levelKey === 'species') && (
+                    <input
+                      className="mt-2 w-full rounded border p-2"
+                      placeholder="Taille (ex: 2-3 mm)"
+                      value={levelDraft.size}
+                      onChange={(e) => updateLevelSize(levelKey, e.target.value)}
+                    />
+                  )}
 
                   <div className="mt-2 space-y-2">
                     {levelDraft.criteria.map((criterion, index) => (

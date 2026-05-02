@@ -4,9 +4,9 @@ import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 
 type LevelDetailsDraft = {
-  subfamily: { description: string; criteria: string[] }
-  genus: { description: string; criteria: string[] }
-  species: { description: string; criteria: string[] }
+  subfamily: { description: string; size: string; criteria: string[] }
+  genus: { description: string; size: string; criteria: string[] }
+  species: { description: string; size: string; criteria: string[] }
 }
 
 type SwarmingPeriodDraft = {
@@ -254,14 +254,17 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,
+            size: levelDetails.subfamily.size.trim() || null,
             criteria: levelDetails.subfamily.criteria.map((value) => value.trim()).filter(Boolean),
           },
           genus: {
             description: levelDetails.genus.description.trim() || null,
+            size: levelDetails.genus.size.trim() || null,
             criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
           },
           species: {
             description: levelDetails.species.description.trim() || null,
+            size: levelDetails.species.size.trim() || null,
             criteria: levelDetails.species.criteria.map((value) => value.trim()).filter(Boolean),
           },
         },
