@@ -335,7 +335,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.subfamily}
-            onChange={(e) => setEntryForm({ ...entryForm, subfamily: e.target.value, genus: '', species: '' })}
+            onChange={(e) => setEntryForm({ ...entryForm, subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
             required
           >
             <option value="">Sous-famille</option>
@@ -361,6 +361,12 @@ export function EntriesCrudPanel({
             onChange={(e) => setEntryForm({ ...entryForm, subgenus: e.target.value })}
             disabled={!entryForm.genus}
           />
+          <input
+            className="rounded border p-2"
+            placeholder="groupe d'espèce (optionnel)"
+            value={entryForm.speciesGroup}
+            onChange={(e) => setEntryForm({ ...entryForm, speciesGroup: e.target.value })}
+          />
           <select
             className="rounded border p-2"
             value={entryForm.species}
@@ -372,12 +378,6 @@ export function EntriesCrudPanel({
               <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
             ))}
           </select>
-          <input
-            className="rounded border p-2"
-            placeholder="Sous-genre / groupe d'espèce (optionnel)"
-            value={entryForm.speciesGroup}
-            onChange={(e) => setEntryForm({ ...entryForm, speciesGroup: e.target.value })}
-          />
           <input
             className="rounded border p-2"
             placeholder="Taille (ex: 2-3 mm)"
