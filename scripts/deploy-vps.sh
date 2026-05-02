@@ -31,7 +31,12 @@ if [ -z "${DATABASE_URL:-}" ]; then
 	exit 1
 fi
 
-npx prisma migrate deploy --schema=./apps/backend/prisma/schema.prisma
+MASKED_DBURL="${DATABASE_URL//?/*}"
+echo "DATABASE_URL (masked): ${MASKED_DBURL:0:60}..."
+(
+	cd "$REPO_DIR/apps/backend"
+	npx prisma migrate deploy --schema=./prisma/schema.prisma
+)
 
 printf '\n==> %s\n' "Build frontend"
 npm run build -w apps/frontend
