@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { api, backendOrigin } from '../../lib/api'
 import { getResponsiveImageProps } from '../../lib/image'
 import type { Entry } from '../../types/models'
@@ -148,6 +148,13 @@ function resolveImageUrl(imageUrl: string) {
   return `${backendOrigin}${imageUrl}`
 }
 
+type TaxonSuggestion = {
+  genus?: string | null
+  species?: string | null
+  subgenus?: string | null
+  speciesGroup?: string | null
+}
+
 type EntryForm = {
   subfamily: string
   genus: string
@@ -220,19 +227,29 @@ export function EntriesCrudPanel({
     })
   }
 
-  async function handleSpeciesSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
+  async function handleSpeciesSelectChange(e: ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value
     const genus = entryForm.genus
-    setEntryForm({ ...entryForm, species: value })
+    const baseForm = { ...entryForm, species: value }
+    setEntryForm(baseForm)
 
     if (!value || !genus) return
 
     try {
-      const { data } = await api.get('/taxons', { params: { level: 'species', q: value } })
-      const items = Array.isArray(data.items) ? data.items : []
-      const match = items.find((t: any) => (t.genus ?? '').toLowerCase() === genus.toLowerCase() && (t.species ?? '').toLowerCase() === value.toLowerCase())
+      const { data } = await api.get<{ items: TaxonSuggestion[] }>('/taxons', { params: { level: 'species', q: value } })
+      const items = data.items ?? []
+      const match = items.find(
+        (taxon) =>
+          (taxon.genus ?? '').toLowerCase() === genus.toLowerCase() &&
+          (taxon.species ?? '').toLowerCase() === value.toLowerCase(),
+      )
+
       if (match) {
-        setEntryForm({ ...entryForm, species: value, subgenus: match.subgenus ?? '', speciesGroup: match.speciesGroup ?? '' })
+        setEntryForm({
+          ...baseForm,
+          subgenus: match.subgenus ?? '',
+          speciesGroup: match.speciesGroup ?? '',
+        })
       }
     } catch {
       // ignore errors — suggestions are optional
@@ -404,7 +421,7 @@ export function EntriesCrudPanel({
           <select
             className="rounded border p-2"
             value={entryForm.species}
-            onChange={(e) => setEntryForm({ ...entryForm, species: e.target.value })}
+            onChange={handleSpeciesSelectChange}
             disabled={!entryForm.genus}
           >
             <option value="">Espèce (optionnel)</option>
