@@ -17,6 +17,20 @@ printf '\n==> %s\n' "Génération Prisma + build backend"
 npm run build -w apps/backend
 
 printf '\n==> %s\n' "Application des migrations Prisma"
+printf '\n==> %s\n' "Chargement des variables d'environnement backend"
+if [ -f "$REPO_DIR/apps/backend/.env" ]; then
+	set -a
+	# shellcheck disable=SC1090
+	source "$REPO_DIR/apps/backend/.env"
+	set +a
+fi
+
+# Ensure DATABASE_URL is set for Prisma migrate
+if [ -z "${DATABASE_URL:-}" ]; then
+	echo "ERROR: DATABASE_URL not set. Aborting migrations."
+	exit 1
+fi
+
 npx prisma migrate deploy --schema=./apps/backend/prisma/schema.prisma
 
 printf '\n==> %s\n' "Build frontend"
