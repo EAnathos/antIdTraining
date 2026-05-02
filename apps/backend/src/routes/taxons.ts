@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
-import { createTaxon, deleteTaxon, listGenera, listSpecies, listSubfamilies, listTaxons, taxonSchema, updateTaxon } from '../services/taxons.js'
+import { createTaxon, deleteTaxon, listGenera, listSpecies, listSubfamilies, listTaxons, listSubgenera, listSpeciesGroups, taxonSchema, updateTaxon } from '../services/taxons.js'
 
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
@@ -13,6 +13,16 @@ publicTaxonsRouter.get('/subfamilies', async (_req, res) => {
 publicTaxonsRouter.get('/genera', async (req, res) => {
   const genera = await listGenera(String(req.query.subfamily ?? ''))
   return res.json(genera)
+})
+
+publicTaxonsRouter.get('/subgenera', async (req, res) => {
+  const subgenera = await listSubgenera(String(req.query.genus ?? ''))
+  return res.json(subgenera)
+})
+
+publicTaxonsRouter.get('/species-groups', async (req, res) => {
+  const groups = await listSpeciesGroups(String(req.query.genus ?? ''))
+  return res.json(groups)
 })
 
 publicTaxonsRouter.get('/species', async (req, res) => {

@@ -388,6 +388,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('taxonLevel', taxonLevel)
     formData.append('taxonValue', taxonValue)
     formData.append('taxonGenus', entryForm.genus || '')
+    formData.append('subgenus', entryForm.subgenus || '')
     formData.append('speciesGroup', entryForm.speciesGroup || '')
     formData.append('size', entryForm.size || '')
     formData.append('department', entryForm.department)
@@ -425,6 +426,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonLevel,
         taxonValue,
         taxonGenus: entryForm.genus || '',
+        subgenus: entryForm.subgenus || '',
         speciesGroup: entryForm.speciesGroup || '',
         size: entryForm.size || '',
         department: entryForm.department,

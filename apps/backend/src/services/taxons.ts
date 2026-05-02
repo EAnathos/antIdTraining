@@ -167,6 +167,48 @@ export async function listSpecies(genus: string) {
   return species.map((item) => item.species)
 }
 
+export async function listSubgenera(genus: string) {
+  const normalizedGenus = genus.trim()
+  if (!normalizedGenus) {
+    throw new AppError(400, 'Le paramètre genus est requis.')
+  }
+
+  const subgenera = await prisma.taxon.findMany({
+    where: {
+      genus: {
+        equals: normalizedGenus,
+        mode: 'insensitive',
+      },
+    },
+    select: { subgenus: true },
+    distinct: ['subgenus'],
+    orderBy: { subgenus: 'asc' },
+  })
+
+  return subgenera.map((item) => item.subgenus).filter(Boolean) as string[]
+}
+
+export async function listSpeciesGroups(genus: string) {
+  const normalizedGenus = genus.trim()
+  if (!normalizedGenus) {
+    throw new AppError(400, 'Le paramètre genus est requis.')
+  }
+
+  const groups = await prisma.taxon.findMany({
+    where: {
+      genus: {
+        equals: normalizedGenus,
+        mode: 'insensitive',
+      },
+    },
+    select: { speciesGroup: true },
+    distinct: ['speciesGroup'],
+    orderBy: { speciesGroup: 'asc' },
+  })
+
+  return groups.map((item) => item.speciesGroup).filter(Boolean) as string[]
+}
+
 export async function listTaxons(params: { level?: unknown; q?: unknown; offset?: unknown }) {
   const level = String(params.level ?? '').toLowerCase()
   const rawQuery = String(params.q ?? '')

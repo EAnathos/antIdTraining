@@ -189,6 +189,8 @@ export function EntriesCrudPanel({
   const [query, setQuery] = useState('')
   const [previewImage, setPreviewImage] = useState<{ images: string[]; index: number; alt: string } | null>(null)
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
+  const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
+  const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
   const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formContainerRef = useRef<HTMLDivElement | null>(null)
@@ -252,28 +254,32 @@ export function EntriesCrudPanel({
 
   useEffect(() => {
     let cancelled = false
-
     if (!entryForm.genus) {
       setSpeciesOptions([])
+      setSubgenusOptions([])
+      setSpeciesGroupOptions([])
       return () => {
         cancelled = true
       }
     }
 
-    void api
-      .get<string[]>('/taxons/species', {
-        params: {
-          genus: entryForm.genus,
-        },
-      })
-      .then(({ data }) => {
+    void Promise.all([
+      api.get<string[]>('/taxons/species', { params: { genus: entryForm.genus } }),
+      api.get<string[]>('/taxons/subgenera', { params: { genus: entryForm.genus } }),
+      api.get<string[]>('/taxons/species-groups', { params: { genus: entryForm.genus } }),
+    ])
+      .then(([speciesRes, subgenusRes, groupRes]) => {
         if (!cancelled) {
-          setSpeciesOptions(data)
+          setSpeciesOptions(speciesRes.data)
+          setSubgenusOptions(subgenusRes.data)
+          setSpeciesGroupOptions(groupRes.data)
         }
       })
       .catch(() => {
         if (!cancelled) {
           setSpeciesOptions([])
+          setSubgenusOptions([])
+          setSpeciesGroupOptions([])
         }
       })
 
@@ -359,6 +365,7 @@ export function EntriesCrudPanel({
             placeholder="Sous-genre (optionnel)"
             value={entryForm.subgenus}
             onChange={(e) => setEntryForm({ ...entryForm, subgenus: e.target.value })}
+            list="subgenus-suggestions"
             disabled={!entryForm.genus}
           />
           <input
@@ -366,6 +373,7 @@ export function EntriesCrudPanel({
             placeholder="groupe d'espèce (optionnel)"
             value={entryForm.speciesGroup}
             onChange={(e) => setEntryForm({ ...entryForm, speciesGroup: e.target.value })}
+            list="species-group-suggestions"
           />
           <select
             className="rounded border p-2"
@@ -396,6 +404,16 @@ export function EntriesCrudPanel({
           <datalist id="department-suggestions">
             {departmentOptions.map((department) => (
               <option key={department.code} value={`${department.code} - ${department.name}`} />
+            ))}
+          </datalist>
+          <datalist id="subgenus-suggestions">
+            {subgenusOptions.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+          <datalist id="species-group-suggestions">
+            {speciesGroupOptions.map((value) => (
+              <option key={value} value={value} />
             ))}
           </datalist>
           <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => setEntryForm({ ...entryForm, observedAt: e.target.value })} required />
