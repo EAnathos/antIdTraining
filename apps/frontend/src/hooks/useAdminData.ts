@@ -260,6 +260,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     taxonId: string,
     levelDetails: LevelDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
+    distribution: FrenchRegionCode[],
   ) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
@@ -274,6 +275,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: found.species,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
+        distribution: distribution.length > 0 ? { regions: distribution } : null,
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,

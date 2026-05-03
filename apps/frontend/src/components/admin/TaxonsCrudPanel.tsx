@@ -50,6 +50,7 @@ type Props = {
     taxonId: string,
     levelDetails: TaxonDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
+    distribution: FrenchRegionCode[],
   ) => Promise<void>
 }
 
@@ -84,6 +85,7 @@ export function TaxonsCrudPanel({
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
   const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
+  const [distributionDraft, setDistributionDraft] = useState<FrenchRegionCode[]>([])
   const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
   const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
 
@@ -131,6 +133,7 @@ export function TaxonsCrudPanel({
       swarmingStartMonth: taxon.swarmingStartMonth,
       swarmingEndMonth: taxon.swarmingEndMonth,
     })
+    setDistributionDraft((taxon.distribution?.regions ?? []) as FrenchRegionCode[])
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
@@ -160,6 +163,7 @@ export function TaxonsCrudPanel({
     setModalTaxon(null)
     setModalDraft(null)
     setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })
+    setDistributionDraft([])
     setIsSelectingSwarmingRange(false)
     setSelectionAnchorMonth(null)
   }
@@ -399,7 +403,7 @@ export function TaxonsCrudPanel({
 
   async function saveDetailsModal() {
     if (!modalTaxon || !modalDraft) return
-    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft)
+    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft, distributionDraft)
     closeDetailsModal()
   }
 
@@ -525,6 +529,20 @@ export function TaxonsCrudPanel({
             </div>
 
             {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modalDraft[levelKey], modalTaxon))}
+
+            {modalTaxon.levelDetails.species && (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <label className="mb-3 block text-sm font-medium text-slate-700">Aire de répartition</label>
+                <FranceMap
+                  selectedRegions={distributionDraft}
+                  onToggleRegion={(regionCode) => {
+                    setDistributionDraft((current) =>
+                      current.includes(regionCode) ? current.filter((value) => value !== regionCode) : [...current, regionCode],
+                    )
+                  }}
+                />
+              </div>
+            )}
 
             <div className="mt-2 flex justify-end gap-2">
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>
