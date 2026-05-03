@@ -522,7 +522,16 @@ export function TaxonsCrudPanel({
 
             {modalTaxon.levelDetails.species && (
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <label className="mb-3 block text-sm font-medium text-slate-700">Aire de répartition</label>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium text-slate-700">Aire de répartition</label>
+                  <button
+                    className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                    type="button"
+                    onClick={() => setDistributionDraft([])}
+                  >
+                    Réinitialiser
+                  </button>
+                </div>
                 <FranceMap
                   selectedDepartments={distributionDraft}
                   onToggleDepartment={(departmentCode) => {
