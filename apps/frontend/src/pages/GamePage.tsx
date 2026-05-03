@@ -356,7 +356,7 @@ export function GamePage() {
 
           {level === 'medium' && mediumStep === 'genus' && subfamilyValidation && (
             <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <p className="font-medium text-slate-900">✅ Correct — sous-famille validée</p>
+              <p className="font-medium text-slate-900">Correct : sous-famille validée</p>
 
               {subfamilyValidation.identification?.subfamily.value && (
                 <p>
@@ -438,7 +438,7 @@ export function GamePage() {
           {result && (
             <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <p className="font-medium text-slate-900">
-                {result.correct ? '✅ Correct' : `❌ Faux${result.reason ? ` : ${result.reason}` : ''}`}
+                {result.correct ? 'Correct' : `Faux${result.reason ? ` : ${result.reason}` : ''}`}
               </p>
 
               <div className="space-y-3">
