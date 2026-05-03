@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
@@ -14,6 +14,15 @@ type TaxonForm = {
   speciesGroup: string
   species: string
   distribution: FrenchDepartmentCode[]
+}
+
+type ModalState = {
+  taxon: Taxon | null
+  draft: TaxonDetailsDraft | null
+  swarming: SwarmingPeriodDraft
+  distribution: FrenchDepartmentCode[]
+  isSelectingSwarmingRange: boolean
+  selectionAnchorMonth: number | null
 }
 
 type LevelDetailDraft = {
@@ -54,7 +63,7 @@ type Props = {
   ) => Promise<void>
 }
 
-const monthOptions = [
+const MONTH_OPTIONS = [
   { value: 1, label: 'Janvier' },
   { value: 2, label: 'Février' },
   { value: 3, label: 'Mars' },
@@ -69,6 +78,15 @@ const monthOptions = [
   { value: 12, label: 'Décembre' },
 ] as const
 
+const INITIAL_MODAL_STATE: ModalState = {
+  taxon: null,
+  draft: null,
+  swarming: { swarmingStartMonth: null, swarmingEndMonth: null },
+  distribution: [],
+  isSelectingSwarmingRange: false,
+  selectionAnchorMonth: null,
+}
+
 export function TaxonsCrudPanel({
   taxons,
   taxonForm,
@@ -82,12 +100,29 @@ export function TaxonsCrudPanel({
 }: Props) {
   const [level, setLevel] = useState('genus')
   const [query, setQuery] = useState('')
-  const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
-  const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
-  const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
-  const [distributionDraft, setDistributionDraft] = useState<FrenchDepartmentCode[]>([])
-  const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
-  const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
+  const [modal, setModal] = useState<ModalState>(INITIAL_MODAL_STATE)
+
+  const handleTaxonChange = useCallback((field: keyof TaxonForm, value: any) => {
+    setTaxonForm({ ...taxonForm, [field]: value })
+  }, [taxonForm, setTaxonForm])
+
+  const validateTaxonForm = (): boolean => {
+    if (!taxonForm.subfamily.trim() || !taxonForm.genus.trim() || !taxonForm.species.trim()) {
+      return false
+    }
+    return true
+  }
+
+  const validateSizeFormat = (value: string): boolean => {
+    if (!value.trim()) return true
+    return /^\d+(-\d+)?\s*mm$/.test(value.trim())
+  }
+
+  const validateSwarmingPeriod = (): boolean => {
+    const { swarmingStartMonth, swarmingEndMonth } = modal.swarming
+    if (swarmingStartMonth === null || swarmingEndMonth === null) return true
+    return swarmingStartMonth <= swarmingEndMonth
+  }
 
   const filteredTaxons = useMemo(() => {
     const value = query.trim().toLowerCase()
@@ -105,16 +140,21 @@ export function TaxonsCrudPanel({
     })
   }, [level, query, taxons])
 
-  function submitTaxon(event: FormEvent) {
+  const submitTaxon = (event: FormEvent) => {
+    event.preventDefault()
+    if (!validateTaxonForm()) {
+      alert('Veuillez remplir les champs obligatoires')
+      return
+    }
     return selectedTaxonId ? updateTaxon(event) : createTaxon(event)
   }
 
-  function resetTaxonForm() {
+  const resetTaxonForm = () => {
     setSelectedTaxonId('')
     setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
   }
 
-  function loadTaxonInForm(taxon: Taxon) {
+  const loadTaxonInForm = (taxon: Taxon) => {
     setSelectedTaxonId(taxon.id)
     setTaxonForm({
       subfamily: taxon.subfamily,
@@ -123,21 +163,13 @@ export function TaxonsCrudPanel({
       subgenus: taxon.subgenus ?? '',
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
-      distribution: (taxon.distribution?.departments ?? taxon.distribution?.regions ?? [])
+      distribution: (taxon.distribution?.departments ?? [])
         .filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
     })
   }
 
-  function openDetailsModal(taxon: Taxon) {
-    setModalTaxon(taxon)
-    setSwarmingDraft({
-      swarmingStartMonth: taxon.swarmingStartMonth,
-      swarmingEndMonth: taxon.swarmingEndMonth,
-    })
-    setDistributionDraft(
-      (taxon.distribution?.departments ?? taxon.distribution?.regions ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
-    )
-    setModalDraft({
+  const buildLevelDetailsFromTaxon = (taxon: Taxon): TaxonDetailsDraft => {
+    return {
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
         sizeWorker: '',
@@ -159,132 +191,168 @@ export function TaxonsCrudPanel({
         sizeMale: taxon.levelDetails.species.sizeMale ?? '',
         criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
       },
+    }
+  }
+
+  const openDetailsModal = (taxon: Taxon) => {
+    const distribution = (taxon.distribution?.departments ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+    setModal({
+      taxon,
+      draft: buildLevelDetailsFromTaxon(taxon),
+      swarming: {
+        swarmingStartMonth: taxon.swarmingStartMonth,
+        swarmingEndMonth: taxon.swarmingEndMonth,
+      },
+      distribution,
+      isSelectingSwarmingRange: false,
+      selectionAnchorMonth: null,
     })
   }
 
-  function closeDetailsModal() {
-    setModalTaxon(null)
-    setModalDraft(null)
-    setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })
-    setDistributionDraft([])
-    setIsSelectingSwarmingRange(false)
-    setSelectionAnchorMonth(null)
+  const closeDetailsModal = () => {
+    setModal(INITIAL_MODAL_STATE)
   }
 
-  function updateSwarmingRange(anchorMonth: number, currentMonth: number) {
-    setSwarmingDraft({
-      swarmingStartMonth: Math.min(anchorMonth, currentMonth),
-      swarmingEndMonth: Math.max(anchorMonth, currentMonth),
-    })
+  const updateSwarmingRange = (anchorMonth: number, currentMonth: number) => {
+    setModal(prev => ({
+      ...prev,
+      swarming: {
+        swarmingStartMonth: Math.min(anchorMonth, currentMonth),
+        swarmingEndMonth: Math.max(anchorMonth, currentMonth),
+      },
+    }))
   }
 
-  function beginSwarmingRangeSelection(month: number) {
-    setIsSelectingSwarmingRange(true)
-    setSelectionAnchorMonth(month)
-    updateSwarmingRange(month, month)
+  const beginSwarmingRangeSelection = (month: number) => {
+    setModal(prev => ({
+      ...prev,
+      isSelectingSwarmingRange: true,
+      selectionAnchorMonth: month,
+      swarming: {
+        swarmingStartMonth: month,
+        swarmingEndMonth: month,
+      },
+    }))
   }
 
-  function continueSwarmingRangeSelection(month: number) {
-    if (!isSelectingSwarmingRange || selectionAnchorMonth === null) {
+  const continueSwarmingRangeSelection = (month: number) => {
+    if (!modal.isSelectingSwarmingRange || modal.selectionAnchorMonth === null) {
       return
     }
-    updateSwarmingRange(selectionAnchorMonth, month)
+    updateSwarmingRange(modal.selectionAnchorMonth, month)
   }
 
-  function endSwarmingRangeSelection() {
-    setIsSelectingSwarmingRange(false)
-    setSelectionAnchorMonth(null)
-  }
+  const endSwarmingRangeSelection = useCallback(() => {
+    setModal(prev => ({
+      ...prev,
+      isSelectingSwarmingRange: false,
+      selectionAnchorMonth: null,
+    }))
+  }, [])
 
-  function isMonthInSelectedRange(month: number) {
-    if (swarmingDraft.swarmingStartMonth === null || swarmingDraft.swarmingEndMonth === null) {
+  const isMonthInSelectedRange = (month: number): boolean => {
+    if (modal.swarming.swarmingStartMonth === null || modal.swarming.swarmingEndMonth === null) {
       return false
     }
-    return month >= swarmingDraft.swarmingStartMonth && month <= swarmingDraft.swarmingEndMonth
+    return month >= modal.swarming.swarmingStartMonth && month <= modal.swarming.swarmingEndMonth
   }
 
-  function isMonthRangeEndpoint(month: number) {
-    if (swarmingDraft.swarmingStartMonth === null || swarmingDraft.swarmingEndMonth === null) {
+  const isMonthRangeEndpoint = (month: number): boolean => {
+    if (modal.swarming.swarmingStartMonth === null || modal.swarming.swarmingEndMonth === null) {
       return false
     }
 
-    return month === swarmingDraft.swarmingStartMonth || month === swarmingDraft.swarmingEndMonth
+    return month === modal.swarming.swarmingStartMonth || month === modal.swarming.swarmingEndMonth
   }
 
   useEffect(() => {
-    if (!isSelectingSwarmingRange) {
+    if (!modal.isSelectingSwarmingRange) {
       return
     }
 
-    const stopSelection = () => {
-      setIsSelectingSwarmingRange(false)
-      setSelectionAnchorMonth(null)
-    }
-
-    window.addEventListener('pointerup', stopSelection)
+    window.addEventListener('pointerup', endSwarmingRangeSelection)
     return () => {
-      window.removeEventListener('pointerup', stopSelection)
+      window.removeEventListener('pointerup', endSwarmingRangeSelection)
     }
-  }, [isSelectingSwarmingRange])
+  }, [modal.isSelectingSwarmingRange, endSwarmingRangeSelection])
 
-  function updateLevelDescription(levelKey: keyof TaxonDetailsDraft, value: string) {
-    if (!modalDraft) return
-    setModalDraft({
-      ...modalDraft,
-      [levelKey]: {
-        ...modalDraft[levelKey],
-        description: value,
+  const updateLevelDescription = (levelKey: keyof TaxonDetailsDraft, value: string) => {
+    if (!modal.draft) return
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          description: value,
+        },
       },
-    })
+    }))
   }
 
-  function updateCriterion(levelKey: keyof TaxonDetailsDraft, index: number, value: string) {
-    if (!modalDraft) return
-    const nextCriteria = [...modalDraft[levelKey].criteria]
+  const updateCriterion = (levelKey: keyof TaxonDetailsDraft, index: number, value: string) => {
+    if (!modal.draft) return
+    const nextCriteria = [...modal.draft[levelKey].criteria]
     nextCriteria[index] = value
-    setModalDraft({
-      ...modalDraft,
-      [levelKey]: {
-        ...modalDraft[levelKey],
-        criteria: nextCriteria,
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          criteria: nextCriteria,
+        },
       },
-    })
+    }))
   }
 
-  function updateLevelSize(levelKey: keyof TaxonDetailsDraft, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) {
-    if (!modalDraft) return
-    setModalDraft({
-      ...modalDraft,
-      [levelKey]: {
-        ...modalDraft[levelKey],
-        [casteKey]: value,
+  const updateLevelSize = (levelKey: keyof TaxonDetailsDraft, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) => {
+    if (!modal.draft) return
+    if (!validateSizeFormat(value)) {
+      alert('Format de taille invalide. Utilisez: "2-3 mm"')
+      return
+    }
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          [casteKey]: value,
+        },
       },
-    })
+    }))
   }
 
-  function addCriterion(levelKey: keyof TaxonDetailsDraft) {
-    if (!modalDraft) return
-    setModalDraft({
-      ...modalDraft,
-      [levelKey]: {
-        ...modalDraft[levelKey],
-        criteria: [...modalDraft[levelKey].criteria, ''],
+  const addCriterion = (levelKey: keyof TaxonDetailsDraft) => {
+    if (!modal.draft) return
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          criteria: [...prev.draft![levelKey].criteria, ''],
+        },
       },
-    })
+    }))
   }
 
-  function removeCriterion(levelKey: keyof TaxonDetailsDraft, index: number) {
-    if (!modalDraft) return
-    setModalDraft({
-      ...modalDraft,
-      [levelKey]: {
-        ...modalDraft[levelKey],
-        criteria: modalDraft[levelKey].criteria.filter((_, currentIndex) => currentIndex !== index),
+  const removeCriterion = (levelKey: keyof TaxonDetailsDraft, index: number) => {
+    if (!modal.draft) return
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          criteria: prev.draft![levelKey].criteria.filter((_, currentIndex) => currentIndex !== index),
+        },
       },
-    })
+    }))
   }
 
-  function renderLevelTitle(levelKey: TaxonDetailLevelKey, taxon: Taxon) {
+  const renderLevelTitle = (levelKey: TaxonDetailLevelKey, taxon: Taxon) => {
     if (levelKey === 'subfamily') {
       return <>Sous-famille ({taxon.subfamily})</>
     }
@@ -296,33 +364,37 @@ export function TaxonsCrudPanel({
     return <>Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)</>
   }
 
-  function renderSwarmingSelector() {
+  const renderSwarmingSelector = () => {
     return (
       <div className="mt-3 mb-4 space-y-2">
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
           <span>Essaimage :</span>
-          {swarmingDraft.swarmingStartMonth && swarmingDraft.swarmingEndMonth && (
+          {modal.swarming.swarmingStartMonth && modal.swarming.swarmingEndMonth && (
             <>
               <span>
-                {monthOptions[swarmingDraft.swarmingStartMonth - 1].label} à {monthOptions[swarmingDraft.swarmingEndMonth - 1].label}
+                {MONTH_OPTIONS[modal.swarming.swarmingStartMonth - 1].label} à {MONTH_OPTIONS[modal.swarming.swarmingEndMonth - 1].label}
               </span>
               <button
                 className="text-sm underline underline-offset-2"
                 type="button"
-                onClick={() => setSwarmingDraft({ swarmingStartMonth: null, swarmingEndMonth: null })}
+                onClick={() => setModal(prev => ({
+                  ...prev,
+                  swarming: { swarmingStartMonth: null, swarmingEndMonth: null },
+                }))}
               >
                 Réinitialiser
               </button>
             </>
           )}
         </div>
-        <div className="grid grid-cols-12 justify-items-center gap-2">
-          {monthOptions.map((month) => (
+        <div className="grid grid-cols-12 justify-items-center gap-2" role="group" aria-label="Sélection période d'essaimage">
+          {MONTH_OPTIONS.map((month) => (
             <button
               key={month.value}
               type="button"
               title={month.label}
               aria-label={month.label}
+              aria-pressed={isMonthInSelectedRange(month.value)}
               onPointerDown={() => beginSwarmingRangeSelection(month.value)}
               onPointerEnter={() => continueSwarmingRangeSelection(month.value)}
               onPointerUp={endSwarmingRangeSelection}
@@ -336,8 +408,8 @@ export function TaxonsCrudPanel({
             />
           ))}
         </div>
-        <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
-          {monthOptions.map((month) => (
+        <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500" aria-hidden>
+          {MONTH_OPTIONS.map((month) => (
             <span key={`label-${month.value}`} className="w-6 text-center">{month.label.slice(0, 1)}</span>
           ))}
         </div>
@@ -345,7 +417,7 @@ export function TaxonsCrudPanel({
     )
   }
 
-  function renderLevelEditor(levelKey: TaxonDetailLevelKey, levelDraft: LevelDetailDraft, taxon: Taxon) {
+  const renderLevelEditor = (levelKey: TaxonDetailLevelKey, levelDraft: LevelDetailDraft, taxon: Taxon): React.ReactNode => {
     return (
       <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
         <p className="font-medium text-slate-800">
@@ -404,17 +476,38 @@ export function TaxonsCrudPanel({
     )
   }
 
-  async function saveDetailsModal() {
-    if (!modalTaxon || !modalDraft) return
-    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft, distributionDraft)
-    closeDetailsModal()
+  const saveDetailsModal = async () => {
+    if (!modal.taxon || !modal.draft) return
+    if (!validateSwarmingPeriod()) {
+      alert('Période d\'essaimage invalide')
+      return
+    }
+    const hasEmptyCriteria = ['subfamily', 'genus', 'species'].some(key => {
+      return modal.draft![key as keyof TaxonDetailsDraft].criteria.some(c => !c.trim())
+    })
+    if (hasEmptyCriteria) {
+      alert('Les critères vides doivent être supprimés')
+      return
+    }
+    try {
+      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.swarming, modal.distribution)
+      closeDetailsModal()
+    } catch (error) {
+      console.error('Error saving taxon details:', error)
+      alert('Erreur lors de l\'enregistrement')
+    }
   }
 
-  async function handleDeleteTaxon(id: string) {
+  const handleDeleteTaxon = async (id: string) => {
     if (!window.confirm('Confirmer la suppression de ce taxon ?')) {
       return
     }
-    await deleteTaxon(id)
+    try {
+      await deleteTaxon(id)
+    } catch (error) {
+      console.error('Error deleting taxon:', error)
+      alert('Erreur lors de la suppression')
+    }
   }
 
   return (
@@ -422,12 +515,12 @@ export function TaxonsCrudPanel({
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Ajout / modification</h3>
         <form className="grid gap-2 md:grid-cols-6" onSubmit={submitTaxon}>
-          <input className="rounded border p-2" placeholder="Sous-famille" value={taxonForm.subfamily} onChange={(e) => setTaxonForm({ ...taxonForm, subfamily: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Tribu" value={taxonForm.tribe} onChange={(e) => setTaxonForm({ ...taxonForm, tribe: e.target.value })} />
-          <input className="rounded border p-2" placeholder="Genre" value={taxonForm.genus} onChange={(e) => setTaxonForm({ ...taxonForm, genus: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Sous-genre" value={taxonForm.subgenus} onChange={(e) => setTaxonForm({ ...taxonForm, subgenus: e.target.value })} />
-          <input className="rounded border p-2" placeholder="Groupe d'espèces" value={taxonForm.speciesGroup} onChange={(e) => setTaxonForm({ ...taxonForm, speciesGroup: e.target.value })} />
-          <input className="rounded border p-2" placeholder="Espèce" value={taxonForm.species} onChange={(e) => setTaxonForm({ ...taxonForm, species: e.target.value })} required />
+          <input className="rounded border p-2" placeholder="Sous-famille" value={taxonForm.subfamily} onChange={(e) => handleTaxonChange('subfamily', e.target.value)} required />
+          <input className="rounded border p-2" placeholder="Tribu" value={taxonForm.tribe} onChange={(e) => handleTaxonChange('tribe', e.target.value)} />
+          <input className="rounded border p-2" placeholder="Genre" value={taxonForm.genus} onChange={(e) => handleTaxonChange('genus', e.target.value)} required />
+          <input className="rounded border p-2" placeholder="Sous-genre" value={taxonForm.subgenus} onChange={(e) => handleTaxonChange('subgenus', e.target.value)} />
+          <input className="rounded border p-2" placeholder="Groupe d'espèces" value={taxonForm.speciesGroup} onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)} />
+          <input className="rounded border p-2" placeholder="Espèce" value={taxonForm.species} onChange={(e) => handleTaxonChange('species', e.target.value)} required />
 
           <div className="md:col-span-6 flex flex-wrap gap-2">
             <button className="rounded bg-slate-900 px-3 py-2 text-white" type="submit">
@@ -496,7 +589,7 @@ export function TaxonsCrudPanel({
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <AdminIconButton title="Modifier" onClick={() => loadTaxonInForm(taxon)} icon={<EditIcon />} />
-                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => void handleDeleteTaxon(taxon.id)} icon={<TrashIcon />} />
+                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => { handleDeleteTaxon(taxon.id).catch(console.error) }} icon={<TrashIcon />} />
                     </div>
                   </td>
                 </tr>
@@ -506,38 +599,44 @@ export function TaxonsCrudPanel({
         </div>
       </div>
 
-      {modalTaxon && modalDraft && (
+      {modal.taxon && modal.draft && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl" role="dialog" aria-labelledby="modal-title" aria-modal="true">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-900">
-                Critères et description — <ScientificTaxonName taxon={modalTaxon} />
+              <h3 id="modal-title" className="text-base font-semibold text-slate-900">
+                Critères et description — <ScientificTaxonName taxon={modal.taxon} />
               </h3>
-              <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal}>
+              <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal} aria-label="Fermer la boîte de dialogue">
                 Fermer
               </button>
             </div>
 
-            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modalDraft[levelKey], modalTaxon))}
+            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modal.draft![levelKey], modal.taxon!))}
 
-            {modalTaxon.levelDetails.species && (
+            {modal.taxon.levelDetails.species && (
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <label className="block text-sm font-medium text-slate-700">Aire de répartition</label>
                   <button
                     className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
                     type="button"
-                    onClick={() => setDistributionDraft([])}
+                    onClick={() => setModal(prev => ({
+                      ...prev,
+                      distribution: [],
+                    }))}
                   >
                     Réinitialiser
                   </button>
                 </div>
                 <FranceMap
-                  selectedDepartments={distributionDraft}
+                  selectedDepartments={modal.distribution}
                   onToggleDepartment={(departmentCode) => {
-                    setDistributionDraft((current) =>
-                      current.includes(departmentCode) ? current.filter((value) => value !== departmentCode) : [...current, departmentCode],
-                    )
+                    setModal(prev => ({
+                      ...prev,
+                      distribution: prev.distribution.includes(departmentCode)
+                        ? prev.distribution.filter((value) => value !== departmentCode)
+                        : [...prev.distribution, departmentCode],
+                    }))
                   }}
                 />
               </div>
@@ -547,7 +646,7 @@ export function TaxonsCrudPanel({
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>
                 Annuler
               </button>
-              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => void saveDetailsModal()}>
+              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => { saveDetailsModal().catch(console.error) }}>
                 Enregistrer
               </button>
             </div>
