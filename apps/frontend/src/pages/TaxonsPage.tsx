@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { getResponsiveImageProps } from '../lib/image'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
+import { FranceMap } from '../components/FranceMap'
+import type { FrenchRegionCode } from '../lib/frenchRegions'
 
 const TAXONS_CACHE_TTL_MS = 5 * 60 * 1000
 const TAXONS_CACHE_PREFIX = 'taxons-page-cache:v1:'
@@ -501,6 +503,15 @@ export function TaxonsPage() {
               </ul>
             ) : (
               <p className="mt-1 text-slate-700">Aucune référence liée.</p>
+            )}
+
+            {selectedDetail.level === 'species' && selectedDetail.taxon.distribution?.regions && (
+              <>
+                <p className="mt-3 font-medium text-slate-800">Aire de répartition</p>
+                <div className="mt-1">
+                  <FranceMap selectedRegions={selectedDetail.taxon.distribution.regions as FrenchRegionCode[]} readonly />
+                </div>
+              </>
             )}
           </div>
         </div>

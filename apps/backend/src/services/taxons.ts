@@ -22,6 +22,12 @@ export const taxonSchema = z
     species: z.string().min(1),
     swarmingStartMonth: z.number().int().min(1).max(12).optional().nullable(),
     swarmingEndMonth: z.number().int().min(1).max(12).optional().nullable(),
+    distribution: z
+      .object({
+        regions: z.array(z.string()).optional(),
+      })
+      .optional()
+      .nullable(),
     levelDetails: z
       .object({
         subfamily: levelDetailSchema.optional(),
@@ -62,6 +68,9 @@ function normalizeTaxonData(data: TaxonInput) {
     species: data.species.trim().toLowerCase(),
     swarmingStartMonth: data.swarmingStartMonth ?? null,
     swarmingEndMonth: data.swarmingEndMonth ?? null,
+    distribution: data.distribution?.regions
+      ? { regions: data.distribution.regions.filter((r) => r && typeof r === 'string') }
+      : null,
     levelDetails: data.levelDetails,
   }
 }
@@ -78,6 +87,7 @@ function buildTaxonWriteData(data: TaxonInput): Prisma.TaxonUncheckedCreateInput
     species: normalized.species,
     swarmingStartMonth: normalized.swarmingStartMonth,
     swarmingEndMonth: normalized.swarmingEndMonth,
+    distribution: normalized.distribution as any,
   }
 }
 

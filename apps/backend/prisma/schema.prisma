@@ -59,6 +59,7 @@ model Taxon {
   species      String
   swarmingStartMonth Int?
   swarmingEndMonth   Int?
+  distribution Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

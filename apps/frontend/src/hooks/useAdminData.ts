@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
+import type { FrenchRegionCode } from '../lib/frenchRegions'
 
 type LevelDetailsDraft = {
   subfamily: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
@@ -26,7 +27,15 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
 
-  const [taxonForm, setTaxonForm] = useState({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
+  const [taxonForm, setTaxonForm] = useState<{
+    subfamily: string
+    tribe: string
+    genus: string
+    subgenus: string
+    speciesGroup: string
+    species: string
+    distribution: FrenchRegionCode[]
+  }>({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
   const [selectedTaxonId, setSelectedTaxonId] = useState('')
 
   const [referenceForm, setReferenceForm] = useState({
@@ -165,6 +174,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus: found.subgenus ?? '',
           speciesGroup: found.speciesGroup ?? '',
           species: found.species,
+          distribution: (found.distribution?.regions as any) ?? [],
         })
       }
     }
@@ -218,8 +228,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         subgenus: taxonForm.subgenus.trim() || null,
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
+        distribution: taxonForm.distribution.length > 0 ? { regions: taxonForm.distribution } : null,
       })
-      setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
+      setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
     }, 'Taxon créé.', 'Impossible de créer le taxon.')
   }
 
@@ -234,6 +245,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         subgenus: taxonForm.subgenus.trim() || null,
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
+        distribution: taxonForm.distribution.length > 0 ? { regions: taxonForm.distribution } : null,
       })
     }, 'Taxon modifié.', 'Impossible de modifier le taxon.')
   }

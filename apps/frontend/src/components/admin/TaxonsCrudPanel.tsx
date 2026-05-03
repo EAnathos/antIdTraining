@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
+import { FranceMap } from '../FranceMap'
+import type { FrenchRegionCode } from '../../lib/frenchRegions'
 
 type TaxonForm = {
   subfamily: string
@@ -11,6 +13,7 @@ type TaxonForm = {
   subgenus: string
   speciesGroup: string
   species: string
+  distribution: FrenchRegionCode[]
 }
 
 type LevelDetailDraft = {
@@ -106,7 +109,7 @@ export function TaxonsCrudPanel({
 
   function resetTaxonForm() {
     setSelectedTaxonId('')
-    setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '' })
+    setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
   }
 
   function loadTaxonInForm(taxon: Taxon) {
@@ -118,6 +121,7 @@ export function TaxonsCrudPanel({
       subgenus: taxon.subgenus ?? '',
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
+      distribution: (taxon.distribution?.regions ?? []) as FrenchRegionCode[],
     })
   }
 
@@ -417,6 +421,20 @@ export function TaxonsCrudPanel({
           <input className="rounded border p-2" placeholder="Sous-genre" value={taxonForm.subgenus} onChange={(e) => setTaxonForm({ ...taxonForm, subgenus: e.target.value })} />
           <input className="rounded border p-2" placeholder="Groupe d'espèces" value={taxonForm.speciesGroup} onChange={(e) => setTaxonForm({ ...taxonForm, speciesGroup: e.target.value })} />
           <input className="rounded border p-2" placeholder="Espèce" value={taxonForm.species} onChange={(e) => setTaxonForm({ ...taxonForm, species: e.target.value })} required />
+          
+          <div className="md:col-span-6">
+            <label className="block text-sm font-medium text-slate-700 mb-3">Aire de répartition</label>
+            <FranceMap
+              selectedRegions={taxonForm.distribution}
+              onToggleRegion={(regionCode) => {
+                const newDistribution = taxonForm.distribution.includes(regionCode)
+                  ? taxonForm.distribution.filter((r) => r !== regionCode)
+                  : [...taxonForm.distribution, regionCode]
+                setTaxonForm({ ...taxonForm, distribution: newDistribution })
+              }}
+            />
+          </div>
+
           <div className="md:col-span-6 flex flex-wrap gap-2">
             <button className="rounded bg-slate-900 px-3 py-2 text-white" type="submit">
               {selectedTaxonId ? 'Modifier taxon' : 'Créer taxon'}
