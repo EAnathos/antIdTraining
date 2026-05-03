@@ -169,6 +169,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLink className={navClass} to="/references">
             Références
           </NavLink>
+          <NavLink className={navClass} to="/about">
+            À propos
+          </NavLink>
           <NavLink className={adminNavClass} to="/admin/login">
             Admin
           </NavLink>

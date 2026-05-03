@@ -7,6 +7,7 @@ const TaxonsPage = lazy(() => import('./pages/TaxonsPage').then((module) => ({ d
 const ReferencesPage = lazy(() => import('./pages/ReferencesPage').then((module) => ({ default: module.ReferencesPage })))
 const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage').then((module) => ({ default: module.AdminLoginPage })))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })))
+const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ default: module.default })))
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/jeu" element={<Navigate to="/" replace />} />
           <Route path="/taxons" element={<TaxonsPage />} />
           <Route path="/references" element={<ReferencesPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
         </Routes>

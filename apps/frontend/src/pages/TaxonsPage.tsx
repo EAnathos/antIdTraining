@@ -505,16 +505,20 @@ export function TaxonsPage() {
               <p className="mt-1 text-slate-700">Aucune référence liée.</p>
             )}
 
-            {selectedDetail.level === 'species' && selectedDetail.taxon.distribution && (
+            {selectedDetail.level === 'species' && (
               <>
                 <p className="mt-3 font-medium text-slate-800">Aire de répartition</p>
                 <div className="mt-1">
-                  <FranceMap
-                    selectedDepartments={
-                      (selectedDetail.taxon.distribution.departments ?? selectedDetail.taxon.distribution.regions ?? []) as FrenchDepartmentCode[]
+                  {(() => {
+                    const raw = (selectedDetail.taxon.distribution?.departments ?? selectedDetail.taxon.distribution?.regions ?? []) as unknown[]
+                    const codes = raw.filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+
+                    if (codes.length === 0) {
+                      return <p className="mt-1 text-slate-700">Aucune aire de répartition renseignée.</p>
                     }
-                    readonly
-                  />
+
+                    return <FranceMap selectedDepartments={codes} readonly />
+                  })()}
                 </div>
               </>
             )}
