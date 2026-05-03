@@ -3,8 +3,8 @@ export default function AboutPage() {
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">À propos</h2>
       <p className="mt-4 text-slate-700">
-        Ant ID Training est une application éducative pour l'entraînement à l'identification d'espèces de fourmis.
-        Elle permet de jouer, consulter des fiches d'espèces et contribuer des suggestions.
+        Ant ID Training est une application éducative pour l'entraînement à l'identification d'espèces de fourmis de France métropolitaine.
+        Elle permet de jouer et de consulter des informations sur un taxon (description, tailles, critères d'identification, période d'essaimage, répartition).
       </p>
 
       <h3 className="mt-6 text-lg font-medium text-slate-800">Mission</h3>
