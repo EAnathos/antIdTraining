@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { getTaxonCatalog, invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
+import { buildTaxonSizeMaps } from '../lib/taxonSizes.js'
 import { AppError } from '../lib/errors.js'
 
 const levelDetailSchema = z.object({
@@ -339,6 +340,7 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
   })
 
   const profileByKey = new Map(profiles.map((profile) => [`${profile.level}:${profile.value}`, profile]))
+  const derivedSizes = await buildTaxonSizeMaps()
 
   const items = taxons.map((taxon) => ({
     ...taxon,
@@ -346,18 +348,18 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
       subfamily: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)
         ? {
             description: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.description ?? null,
-            sizeWorker: null,
-            sizeQueen: null,
-            sizeMale: null,
+            sizeWorker: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeWorker ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeWorker ?? null,
+            sizeQueen: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeQueen ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeQueen ?? null,
+            sizeMale: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeMale ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeMale ?? null,
             criteria: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.criteria ?? [],
           }
         : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
       genus: profileByKey.get(`GENUS:${taxon.genus}`)
         ? {
             description: profileByKey.get(`GENUS:${taxon.genus}`)?.description ?? null,
-            sizeWorker: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeWorker ?? null,
-            sizeQueen: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeQueen ?? null,
-            sizeMale: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeMale ?? null,
+            sizeWorker: derivedSizes.genusSizes.get(taxon.genus)?.sizeWorker ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeWorker ?? null,
+            sizeQueen: derivedSizes.genusSizes.get(taxon.genus)?.sizeQueen ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeQueen ?? null,
+            sizeMale: derivedSizes.genusSizes.get(taxon.genus)?.sizeMale ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeMale ?? null,
             criteria: profileByKey.get(`GENUS:${taxon.genus}`)?.criteria ?? [],
           }
         : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },

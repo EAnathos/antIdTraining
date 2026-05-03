@@ -113,11 +113,6 @@ export function TaxonsCrudPanel({
     return true
   }
 
-  const validateSizeFormat = (value: string): boolean => {
-    if (!value.trim()) return true
-    return /^\d+(-\d+)?\s*mm$/.test(value.trim())
-  }
-
   const validateSwarmingPeriod = (): boolean => {
     const { swarmingStartMonth, swarmingEndMonth } = modal.swarming
     if (swarmingStartMonth === null || swarmingEndMonth === null) return true
@@ -308,10 +303,6 @@ export function TaxonsCrudPanel({
 
   const updateLevelSize = (levelKey: keyof TaxonDetailsDraft, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) => {
     if (!modal.draft) return
-    if (!validateSizeFormat(value)) {
-      alert('Format de taille invalide. Utilisez: "2-3 mm"')
-      return
-    }
     setModal(prev => ({
       ...prev,
       draft: {
