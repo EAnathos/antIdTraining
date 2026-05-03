@@ -11,6 +11,7 @@
   },
   "author": "Anathos",
   "dependencies": {
+    "@svg-country-maps/france.departments": "^1.0.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.14.0",

@@ -24,6 +24,7 @@ export const taxonSchema = z
     swarmingEndMonth: z.number().int().min(1).max(12).optional().nullable(),
     distribution: z
       .object({
+        departments: z.array(z.string()).optional(),
         regions: z.array(z.string()).optional(),
       })
       .optional()
@@ -59,6 +60,8 @@ function capitalizeWords(value: string) {
 }
 
 function normalizeTaxonData(data: TaxonInput) {
+  const distribution = data.distribution?.departments ?? data.distribution?.regions ?? []
+
   return {
     subfamily: capitalizeWords(data.subfamily),
     tribe: data.tribe?.trim() ? capitalizeWords(data.tribe) : null,
@@ -68,9 +71,7 @@ function normalizeTaxonData(data: TaxonInput) {
     species: data.species.trim().toLowerCase(),
     swarmingStartMonth: data.swarmingStartMonth ?? null,
     swarmingEndMonth: data.swarmingEndMonth ?? null,
-    distribution: data.distribution?.regions
-      ? { regions: data.distribution.regions.filter((r) => r && typeof r === 'string') }
-      : null,
+    distribution: distribution.length > 0 ? { departments: distribution.filter((r) => r && typeof r === 'string') } : null,
     levelDetails: data.levelDetails,
   }
 }

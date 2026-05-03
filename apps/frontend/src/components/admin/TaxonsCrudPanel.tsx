@@ -4,7 +4,7 @@ import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
-import type { FrenchRegionCode } from '../../lib/frenchRegions'
+import type { FrenchDepartmentCode } from '../../lib/frenchDepartments'
 
 type TaxonForm = {
   subfamily: string
@@ -13,7 +13,7 @@ type TaxonForm = {
   subgenus: string
   speciesGroup: string
   species: string
-  distribution: FrenchRegionCode[]
+  distribution: FrenchDepartmentCode[]
 }
 
 type LevelDetailDraft = {
@@ -50,7 +50,7 @@ type Props = {
     taxonId: string,
     levelDetails: TaxonDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
-    distribution: FrenchRegionCode[],
+    distribution: FrenchDepartmentCode[],
   ) => Promise<void>
 }
 
@@ -85,7 +85,7 @@ export function TaxonsCrudPanel({
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
   const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
-  const [distributionDraft, setDistributionDraft] = useState<FrenchRegionCode[]>([])
+  const [distributionDraft, setDistributionDraft] = useState<FrenchDepartmentCode[]>([])
   const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
   const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
 
@@ -123,7 +123,7 @@ export function TaxonsCrudPanel({
       subgenus: taxon.subgenus ?? '',
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
-      distribution: (taxon.distribution?.regions ?? []) as FrenchRegionCode[],
+      distribution: (taxon.distribution?.departments ?? taxon.distribution?.regions ?? []) as FrenchDepartmentCode[],
     })
   }
 
@@ -133,7 +133,7 @@ export function TaxonsCrudPanel({
       swarmingStartMonth: taxon.swarmingStartMonth,
       swarmingEndMonth: taxon.swarmingEndMonth,
     })
-    setDistributionDraft((taxon.distribution?.regions ?? []) as FrenchRegionCode[])
+    setDistributionDraft((taxon.distribution?.departments ?? taxon.distribution?.regions ?? []) as FrenchDepartmentCode[])
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
@@ -521,10 +521,10 @@ export function TaxonsCrudPanel({
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <label className="mb-3 block text-sm font-medium text-slate-700">Aire de répartition</label>
                 <FranceMap
-                  selectedRegions={distributionDraft}
-                  onToggleRegion={(regionCode) => {
+                  selectedDepartments={distributionDraft}
+                  onToggleDepartment={(departmentCode) => {
                     setDistributionDraft((current) =>
-                      current.includes(regionCode) ? current.filter((value) => value !== regionCode) : [...current, regionCode],
+                      current.includes(departmentCode) ? current.filter((value) => value !== departmentCode) : [...current, departmentCode],
                     )
                   }}
                 />

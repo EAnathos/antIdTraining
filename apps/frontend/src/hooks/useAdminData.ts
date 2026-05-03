@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
-import type { FrenchRegionCode } from '../lib/frenchRegions'
+import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
   subfamily: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
@@ -34,7 +34,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     subgenus: string
     speciesGroup: string
     species: string
-    distribution: FrenchRegionCode[]
+    distribution: FrenchDepartmentCode[]
   }>({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
   const [selectedTaxonId, setSelectedTaxonId] = useState('')
 
@@ -174,7 +174,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus: found.subgenus ?? '',
           speciesGroup: found.speciesGroup ?? '',
           species: found.species,
-          distribution: (found.distribution?.regions as any) ?? [],
+          distribution: (found.distribution?.departments ?? found.distribution?.regions ?? []) as FrenchDepartmentCode[],
         })
       }
     }
@@ -228,7 +228,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         subgenus: taxonForm.subgenus.trim() || null,
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
-        distribution: taxonForm.distribution.length > 0 ? { regions: taxonForm.distribution } : null,
+        distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
       })
       setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
     }, 'Taxon créé.', 'Impossible de créer le taxon.')
@@ -245,7 +245,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         subgenus: taxonForm.subgenus.trim() || null,
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
-        distribution: taxonForm.distribution.length > 0 ? { regions: taxonForm.distribution } : null,
+        distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
       })
     }, 'Taxon modifié.', 'Impossible de modifier le taxon.')
   }
@@ -260,7 +260,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     taxonId: string,
     levelDetails: LevelDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
-    distribution: FrenchRegionCode[],
+    distribution: FrenchDepartmentCode[],
   ) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
@@ -275,7 +275,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: found.species,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
-        distribution: distribution.length > 0 ? { regions: distribution } : null,
+        distribution: distribution.length > 0 ? { departments: distribution } : null,
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,
