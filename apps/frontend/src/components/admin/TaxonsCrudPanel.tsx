@@ -167,9 +167,9 @@ export function TaxonsCrudPanel({
     return {
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
-        sizeWorker: '',
-        sizeQueen: '',
-        sizeMale: '',
+        sizeWorker: taxon.levelDetails.subfamily.sizeWorker ?? '',
+        sizeQueen: taxon.levelDetails.subfamily.sizeQueen ?? '',
+        sizeMale: taxon.levelDetails.subfamily.sizeMale ?? '',
         criteria: taxon.levelDetails.subfamily.criteria.map((criterion) => criterion.label),
       },
       genus: {
@@ -409,6 +409,8 @@ export function TaxonsCrudPanel({
   }
 
   const renderLevelEditor = (levelKey: TaxonDetailLevelKey, levelDraft: LevelDetailDraft, taxon: Taxon): React.ReactNode => {
+    const isAutoCalculatedSize = levelKey !== 'species'
+
     return (
       <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
         <p className="font-medium text-slate-800">
@@ -423,27 +425,43 @@ export function TaxonsCrudPanel({
           onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
         />
 
-        {(levelKey === 'genus' || levelKey === 'species') && (
+        {(levelKey === 'subfamily' || levelKey === 'genus' || levelKey === 'species') && (
           <div className="mt-2 grid grid-cols-3 gap-2">
             <input
-              className="rounded border p-2"
+              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
               placeholder="Ouvrière (ex: 2-3 mm)"
               value={levelDraft.sizeWorker}
+              readOnly={isAutoCalculatedSize}
+              disabled={isAutoCalculatedSize}
+              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
+              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Ouvrière'}
               onChange={(e) => updateLevelSize(levelKey, 'sizeWorker', e.target.value)}
             />
             <input
-              className="rounded border p-2"
+              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
               placeholder="Reine (ex: 4-5 mm)"
               value={levelDraft.sizeQueen}
+              readOnly={isAutoCalculatedSize}
+              disabled={isAutoCalculatedSize}
+              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
+              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Reine'}
               onChange={(e) => updateLevelSize(levelKey, 'sizeQueen', e.target.value)}
             />
             <input
-              className="rounded border p-2"
+              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
               placeholder="Mâle (ex: 2-3 mm)"
               value={levelDraft.sizeMale}
+              readOnly={isAutoCalculatedSize}
+              disabled={isAutoCalculatedSize}
+              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
+              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Mâle'}
               onChange={(e) => updateLevelSize(levelKey, 'sizeMale', e.target.value)}
             />
           </div>
+        )}
+
+        {isAutoCalculatedSize && (
+          <p className="mt-2 text-xs text-slate-500">Les tailles sont auto-calculées à partir des espèces enfants.</p>
         )}
 
         <div className="mt-2 space-y-2">

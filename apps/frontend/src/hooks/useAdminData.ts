@@ -299,9 +299,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           },
           genus: {
             description: levelDetails.genus.description.trim() || null,
-            sizeWorker: levelDetails.genus.sizeWorker.trim() || null,
-            sizeQueen: levelDetails.genus.sizeQueen.trim() || null,
-            sizeMale: levelDetails.genus.sizeMale.trim() || null,
+            sizeWorker: null,
+            sizeQueen: null,
+            sizeMale: null,
             criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
           },
           species: {

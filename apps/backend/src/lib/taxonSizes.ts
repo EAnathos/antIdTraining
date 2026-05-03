@@ -14,11 +14,11 @@ type SizeBounds = {
 function parseSizeBounds(value: string | null | undefined): SizeBounds | null {
   if (!value) return null
 
-  const match = value.trim().match(/^(\d+)(?:\s*-\s*(\d+))?\s*mm$/i)
+  const match = value.trim().match(/^(\d+(?:[.,]\d+)?)(?:\s*-\s*(\d+(?:[.,]\d+)?))?\s*mm$/i)
   if (!match) return null
 
-  const first = Number(match[1])
-  const second = match[2] ? Number(match[2]) : first
+  const first = Number.parseFloat(match[1].replace(',', '.'))
+  const second = match[2] ? Number.parseFloat(match[2].replace(',', '.')) : first
 
   if (!Number.isFinite(first) || !Number.isFinite(second)) {
     return null
@@ -32,7 +32,16 @@ function parseSizeBounds(value: string | null | undefined): SizeBounds | null {
 
 function formatSizeBounds(bounds: SizeBounds | null): string | null {
   if (!bounds) return null
-  return bounds.min === bounds.max ? `${bounds.min} mm` : `${bounds.min}-${bounds.max} mm`
+
+  const formatter = new Intl.NumberFormat('fr-FR', {
+    useGrouping: false,
+    maximumFractionDigits: 2,
+  })
+
+  const min = formatter.format(bounds.min)
+  const max = formatter.format(bounds.max)
+
+  return bounds.min === bounds.max ? `${min} mm` : `${min}-${max} mm`
 }
 
 function mergeSizeValues(values: Array<string | null | undefined>): string | null {
