@@ -505,7 +505,7 @@ export function TaxonsPage() {
               <p className="mt-1 text-slate-700">Aucune référence liée.</p>
             )}
 
-            {selectedDetail.level === 'species' && selectedDetail.taxon.distribution?.regions && (
+            {selectedDetail.level === 'species' && selectedDetail.taxon.distribution && (
               <>
                 <p className="mt-3 font-medium text-slate-800">Aire de répartition</p>
                 <div className="mt-1">

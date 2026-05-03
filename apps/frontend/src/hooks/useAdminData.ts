@@ -174,7 +174,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus: found.subgenus ?? '',
           speciesGroup: found.speciesGroup ?? '',
           species: found.species,
-          distribution: (found.distribution?.departments ?? found.distribution?.regions ?? []) as FrenchDepartmentCode[],
+          distribution: (found.distribution?.departments ?? found.distribution?.regions ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
         })
       }
     }

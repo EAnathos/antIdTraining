@@ -123,7 +123,8 @@ export function TaxonsCrudPanel({
       subgenus: taxon.subgenus ?? '',
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
-      distribution: (taxon.distribution?.departments ?? taxon.distribution?.regions ?? []) as FrenchDepartmentCode[],
+      distribution: (taxon.distribution?.departments ?? taxon.distribution?.regions ?? [])
+        .filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
     })
   }
 
@@ -133,7 +134,9 @@ export function TaxonsCrudPanel({
       swarmingStartMonth: taxon.swarmingStartMonth,
       swarmingEndMonth: taxon.swarmingEndMonth,
     })
-    setDistributionDraft((taxon.distribution?.departments ?? taxon.distribution?.regions ?? []) as FrenchDepartmentCode[])
+    setDistributionDraft(
+      (taxon.distribution?.departments ?? taxon.distribution?.regions ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
+    )
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',

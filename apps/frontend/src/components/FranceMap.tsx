@@ -1,4 +1,4 @@
-import { getDepartmentLabel, getDepartmentMapData, type FrenchDepartmentCode } from '../lib/frenchDepartments'
+import { getDepartmentLabel, getDepartmentMapData, type FrenchDepartmentCode, IDF_CODE, IDF_DEPARTMENTS } from '../lib/frenchDepartments'
 
 type Props = {
   selectedDepartments: FrenchDepartmentCode[]
@@ -35,8 +35,17 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
           aria-label={readonly ? 'Aire de répartition' : 'Carte interactive de la France'}
         >
           {MAP_DATA.locations.map((location: { id: string; name: string; path?: string }) => {
-            const isSelected = selectedSet.has(location.id)
+            const isSelected =
+              selectedSet.has(location.id) || (selectedSet.has(IDF_CODE) && IDF_DEPARTMENTS.includes(location.id))
             const departmentName = getDepartmentLabel(location.id)
+
+            const handleClick = () => {
+              if (IDF_DEPARTMENTS.includes(location.id)) {
+                activateDepartment(IDF_CODE)
+              } else {
+                activateDepartment(location.id)
+              }
+            }
 
             return (
               <path
@@ -50,12 +59,12 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
                 role={readonly ? undefined : 'button'}
                 aria-label={departmentName}
                 aria-pressed={isSelected}
-                onClick={() => activateDepartment(location.id)}
+                onClick={handleClick}
                 onKeyDown={(event) => {
                   if (readonly) return
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
-                    activateDepartment(location.id)
+                    handleClick()
                   }
                 }}
               >
@@ -64,11 +73,13 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
             )
           })}
 
-          <g pointerEvents="none">
-            <text x="18" y="570" className="fill-slate-500 text-[11px] font-medium">
-              Cliquez sur un département pour l'ajouter ou le retirer
-            </text>
-          </g>
+          {!readonly && (
+            <g pointerEvents="none">
+              <text x="18" y="570" className="fill-slate-500 text-[11px] font-medium">
+                Cliquez sur un département pour l'ajouter ou le retirer
+              </text>
+            </g>
+          )}
         </svg>
       </div>
 
