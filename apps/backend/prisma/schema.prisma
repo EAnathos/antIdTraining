@@ -59,9 +59,6 @@ model Taxon {
   species      String
   swarmingStartMonth Int?
   swarmingEndMonth   Int?
-  sizeWorker   String?
-  sizeQueen    String?
-  sizeMale     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -79,7 +76,9 @@ model TaxonLevelProfile {
   level     TaxonLevel
   value     String
   description String?
-  size      String?
+  sizeWorker String?
+  sizeQueen  String?
+  sizeMale   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

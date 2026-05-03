@@ -4,9 +4,9 @@ import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 
 type LevelDetailsDraft = {
-  subfamily: { description: string; size: string; criteria: string[] }
-  genus: { description: string; size: string; criteria: string[] }
-  species: { description: string; size: string; criteria: string[] }
+  subfamily: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
+  genus: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
+  species: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
 }
 
 type SwarmingPeriodDraft = {
@@ -248,7 +248,6 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     taxonId: string,
     levelDetails: LevelDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
-    sizes: { worker?: string | null; queen?: string | null; male?: string | null } = {},
   ) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
@@ -263,23 +262,26 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: found.species,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
-        sizeWorker: sizes.worker?.trim() || null,
-        sizeQueen: sizes.queen?.trim() || null,
-        sizeMale: sizes.male?.trim() || null,
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,
-            size: levelDetails.subfamily.size.trim() || null,
+            sizeWorker: null,
+            sizeQueen: null,
+            sizeMale: null,
             criteria: levelDetails.subfamily.criteria.map((value) => value.trim()).filter(Boolean),
           },
           genus: {
             description: levelDetails.genus.description.trim() || null,
-            size: levelDetails.genus.size.trim() || null,
+            sizeWorker: levelDetails.genus.sizeWorker.trim() || null,
+            sizeQueen: levelDetails.genus.sizeQueen.trim() || null,
+            sizeMale: levelDetails.genus.sizeMale.trim() || null,
             criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
           },
           species: {
             description: levelDetails.species.description.trim() || null,
-            size: levelDetails.species.size.trim() || null,
+            sizeWorker: levelDetails.species.sizeWorker.trim() || null,
+            sizeQueen: levelDetails.species.sizeQueen.trim() || null,
+            sizeMale: levelDetails.species.sizeMale.trim() || null,
             criteria: levelDetails.species.criteria.map((value) => value.trim()).filter(Boolean),
           },
         },

@@ -43,6 +43,13 @@ function resolveSpeciesSelection(input: EntryInput) {
   return parseSpeciesTaxonValue(input.taxonValue)
 }
 
+function getSizeFromProfile(profile: { sizeWorker: string | null; sizeQueen: string | null; sizeMale: string | null } | null, caste?: 'WORKER' | 'QUEEN' | 'MALE' | null): string | null {
+  if (!profile) return null
+  if (caste === 'QUEEN') return profile.sizeQueen
+  if (caste === 'MALE') return profile.sizeMale
+  return profile.sizeWorker
+}
+
 export async function resolveEntryTaxonSelection(input: EntryInput) {
   if (input.taxonLevel === 'SUBFAMILY') {
     const match = await prisma.taxon.findFirst({
@@ -59,8 +66,8 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
-    const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
-    const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+    // No size for subfamily per user requirement
+    const sizeValue = (input.size && input.size.trim()) || null
 
     return {
       taxonId: null,
@@ -88,8 +95,13 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
-    const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
-    const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+    // Fetch profile for this genus to get caste-specific sizes
+    const profile = await prisma.taxonLevelProfile.findUnique({
+      where: { level_value: { level: 'GENUS', value: match.genus } },
+    })
+
+    const sizeFromProfile = getSizeFromProfile(profile, input.caste)
+    const sizeValue = (input.size && input.size.trim()) || sizeFromProfile || null
 
     return {
       taxonId: match.id,
@@ -125,8 +137,13 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
     return null
   }
 
-  const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
-  const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+  // Fetch profile for this species to get caste-specific sizes
+  const profile = await prisma.taxonLevelProfile.findUnique({
+    where: { level_value: { level: 'SPECIES', value: match.species } },
+  })
+
+  const sizeFromProfile = getSizeFromProfile(profile, input.caste)
+  const sizeValue = (input.size && input.size.trim()) || sizeFromProfile || null
 
   return {
     taxonId: match.id,

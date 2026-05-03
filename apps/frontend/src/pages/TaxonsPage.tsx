@@ -423,11 +423,15 @@ export function TaxonsPage() {
             <p className="mt-1 text-slate-700">{selectedDetail.detail.description ?? 'Aucune description.'}</p>
 
             <p className="mt-3 font-medium text-slate-800">Caractéristiques</p>
-            {selectedDetail.detail.criteria.length > 0 ? (
+            {selectedDetail.detail.criteria.length > 0 || selectedDetail.detail.sizeWorker || selectedDetail.detail.sizeQueen || selectedDetail.detail.sizeMale ? (
               <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                {selectedDetail.detail.size && (
+                {(selectedDetail.detail.sizeWorker || selectedDetail.detail.sizeQueen || selectedDetail.detail.sizeMale) && (
                   <li>
-                    Taille : {selectedDetail.detail.size}
+                    Tailles : {[
+                      selectedDetail.detail.sizeWorker ? `Ouvrière ${selectedDetail.detail.sizeWorker}` : null,
+                      selectedDetail.detail.sizeQueen ? `Reine ${selectedDetail.detail.sizeQueen}` : null,
+                      selectedDetail.detail.sizeMale ? `Mâle ${selectedDetail.detail.sizeMale}` : null,
+                    ].filter(Boolean).join(' / ')}
                   </li>
                 )}
                 {selectedDetail.detail.criteria.map((criterion) => (
@@ -435,13 +439,7 @@ export function TaxonsPage() {
                 ))}
               </ul>
             ) : (
-              selectedDetail.detail.size ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                  <li>Taille : {selectedDetail.detail.size}</li>
-                </ul>
-              ) : (
-                <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
-              )
+              <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
             )}
 
             {selectedDetail.level === 'species' && (

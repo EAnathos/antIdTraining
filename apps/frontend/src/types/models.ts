@@ -6,7 +6,9 @@ export type TaxonCriterion = {
 
 export type TaxonLevelDetail = {
   description: string | null
-  size: string | null
+  sizeWorker: string | null
+  sizeQueen: string | null
+  sizeMale: string | null
   criteria: TaxonCriterion[]
 }
 
@@ -25,9 +27,6 @@ export type Taxon = {
     genus: TaxonLevelDetail
     species: TaxonLevelDetail
   }
-  sizeWorker?: string | null
-  sizeQueen?: string | null
-  sizeMale?: string | null
 }
 
 export type TaxonsPageResponse = {

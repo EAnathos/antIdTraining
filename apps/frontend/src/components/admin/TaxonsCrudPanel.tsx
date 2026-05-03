@@ -15,7 +15,9 @@ type TaxonForm = {
 
 type LevelDetailDraft = {
   description: string
-  size: string
+  sizeWorker: string
+  sizeQueen: string
+  sizeMale: string
   criteria: string[]
 }
 
@@ -45,7 +47,6 @@ type Props = {
     taxonId: string,
     levelDetails: TaxonDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
-    sizes: { worker?: string | null; queen?: string | null; male?: string | null },
   ) => Promise<void>
 }
 
@@ -79,7 +80,6 @@ export function TaxonsCrudPanel({
   const [query, setQuery] = useState('')
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
-  const [modalCasteSizes, setModalCasteSizes] = useState<{ worker: string; queen: string; male: string }>({ worker: '', queen: '', male: '' })
   const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
   const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
   const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
@@ -130,21 +130,26 @@ export function TaxonsCrudPanel({
     setModalDraft({
       subfamily: {
         description: taxon.levelDetails.subfamily.description ?? '',
-        size: taxon.levelDetails.subfamily.size ?? '',
+        sizeWorker: '',
+        sizeQueen: '',
+        sizeMale: '',
         criteria: taxon.levelDetails.subfamily.criteria.map((criterion) => criterion.label),
       },
       genus: {
         description: taxon.levelDetails.genus.description ?? '',
-        size: taxon.levelDetails.genus.size ?? '',
+        sizeWorker: taxon.levelDetails.genus.sizeWorker ?? '',
+        sizeQueen: taxon.levelDetails.genus.sizeQueen ?? '',
+        sizeMale: taxon.levelDetails.genus.sizeMale ?? '',
         criteria: taxon.levelDetails.genus.criteria.map((criterion) => criterion.label),
       },
       species: {
         description: taxon.levelDetails.species.description ?? '',
-        size: taxon.levelDetails.species.size ?? '',
+        sizeWorker: taxon.levelDetails.species.sizeWorker ?? '',
+        sizeQueen: taxon.levelDetails.species.sizeQueen ?? '',
+        sizeMale: taxon.levelDetails.species.sizeMale ?? '',
         criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
       },
     })
-    setModalCasteSizes({ worker: taxon.sizeWorker ?? '', queen: taxon.sizeQueen ?? '', male: taxon.sizeMale ?? '' })
   }
 
   function closeDetailsModal() {
@@ -235,19 +240,15 @@ export function TaxonsCrudPanel({
     })
   }
 
-  function updateLevelSize(levelKey: keyof TaxonDetailsDraft, value: string) {
+  function updateLevelSize(levelKey: keyof TaxonDetailsDraft, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) {
     if (!modalDraft) return
     setModalDraft({
       ...modalDraft,
       [levelKey]: {
         ...modalDraft[levelKey],
-        size: value,
+        [casteKey]: value,
       },
     })
-  }
-
-  function updateCasteSize(key: 'worker' | 'queen' | 'male', value: string) {
-    setModalCasteSizes((current) => ({ ...current, [key]: value }))
   }
 
   function addCriterion(levelKey: keyof TaxonDetailsDraft) {
@@ -349,12 +350,26 @@ export function TaxonsCrudPanel({
         />
 
         {(levelKey === 'genus' || levelKey === 'species') && (
-          <input
-            className="mt-2 w-full rounded border p-2"
-            placeholder="Taille (ex: 2-3 mm)"
-            value={levelDraft.size}
-            onChange={(e) => updateLevelSize(levelKey, e.target.value)}
-          />
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <input
+              className="rounded border p-2"
+              placeholder="Ouvrière (ex: 2-3 mm)"
+              value={levelDraft.sizeWorker}
+              onChange={(e) => updateLevelSize(levelKey, 'sizeWorker', e.target.value)}
+            />
+            <input
+              className="rounded border p-2"
+              placeholder="Reine (ex: 4-5 mm)"
+              value={levelDraft.sizeQueen}
+              onChange={(e) => updateLevelSize(levelKey, 'sizeQueen', e.target.value)}
+            />
+            <input
+              className="rounded border p-2"
+              placeholder="Mâle (ex: 2-3 mm)"
+              value={levelDraft.sizeMale}
+              onChange={(e) => updateLevelSize(levelKey, 'sizeMale', e.target.value)}
+            />
+          </div>
         )}
 
         <div className="mt-2 space-y-2">
@@ -380,11 +395,7 @@ export function TaxonsCrudPanel({
 
   async function saveDetailsModal() {
     if (!modalTaxon || !modalDraft) return
-    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft, {
-      worker: modalCasteSizes.worker || null,
-      queen: modalCasteSizes.queen || null,
-      male: modalCasteSizes.male || null,
-    })
+    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft)
     closeDetailsModal()
   }
 
@@ -496,15 +507,6 @@ export function TaxonsCrudPanel({
             </div>
 
             {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modalDraft[levelKey], modalTaxon))}
-
-            <div className="mb-4 rounded-lg border border-slate-200 p-3">
-              <p className="font-medium text-slate-800">Tailles par caste (valeurs utilisées par défaut)</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                <input className="rounded border p-2" placeholder="Ouvrière (ex: 2-3 mm)" value={modalCasteSizes.worker} onChange={(e) => updateCasteSize('worker', e.target.value)} />
-                <input className="rounded border p-2" placeholder="Reine (ex: 4-5 mm)" value={modalCasteSizes.queen} onChange={(e) => updateCasteSize('queen', e.target.value)} />
-                <input className="rounded border p-2" placeholder="Mâle (ex: 2-3 mm)" value={modalCasteSizes.male} onChange={(e) => updateCasteSize('male', e.target.value)} />
-              </div>
-            </div>
 
             <div className="mt-2 flex justify-end gap-2">
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>

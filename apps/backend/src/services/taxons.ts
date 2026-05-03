@@ -6,7 +6,9 @@ import { AppError } from '../lib/errors.js'
 
 const levelDetailSchema = z.object({
   description: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
+  sizeWorker: z.string().optional().nullable(),
+  sizeQueen: z.string().optional().nullable(),
+  sizeMale: z.string().optional().nullable(),
   criteria: z.array(z.string()).optional(),
 })
 
@@ -27,9 +29,6 @@ export const taxonSchema = z
         species: levelDetailSchema.optional(),
       })
       .optional(),
-    sizeWorker: z.string().optional().nullable(),
-    sizeQueen: z.string().optional().nullable(),
-    sizeMale: z.string().optional().nullable(),
   })
   .superRefine((value, context) => {
     const startMonth = value.swarmingStartMonth ?? null
@@ -64,9 +63,6 @@ function normalizeTaxonData(data: TaxonInput) {
     swarmingStartMonth: data.swarmingStartMonth ?? null,
     swarmingEndMonth: data.swarmingEndMonth ?? null,
     levelDetails: data.levelDetails,
-    sizeWorker: data.sizeWorker?.trim() || null,
-    sizeQueen: data.sizeQueen?.trim() || null,
-    sizeMale: data.sizeMale?.trim() || null,
   }
 }
 
@@ -82,9 +78,6 @@ function buildTaxonWriteData(data: TaxonInput): Prisma.TaxonUncheckedCreateInput
     species: normalized.species,
     swarmingStartMonth: normalized.swarmingStartMonth,
     swarmingEndMonth: normalized.swarmingEndMonth,
-    sizeWorker: normalized.sizeWorker,
-    sizeQueen: normalized.sizeQueen,
-    sizeMale: normalized.sizeMale,
   }
 }
 
@@ -92,7 +85,9 @@ function normalizeLevelDetail(detail?: z.infer<typeof levelDetailSchema>) {
   if (!detail) return null
   return {
     description: detail.description?.trim() || null,
-    size: detail.size?.trim() || null,
+    sizeWorker: detail.sizeWorker?.trim() || null,
+    sizeQueen: detail.sizeQueen?.trim() || null,
+    sizeMale: detail.sizeMale?.trim() || null,
     criteria: (detail.criteria ?? []).map((criterion) => criterion.trim()).filter(Boolean),
   }
 }
@@ -111,7 +106,9 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', valu
         level,
         value,
         description: normalizedDetail.description,
-        size: normalizedDetail.size,
+        sizeWorker: normalizedDetail.sizeWorker,
+        sizeQueen: normalizedDetail.sizeQueen,
+        sizeMale: normalizedDetail.sizeMale,
         criteria: {
           create: normalizedDetail.criteria.map((label, index) => ({ label, position: index })),
         },
@@ -124,7 +121,9 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', valu
     where: { id: existing.id },
     data: {
       description: normalizedDetail.description,
-      size: normalizedDetail.size,
+      sizeWorker: normalizedDetail.sizeWorker,
+      sizeQueen: normalizedDetail.sizeQueen,
+      sizeMale: normalizedDetail.sizeMale,
       criteria: {
         deleteMany: {},
         create: normalizedDetail.criteria.map((label, index) => ({ label, position: index })),
@@ -336,24 +335,30 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
       subfamily: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)
         ? {
             description: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.description ?? null,
-            size: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.size ?? null,
+            sizeWorker: null,
+            sizeQueen: null,
+            sizeMale: null,
             criteria: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.criteria ?? [],
           }
-        : { description: null, size: null, criteria: [] },
+        : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
       genus: profileByKey.get(`GENUS:${taxon.genus}`)
         ? {
             description: profileByKey.get(`GENUS:${taxon.genus}`)?.description ?? null,
-            size: profileByKey.get(`GENUS:${taxon.genus}`)?.size ?? null,
+            sizeWorker: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeWorker ?? null,
+            sizeQueen: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeQueen ?? null,
+            sizeMale: profileByKey.get(`GENUS:${taxon.genus}`)?.sizeMale ?? null,
             criteria: profileByKey.get(`GENUS:${taxon.genus}`)?.criteria ?? [],
           }
-        : { description: null, size: null, criteria: [] },
+        : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
       species: profileByKey.get(`SPECIES:${taxon.species}`)
         ? {
             description: profileByKey.get(`SPECIES:${taxon.species}`)?.description ?? null,
-            size: profileByKey.get(`SPECIES:${taxon.species}`)?.size ?? null,
+            sizeWorker: profileByKey.get(`SPECIES:${taxon.species}`)?.sizeWorker ?? null,
+            sizeQueen: profileByKey.get(`SPECIES:${taxon.species}`)?.sizeQueen ?? null,
+            sizeMale: profileByKey.get(`SPECIES:${taxon.species}`)?.sizeMale ?? null,
             criteria: profileByKey.get(`SPECIES:${taxon.species}`)?.criteria ?? [],
           }
-        : { description: null, size: null, criteria: [] },
+        : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
     },
   }))
 

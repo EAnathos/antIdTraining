@@ -66,19 +66,20 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
 
 async function resolveEntrySize(entry: { species?: string | null; genus?: string | null; subfamily: string; }) {
   // Try most specific profile first: SPECIES, then GENUS, then SUBFAMILY
+  // Return worker size since it's the most common caste
   if (entry.species) {
     const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SPECIES', value: entry.species } } })
-    if (p?.size) return p.size
+    if (p?.sizeWorker) return p.sizeWorker
   }
 
   if (entry.genus) {
     const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'GENUS', value: entry.genus } } })
-    if (p?.size) return p.size
+    if (p?.sizeWorker) return p.sizeWorker
   }
 
   if (entry.subfamily) {
     const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SUBFAMILY', value: entry.subfamily } } })
-    if (p?.size) return p.size
+    if (p?.sizeWorker) return p.sizeWorker
   }
 
   return null
