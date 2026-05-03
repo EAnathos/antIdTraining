@@ -17,6 +17,7 @@ export function AdminMobileMenu({
     taxons: 'Taxons',
     references: 'Références',
     entries: 'Entrées',
+    suggestions: 'Suggestions',
     stats: 'Statistiques',
     database: 'Base de données',
   }
@@ -25,6 +26,7 @@ export function AdminMobileMenu({
     { id: 'taxons', label: 'Taxons' },
     { id: 'references', label: 'Références' },
     { id: 'entries', label: 'Entrées' },
+    { id: 'suggestions', label: 'Suggestions' },
     { id: 'stats', label: 'Statistiques' },
     { id: 'database', label: 'Base de données' },
   ]

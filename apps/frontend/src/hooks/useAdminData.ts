@@ -39,9 +39,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
+  const [suggestions, setSuggestions] = useState<import('../types/models').Suggestion[]>([])
 
   const adminApi = createAdminApiClient(token, onUnauthorized)
 
@@ -119,6 +120,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setReferences(refRes.data)
     setEntries(entryRes.data)
     setGameStats(statsRes.data.levels)
+    try {
+      const { data: suggestionsData } = await adminApi.get<import('../types/models').Suggestion[]>('/suggestions')
+      setSuggestions(suggestionsData)
+    } catch {
+      setSuggestions([])
+    }
   }
 
   async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
@@ -185,18 +192,17 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     if (selectedEntryId) {
       const found = entries.find((x) => x.id === selectedEntryId)
       if (found) {
-          setEntryForm({
-            subfamily: found.subfamily,
-            genus: found.genus ?? '',
-            subgenus: found.subgenus ?? '',
-            species: found.species ?? '',
-            speciesGroup: found.speciesGroup ?? '',
-            size: found.size ?? '',
-            department: found.department,
-            observedAt: found.observedAt.slice(0, 10),
-            biotope: found.biotope,
-            photoCredit: found.photoCredit,
-          })
+        setEntryForm({
+          subfamily: found.subfamily,
+          genus: found.genus ?? '',
+          subgenus: found.subgenus ?? '',
+          species: found.species ?? '',
+          speciesGroup: found.speciesGroup ?? '',
+          department: found.department,
+          observedAt: found.observedAt.slice(0, 10),
+          biotope: found.biotope,
+          photoCredit: found.photoCredit,
+        })
       }
     }
   }, [selectedEntryId, entries])
@@ -393,7 +399,6 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('taxonGenus', entryForm.genus || '')
     formData.append('subgenus', entryForm.subgenus || '')
     formData.append('speciesGroup', entryForm.speciesGroup || '')
-    formData.append('size', entryForm.size || '')
     formData.append('department', entryForm.department)
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
@@ -404,7 +409,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await adminApi.post('/entries', formData)
-      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', size: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
       setEntryFiles(null)
       await loadAdminData()
       setMessage('Entrée créée.')
@@ -431,7 +436,6 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonGenus: entryForm.genus || '',
         subgenus: entryForm.subgenus || '',
         speciesGroup: entryForm.speciesGroup || '',
-        size: entryForm.size || '',
         department: entryForm.department,
         observedAt: entryForm.observedAt,
         biotope: entryForm.biotope,
@@ -533,6 +537,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }
   }
 
+  async function setSuggestionStatus(id: string, status: 'PENDING' | 'PROCESSED' | 'REJECTED') {
+    await runAdminAction(async () => {
+      await adminApi.put(`/suggestions/${id}`, { status })
+    }, 'Suggestion mise à jour.', 'Impossible de mettre à jour la suggestion.')
+  }
+
   return {
     message,
     setMessage,
@@ -575,6 +585,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     createEntry,
     updateEntry,
     deleteEntry,
+    suggestions,
+    setSuggestionStatus,
     exportDatabaseSnapshot,
     importDatabaseSnapshot,
     cleanupUploads,

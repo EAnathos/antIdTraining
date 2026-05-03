@@ -22,7 +22,6 @@ const entrySchema = z.object({
   taxonGenus: z.string().optional().nullable(),
   subgenus: z.string().optional().nullable(),
   speciesGroup: z.string().optional().nullable(),
-  size: z.string().optional().nullable(),
   department: z.string().min(1),
   observedAt: z.coerce.date(),
   biotope: z.string().min(1),
@@ -144,7 +143,6 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
       photoCredit: parsed.data.photoCredit,
       subgenus: parsed.data.subgenus ?? undefined,
       speciesGroup: parsed.data.speciesGroup ?? undefined,
-      size: parsed.data.size ?? undefined,
     }
 
     const created = await prisma.observationEntry.create({
@@ -186,7 +184,6 @@ entriesRouter.put('/:id', async (req, res) => {
     photoCredit: parsed.data.photoCredit,
     subgenus: parsed.data.subgenus ?? undefined,
     speciesGroup: parsed.data.speciesGroup ?? undefined,
-    size: parsed.data.size ?? undefined,
   }
 
   const updated = await prisma.observationEntry.update({

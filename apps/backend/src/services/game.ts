@@ -64,6 +64,26 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
   return uniqueShuffled([answer, ...wrongChoices])
 }
 
+async function resolveEntrySize(entry: { species?: string | null; genus?: string | null; subfamily: string; }) {
+  // Try most specific profile first: SPECIES, then GENUS, then SUBFAMILY
+  if (entry.species) {
+    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SPECIES', value: entry.species } } })
+    if (p?.size) return p.size
+  }
+
+  if (entry.genus) {
+    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'GENUS', value: entry.genus } } })
+    if (p?.size) return p.size
+  }
+
+  if (entry.subfamily) {
+    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SUBFAMILY', value: entry.subfamily } } })
+    if (p?.size) return p.size
+  }
+
+  return null
+}
+
 export async function getGameQuestion(rawLevel: unknown) {
   const level = normalizeGameLevel(rawLevel)
 
@@ -112,7 +132,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       images,
       prompt: 'Identifier la sous-famille',
       details: {
-        size: entry.size,
+        size: await resolveEntrySize(entry),
         department: entry.department,
         observedAt: entry.observedAt.toISOString(),
         biotope: entry.biotope,
@@ -165,7 +185,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       images,
       prompt: 'Identifier la sous-famille puis le genre',
       details: {
-        size: entry.size,
+        size: await resolveEntrySize(entry),
         department: entry.department,
         observedAt: entry.observedAt.toISOString(),
         biotope: entry.biotope,
@@ -228,7 +248,7 @@ export async function getGameQuestion(rawLevel: unknown) {
     images,
     prompt: "Identifier la sous-famille, le genre et l'espèce",
     details: {
-      size: entry.size,
+      size: await resolveEntrySize(entry),
       department: entry.department,
       observedAt: entry.observedAt.toISOString(),
       biotope: entry.biotope,
@@ -345,13 +365,18 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     },
   }
 
+  const identificationSize = await resolveEntrySize({ species: resolvedAnswer.species ?? null, genus: resolvedAnswer.genus ?? null, subfamily: resolvedAnswer.subfamily ?? '' })
+
   const subfamilyOk = selected.subfamily === resolvedAnswer.subfamily
   if (!subfamilyOk) {
     await persistFinalResult(false)
     return {
       correct: false,
       reason: 'Sous-famille incorrecte',
-      identification,
+      identification: {
+        ...identification,
+        size: identificationSize ?? null,
+      },
     }
   }
 
@@ -359,7 +384,10 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     await persistFinalResult(true)
     return {
       correct: true,
-      identification,
+      identification: {
+        ...identification,
+        size: identificationSize ?? null,
+      },
     }
   }
 
@@ -369,7 +397,10 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     return {
       correct: false,
       reason: 'Genre incorrect',
-      identification,
+      identification: {
+        ...identification,
+        size: identificationSize ?? null,
+      },
     }
   }
 
@@ -377,7 +408,10 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     await persistFinalResult(true)
     return {
       correct: true,
-      identification,
+      identification: {
+        ...identification,
+        size: identificationSize ?? null,
+      },
     }
   }
 
@@ -387,13 +421,19 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     return {
       correct: false,
       reason: 'Espèce incorrecte',
-      identification,
+      identification: {
+        ...identification,
+        size: identificationSize ?? null,
+      },
     }
   }
 
   await persistFinalResult(true)
   return {
     correct: true,
-    identification,
+    identification: {
+      ...identification,
+      size: identificationSize ?? null,
+    },
   }
 }

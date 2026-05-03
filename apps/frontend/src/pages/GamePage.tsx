@@ -17,6 +17,7 @@ type GameValidation = {
       description: string | null
       criteria: string[]
     }
+    size?: string | null
   }
 }
 
@@ -444,6 +445,12 @@ export function GamePage() {
                 {result.identification?.subfamily.value && (
                   <p>
                     <span className="font-semibold">Sous-famille attendue :</span> {result.identification.subfamily.value}
+                  </p>
+                )}
+
+                {result.identification?.size && (
+                  <p>
+                    <span className="font-semibold">Taille :</span> {result.identification.size}
                   </p>
                 )}
 

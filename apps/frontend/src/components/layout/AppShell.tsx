@@ -22,6 +22,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showSuggestionForm, setShowSuggestionForm] = useState(false)
+  const [suggestionName, setSuggestionName] = useState('')
+  const [suggestionEmail, setSuggestionEmail] = useState('')
+  const [suggestionMessage, setSuggestionMessage] = useState('')
+  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false)
+
+  async function submitSuggestion(e?: React.FormEvent) {
+    e?.preventDefault()
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL ?? '/api'}/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: suggestionName || null, email: suggestionEmail || null, message: suggestionMessage }),
+        credentials: 'include',
+      })
+      setSuggestionSubmitted(true)
+      setShowSuggestionForm(false)
+      setSuggestionName('')
+      setSuggestionEmail('')
+      setSuggestionMessage('')
+    } catch {
+      // ignore errors silently
+    }
+  }
 
   useEffect(() => {
     function handleOnline() {
@@ -173,13 +197,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {children}
       <footer className="mt-8 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-600 shadow-sm">
-        <p>
-          Site conçu et maintenu par{' '}
-          <a className="font-medium text-indigo-700 underline decoration-indigo-300 underline-offset-4" href="https://anathos.me/" target="_blank" rel="noreferrer">
-            Anathos
-          </a>
-          .
-        </p>
+        <div className="flex flex-col items-center gap-2">
+          <p>
+            Site conçu et maintenu par{' '}
+            <a className="font-medium text-indigo-700 underline decoration-indigo-300 underline-offset-4" href="https://anathos.me/" target="_blank" rel="noreferrer">
+              Anathos
+            </a>
+            .
+          </p>
+
+          {!suggestionSubmitted && (
+            <div className="mt-2">
+              {!showSuggestionForm ? (
+                <button className="rounded-lg bg-indigo-600 px-3 py-2 text-white" onClick={() => setShowSuggestionForm(true)}>Faire une suggestion</button>
+              ) : (
+                <form className="mt-2 space-y-2" onSubmit={submitSuggestion}>
+                  <input className="w-full rounded border p-2" placeholder="Nom (optionnel)" value={suggestionName} onChange={(e) => setSuggestionName(e.target.value)} />
+                  <input className="w-full rounded border p-2" placeholder="Email (optionnel)" value={suggestionEmail} onChange={(e) => setSuggestionEmail(e.target.value)} />
+                  <textarea className="w-full rounded border p-2" placeholder="Votre suggestion" value={suggestionMessage} onChange={(e) => setSuggestionMessage(e.target.value)} required />
+                  <div className="flex justify-center gap-2">
+                    <button className="rounded-lg bg-indigo-600 px-3 py-2 text-white" type="submit">Envoyer</button>
+                    <button type="button" className="rounded-lg bg-slate-100 px-3 py-2" onClick={() => setShowSuggestionForm(false)}>Annuler</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {suggestionSubmitted && (
+            <p className="mt-2 text-sm text-emerald-700">Merci pour votre suggestion.</p>
+          )}
+        </div>
       </footer>
     </div>
   )

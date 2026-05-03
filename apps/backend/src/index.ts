@@ -119,6 +119,11 @@ app.use('/api/admin/references', requireAuth, requireAdmin, adminReferencesRoute
 app.use('/api/admin/stats', requireAuth, requireAdmin, statsRouter)
 app.use('/api/admin/stats-tools', requireAuth, requireAdmin, adminStatsToolsRouter)
 app.use('/api/admin/database', requireAuth, requireAdmin, databaseRouter)
+import { suggestionsRouter } from './routes/suggestions.js'
+import { adminSuggestionsRouter } from './routes/adminSuggestions.js'
+
+app.use('/api/suggestions', suggestionsRouter)
+app.use('/api/admin/suggestions', requireAuth, requireAdmin, adminSuggestionsRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

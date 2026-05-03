@@ -16,6 +16,12 @@ enum ReferenceType {
   MYRMECOLOGY
 }
 
+enum SuggestionStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+}
+
 enum TaxonLevel {
   SUBFAMILY
   GENUS
@@ -153,4 +159,14 @@ model Reference {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   taxons      Taxon[]
+}
+
+model Suggestion {
+  id         String           @id @default(cuid())
+  name       String?
+  email      String?
+  message    String
+  status     SuggestionStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  processedAt DateTime?
 }

@@ -8,12 +8,14 @@ import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
 import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
 import { StatsPanel } from '../components/admin/StatsPanel'
+import { SuggestionsPanel } from '../components/admin/SuggestionsPanel'
 import { api } from '../lib/api'
 
 const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'taxons', label: 'Taxons' },
   { id: 'references', label: 'Références' },
   { id: 'entries', label: 'Entrées' },
+    { id: 'suggestions', label: 'Suggestions' },
   { id: 'stats', label: 'Statistiques' },
   { id: 'database', label: 'Base de données' },
 ]
@@ -119,6 +121,13 @@ export function AdminDashboardPage() {
             createEntry={data.createEntry}
             updateEntry={data.updateEntry}
             deleteEntry={data.deleteEntry}
+          />
+        )}
+
+        {section === 'suggestions' && (
+          <SuggestionsPanel
+            suggestions={data.suggestions}
+            setSuggestionStatus={data.setSuggestionStatus}
           />
         )}
 

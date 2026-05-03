@@ -159,7 +159,6 @@ type EntryForm = {
   subgenus: string
   species: string
   speciesGroup: string
-  size: string
   department: string
   observedAt: string
   biotope: string
@@ -172,7 +171,6 @@ const emptyEntryForm: EntryForm = {
   subgenus: '',
   species: '',
   speciesGroup: '',
-  size: '',
   department: '',
   observedAt: '',
   biotope: '',
@@ -384,7 +382,6 @@ export function EntriesCrudPanel({
       subgenus: entry.subgenus ?? '',
       species: entry.species ?? '',
       speciesGroup: entry.speciesGroup ?? '',
-      size: entry.size ?? '',
       department: entry.department,
       observedAt: entry.observedAt.slice(0, 10),
       biotope: entry.biotope,
@@ -454,12 +451,7 @@ export function EntriesCrudPanel({
               <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
             ))}
           </select>
-          <input
-            className="rounded border p-2"
-            placeholder="Taille (ex: 2-3 mm)"
-            value={entryForm.size}
-            onChange={(e) => patchEntryForm({ size: e.target.value })}
-          />
+          
           <input
             className="rounded border p-2"
             list="department-suggestions"
