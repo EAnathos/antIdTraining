@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
-import type { Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
+import type { AdminHistoryItem, Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
@@ -17,6 +17,7 @@ type SwarmingPeriodDraft = {
 
 const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_ENTRY_IMAGES = 3
+const HISTORY_LIMIT = 12
 
 export function useAdminData(token: string | null, onUnauthorized?: () => void) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
@@ -26,6 +27,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
+  const [history, setHistory] = useState<AdminHistoryItem[]>([])
 
   const [taxonForm, setTaxonForm] = useState<{
     subfamily: string
@@ -54,6 +56,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [suggestions, setSuggestions] = useState<import('../types/models').Suggestion[]>([])
 
   const adminApi = createAdminApiClient(token, onUnauthorized)
+
 
   function isUnauthorizedError(error: unknown) {
     return typeof error === 'object' && error !== null && 'status' in error && (error as { status?: number }).status === 401
@@ -129,6 +132,14 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setReferences(refRes.data)
     setEntries(entryRes.data)
     setGameStats(statsRes.data.levels)
+
+    try {
+      const { data: historyData } = await adminApi.get<AdminHistoryItem[]>('/history')
+      setHistory(Array.isArray(historyData) ? historyData.slice(0, HISTORY_LIMIT) : [])
+    } catch {
+      setHistory([])
+    }
+
     try {
       const { data: suggestionsData } = await adminApi.get<import('../types/models').Suggestion[]>('/suggestions')
       setSuggestions(suggestionsData)
@@ -145,10 +156,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage(successMessage)
     } catch (error) {
       if (isUnauthorizedError(error)) {
-        setMessage(resolveAdminErrorMessage(error, failureMessage))
+        const resolvedMessage = resolveAdminErrorMessage(error, failureMessage)
+        setMessage(resolvedMessage)
         return
       }
-      setMessage(resolveAdminErrorMessage(error, failureMessage))
+      const resolvedMessage = resolveAdminErrorMessage(error, failureMessage)
+      setMessage(resolvedMessage)
     }
   }
 
@@ -369,7 +382,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      setMessage(resolveAdminErrorMessage(error, 'Impossible de modifier la référence.'))
+      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de modifier la référence.')
+      setMessage(resolvedMessage)
       return false
     }
   }
@@ -396,7 +410,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      setMessage(resolveAdminErrorMessage(error, 'Impossible de modifier la référence.'))
+      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de modifier la référence.')
+      setMessage(resolvedMessage)
       return false
     }
   }
@@ -446,7 +461,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         return
       }
 
-      setMessage(resolveAdminErrorMessage(error, 'Impossible de créer l’entrée.'))
+      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de créer l’entrée.')
+      setMessage(resolvedMessage)
     }
   }
 
@@ -515,8 +531,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       link.remove()
       URL.revokeObjectURL(url)
       setMessage('Export de la base et des images terminé.')
+      await loadAdminData()
     } catch (error) {
-      setMessage(resolveAdminErrorMessage(error, 'Impossible d’exporter la base.'))
+      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible d’exporter la base.')
+      setMessage(resolvedMessage)
     }
   }
 
@@ -533,7 +551,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         const restoredCount = typeof data?.imagesRestored === 'number' ? data.imagesRestored : 0
         setMessage(`Base et images importées (${restoredCount} image${restoredCount > 1 ? 's' : ''} restaurée${restoredCount > 1 ? 's' : ''}).`)
       } catch (error) {
-        setMessage(resolveAdminErrorMessage(error, 'Impossible d’importer l’archive.'))
+        const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible d’importer l’archive.')
+        setMessage(resolvedMessage)
       }
       return
     }
@@ -559,8 +578,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       const deletedLabel = data.deletedFiles > 1 ? 'fichiers supprimés' : 'fichier supprimé'
       const generatedLabel = data.generatedVariants > 1 ? 'variantes générées' : 'variante générée'
       setMessage(`Nettoyage terminé (${data.deletedFiles} ${deletedLabel}, ${data.generatedVariants} ${generatedLabel} pour ${data.referencedImages} image${data.referencedImages > 1 ? 's' : ''} référencée${data.referencedImages > 1 ? 's' : ''}).`)
+      await loadAdminData()
     } catch (error) {
-      setMessage(resolveAdminErrorMessage(error, 'Impossible de nettoyer les images.'))
+      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de nettoyer les images.')
+      setMessage(resolvedMessage)
     }
   }
 
@@ -614,6 +635,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     deleteEntry,
     suggestions,
     setSuggestionStatus,
+    history,
     exportDatabaseSnapshot,
     importDatabaseSnapshot,
     cleanupUploads,

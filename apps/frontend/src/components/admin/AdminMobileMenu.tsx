@@ -20,6 +20,7 @@ export function AdminMobileMenu({
     suggestions: 'Suggestions',
     stats: 'Statistiques',
     database: 'Base de données',
+    history: 'Historique',
   }
 
   const sectionOptions: { id: AdminSection; label: string }[] = [
@@ -29,6 +30,7 @@ export function AdminMobileMenu({
     { id: 'suggestions', label: 'Suggestions' },
     { id: 'stats', label: 'Statistiques' },
     { id: 'database', label: 'Base de données' },
+    { id: 'history', label: 'Historique' },
   ]
 
   return (

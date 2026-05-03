@@ -27,8 +27,7 @@ Services disponibles:
 - PostgreSQL: localhost:5432 (db: `antidtraining`, user: `postgres`, pass: `postgres`)
 
 Variables backend importantes:
-- `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` sont obligatoires
-- `CORS_ORIGINS` permet de limiter les origines autorisées
+- `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` sont obligatoires
 
 À l'initialisation du conteneur backend:
 - `prisma generate`
@@ -67,10 +66,10 @@ Backend local: http://localhost:4000
 ## Admin initial
 
 En local (modifiable via variables d'environnement):
-- Email: `admin@antid.local`
+- Username: `admin`
 - Mot de passe: `admin123`
 
-En production, `ADMIN_EMAIL` et `ADMIN_PASSWORD` doivent être fournis explicitement pour le seed.
+En production, `ADMIN_USERNAME` et `ADMIN_PASSWORD` doivent être fournis explicitement pour le seed.
 
 ## Convention de messages API
 

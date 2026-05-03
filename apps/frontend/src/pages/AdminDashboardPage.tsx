@@ -9,6 +9,7 @@ import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
 import { StatsPanel } from '../components/admin/StatsPanel'
 import { SuggestionsPanel } from '../components/admin/SuggestionsPanel'
+import { AdminHistoryPanel } from '../components/admin/AdminHistoryPanel'
 import { api } from '../lib/api'
 
 const adminSections: { id: AdminSection; label: string }[] = [
@@ -18,6 +19,7 @@ const adminSections: { id: AdminSection; label: string }[] = [
     { id: 'suggestions', label: 'Suggestions' },
   { id: 'stats', label: 'Statistiques' },
   { id: 'database', label: 'Base de données' },
+    { id: 'history', label: 'Historique' },
 ]
 
 export function AdminDashboardPage() {
@@ -146,6 +148,8 @@ export function AdminDashboardPage() {
             cleanupUploads={data.cleanupUploads}
           />
         )}
+
+        {section === 'history' && <AdminHistoryPanel history={data.history} />}
       </div>
     </section>
   )

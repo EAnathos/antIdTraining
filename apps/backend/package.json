@@ -10,7 +10,10 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "user:create": "tsx scripts/create-user.ts",
+    "user:delete": "tsx scripts/delete-user.ts",
+    "user:list": "tsx scripts/list-users.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

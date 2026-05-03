@@ -65,7 +65,7 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
         <p className="text-sm font-medium text-amber-900">Import (remplacement complet)</p>
         <p className="mt-1 text-sm text-amber-800">
-          Cette action supprime les données actuelles et restaure le contenu du fichier sélectionné (ZIP recommandé, JSON compatible).
+          Cette action supprime les données actuelles et restaure le contenu du fichier sélectionné (format ZIP).
         </p>
 
         <input

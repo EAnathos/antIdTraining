@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { getAdminCookieOptions, optionalAuth } from '../middleware/auth.js'
 import { AppError } from '../lib/errors.js'
 import { loginAdmin } from '../services/auth.js'
+import { prisma } from '../prisma.js'
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(2),
   password: z.string().min(3),
 })
 
@@ -18,7 +19,7 @@ authRouter.post('/login', async (req, res) => {
       throw new AppError(400, 'Requête invalide.')
     }
 
-    const auth = await loginAdmin(parsed.data.email, parsed.data.password)
+    const auth = await loginAdmin(parsed.data.username, parsed.data.password)
 
     res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
@@ -39,5 +40,13 @@ authRouter.get('/me', optionalAuth, (req, res) => {
     throw new AppError(401, 'Non autorisé.')
   }
 
-  return res.json({ userId: req.user.userId, role: req.user.role })
+  return prisma.user
+    .findUnique({ where: { id: req.user.userId }, select: { username: true } })
+    .then((user) => {
+      return res.json({
+        userId: req.user!.userId,
+        role: req.user!.role,
+        username: user?.username ?? null,
+      })
+    })
 })

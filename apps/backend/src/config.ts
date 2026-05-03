@@ -14,6 +14,4 @@ function requiredEnv(name: string) {
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: requiredEnv('JWT_SECRET'),
-  adminEmail: requiredEnv('ADMIN_EMAIL'),
-  adminPassword: requiredEnv('ADMIN_PASSWORD'),
 }

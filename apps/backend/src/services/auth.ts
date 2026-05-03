@@ -4,8 +4,8 @@ import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
 
-export async function loginAdmin(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } })
+export async function loginAdmin(username: string, password: string) {
+  const user = await prisma.user.findUnique({ where: { username } })
   if (!user) {
     throw new AppError(401, 'Identifiants invalides.')
   }

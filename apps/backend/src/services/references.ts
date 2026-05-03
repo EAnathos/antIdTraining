@@ -109,5 +109,5 @@ export async function updateReference(id: string, input: ReferenceInput) {
 }
 
 export async function deleteReference(id: string) {
-  await prisma.reference.delete({ where: { id } })
+  return prisma.reference.delete({ where: { id } })
 }

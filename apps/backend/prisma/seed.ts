@@ -16,19 +16,19 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   const isProduction = process.env.NODE_ENV === 'production'
-  const email = process.env.ADMIN_EMAIL ?? (isProduction ? undefined : 'admin@antid.local')
+  const username = process.env.ADMIN_USERNAME ?? (isProduction ? undefined : 'admin')
   const password = process.env.ADMIN_PASSWORD ?? (isProduction ? undefined : 'admin123')
 
-  if (!email || !password) {
-    throw new Error('ADMIN_EMAIL et ADMIN_PASSWORD sont requis pour le seed en production')
+  if (!username || !password) {
+    throw new Error('ADMIN_USERNAME et ADMIN_PASSWORD sont requis pour le seed en production')
   }
 
   const hash = await bcrypt.hash(password, 10)
 
   await prisma.user.upsert({
-    where: { email },
+    where: { username },
     update: { passwordHash: hash, role: UserRole.ADMIN },
-    create: { email, passwordHash: hash, role: UserRole.ADMIN },
+    create: { username, passwordHash: hash, role: UserRole.ADMIN },
   })
 }
 

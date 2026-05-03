@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
 import { createTaxon, deleteTaxon, getSpeciesMetadata, listGenera, listSpecies, listSubfamilies, listTaxons, listSubgenera, listSpeciesGroups, taxonSchema, updateTaxon } from '../services/taxons.js'
+import { recordAdminAudit } from '../lib/adminAudit.js'
 
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
@@ -51,6 +52,14 @@ adminTaxonsRouter.post('/', async (req, res) => {
   }
 
   const created = await createTaxon(parsed.data)
+  const taxonLabel = [created.subfamily, created.genus, created.species].filter(Boolean).join(' · ')
+  await recordAdminAudit(req, {
+    action: 'Taxon créé',
+    detail: taxonLabel,
+    tone: 'SUCCESS',
+    entityType: 'taxon',
+    entityId: created.id,
+  })
 
   return res.status(201).json(created)
 })
@@ -62,11 +71,32 @@ adminTaxonsRouter.put('/:id', async (req, res) => {
   }
 
   const updated = await updateTaxon(req.params.id, parsed.data)
+  const taxonLabel = [updated.subfamily, updated.genus, updated.species].filter(Boolean).join(' · ')
+  await recordAdminAudit(req, {
+    action: 'Taxon modifié',
+    detail: taxonLabel,
+    tone: 'INFO',
+    entityType: 'taxon',
+    entityId: updated.id,
+  })
 
   return res.json(updated)
 })
 
 adminTaxonsRouter.delete('/:id', async (req, res) => {
-  await deleteTaxon(req.params.id)
+  const deletedTaxon = await deleteTaxon(req.params.id)
+
+  const taxonLabel = [deletedTaxon.subfamily, deletedTaxon.genus, deletedTaxon.species]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(' · ')
+  await recordAdminAudit(req, {
+    action: 'Taxon supprimé',
+    detail: taxonLabel,
+    tone: 'ERROR',
+    entityType: 'taxon',
+    entityId: deletedTaxon.id,
+  })
+
   return res.status(204).send()
 })

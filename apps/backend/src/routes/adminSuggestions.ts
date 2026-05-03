@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
+import { recordAdminAudit } from '../lib/adminAudit.js'
 
 export const adminSuggestionsRouter = Router()
 
@@ -31,5 +32,12 @@ adminSuggestionsRouter.put('/:id', async (req, res) => {
   }
 
   const updated = await prisma.suggestion.update({ where: { id: req.params.id }, data })
+  await recordAdminAudit(req, {
+    action: 'Suggestion mise à jour',
+    detail: `Suggestion ${updated.id} → ${updated.status}`,
+    tone: 'INFO',
+    entityType: 'suggestion',
+    entityId: updated.id,
+  })
   return res.json(updated)
 })

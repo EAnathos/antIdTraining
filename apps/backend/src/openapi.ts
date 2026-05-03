@@ -99,13 +99,13 @@ export const openApiDocument = {
       },
       LoginInput: {
         type: 'object',
-        required: ['email', 'password'],
+        required: ['username', 'password'],
         properties: {
-          email: { type: 'string', format: 'email' },
+          username: { type: 'string' },
           password: { type: 'string' },
         },
         example: {
-          email: 'admin@antid.local',
+          username: 'admin',
           password: 'admin123',
         },
       },
@@ -202,7 +202,7 @@ export const openApiDocument = {
             'application/json': {
               schema: { $ref: '#/components/schemas/LoginInput' },
               example: {
-                email: 'admin@antid.local',
+                username: 'admin',
                 password: 'admin123',
               },
             },

@@ -104,6 +104,13 @@ export type GameLevelStats = {
 export type GameStatsPeriod = '7d' | '30d' | 'all'
 
 export type CrudMode = 'create' | 'update' | 'delete'
+export type AdminHistoryItem = {
+  id: string
+  at: string
+  title: string
+  detail: string
+  tone: 'success' | 'error' | 'info'
+}
 export type Suggestion = {
   id: string
   name?: string | null
@@ -114,4 +121,4 @@ export type Suggestion = {
   processedAt?: string | null
 }
 
-export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions'
+export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'history'

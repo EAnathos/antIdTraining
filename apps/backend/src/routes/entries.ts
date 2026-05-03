@@ -11,6 +11,7 @@ import { upload } from '../middleware/upload.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
+import { recordAdminAudit } from '../lib/adminAudit.js'
 
 ensureUploadsDir()
 
@@ -159,6 +160,14 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
       include: { images: true },
     })
 
+    await recordAdminAudit(req, {
+      action: 'Entrée créée',
+      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department})`,
+      tone: 'SUCCESS',
+      entityType: 'entry',
+      entityId: created.id,
+    })
+
     return res.status(201).json(created)
   } catch (error) {
     for (const filePath of savedFilePaths) {
@@ -198,6 +207,14 @@ entriesRouter.put('/:id', async (req, res) => {
     include: { images: true },
   })
 
+  await recordAdminAudit(req, {
+    action: 'Entrée modifiée',
+    detail: `${updated.subfamily} · ${updated.genus ?? '-'} · ${updated.species ?? '-'} (${updated.department})`,
+    tone: 'INFO',
+    entityType: 'entry',
+    entityId: updated.id,
+  })
+
   return res.json(updated)
 })
 
@@ -222,6 +239,14 @@ entriesRouter.delete('/:id', async (req, res) => {
   for (const image of entry.images) {
     deleteUploadFilesForImageUrl(image.imageUrl)
   }
+
+  await recordAdminAudit(req, {
+    action: 'Entrée supprimée',
+    detail: `Entrée ${req.params.id}`,
+    tone: 'ERROR',
+    entityType: 'entry',
+    entityId: req.params.id,
+  })
 
   return res.status(204).send()
 })

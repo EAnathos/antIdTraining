@@ -15,6 +15,7 @@ import { statsRouter } from './routes/stats.js'
 import { adminTaxonsRouter, publicTaxonsRouter } from './routes/taxons.js'
 import { requireAdmin, requireAuth } from './middleware/auth.js'
 import { errorHandler, notFoundHandler } from './middleware/error.js'
+import { adminHistoryRouter } from './routes/adminHistory.js'
 
 function parseCorsOrigins(value: string | undefined) {
   const defaults = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080']
@@ -119,6 +120,7 @@ app.use('/api/admin/references', requireAuth, requireAdmin, adminReferencesRoute
 app.use('/api/admin/stats', requireAuth, requireAdmin, statsRouter)
 app.use('/api/admin/stats-tools', requireAuth, requireAdmin, adminStatsToolsRouter)
 app.use('/api/admin/database', requireAuth, requireAdmin, databaseRouter)
+app.use('/api/admin/history', requireAuth, requireAdmin, adminHistoryRouter)
 import { suggestionsRouter } from './routes/suggestions.js'
 import { adminSuggestionsRouter } from './routes/adminSuggestions.js'
 

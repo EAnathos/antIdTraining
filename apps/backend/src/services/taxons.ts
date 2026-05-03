@@ -416,6 +416,7 @@ export async function updateTaxon(id: string, input: TaxonInput) {
 }
 
 export async function deleteTaxon(id: string) {
-  await prisma.taxon.delete({ where: { id } })
+  const deleted = await prisma.taxon.delete({ where: { id } })
   invalidateTaxonCatalogCache()
+  return deleted
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
 import { createReference, deleteReference, listReferences, referenceSchema, updateReference } from '../services/references.js'
+import { recordAdminAudit } from '../lib/adminAudit.js'
 
 export const publicReferencesRouter = Router()
 export const adminReferencesRouter = Router()
@@ -17,6 +18,13 @@ adminReferencesRouter.post('/', async (req, res) => {
   }
 
   const created = await createReference(parsed.data)
+  await recordAdminAudit(req, {
+    action: 'Référence créée',
+    detail: created.title,
+    tone: 'SUCCESS',
+    entityType: 'reference',
+    entityId: created.id,
+  })
   return res.status(201).json(created)
 })
 
@@ -27,10 +35,24 @@ adminReferencesRouter.put('/:id', async (req, res) => {
   }
 
   const updated = await updateReference(req.params.id, parsed.data)
+  await recordAdminAudit(req, {
+    action: 'Référence modifiée',
+    detail: updated.title,
+    tone: 'INFO',
+    entityType: 'reference',
+    entityId: updated.id,
+  })
   return res.json(updated)
 })
 
 adminReferencesRouter.delete('/:id', async (req, res) => {
-  await deleteReference(req.params.id)
+  const deleted = await deleteReference(req.params.id)
+  await recordAdminAudit(req, {
+    action: 'Référence supprimée',
+    detail: deleted.title,
+    tone: 'ERROR',
+    entityType: 'reference',
+    entityId: deleted.id,
+  })
   return res.status(204).send()
 })
