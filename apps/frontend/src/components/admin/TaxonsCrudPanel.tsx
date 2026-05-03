@@ -41,7 +41,12 @@ type Props = {
   createTaxon: (event: FormEvent) => Promise<void>
   updateTaxon: (event: FormEvent) => Promise<void>
   deleteTaxon: (id: string) => Promise<void>
-  saveTaxonLevelDetails: (taxonId: string, levelDetails: TaxonDetailsDraft, swarmingPeriod: SwarmingPeriodDraft) => Promise<void>
+  saveTaxonLevelDetails: (
+    taxonId: string,
+    levelDetails: TaxonDetailsDraft,
+    swarmingPeriod: SwarmingPeriodDraft,
+    sizes: { worker?: string | null; queen?: string | null; male?: string | null },
+  ) => Promise<void>
 }
 
 const monthOptions = [
@@ -74,6 +79,7 @@ export function TaxonsCrudPanel({
   const [query, setQuery] = useState('')
   const [modalTaxon, setModalTaxon] = useState<Taxon | null>(null)
   const [modalDraft, setModalDraft] = useState<TaxonDetailsDraft | null>(null)
+  const [modalCasteSizes, setModalCasteSizes] = useState<{ worker: string; queen: string; male: string }>({ worker: '', queen: '', male: '' })
   const [swarmingDraft, setSwarmingDraft] = useState<SwarmingPeriodDraft>({ swarmingStartMonth: null, swarmingEndMonth: null })
   const [isSelectingSwarmingRange, setIsSelectingSwarmingRange] = useState(false)
   const [selectionAnchorMonth, setSelectionAnchorMonth] = useState<number | null>(null)
@@ -138,6 +144,7 @@ export function TaxonsCrudPanel({
         criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
       },
     })
+    setModalCasteSizes({ worker: taxon.sizeWorker ?? '', queen: taxon.sizeQueen ?? '', male: taxon.sizeMale ?? '' })
   }
 
   function closeDetailsModal() {
@@ -237,6 +244,10 @@ export function TaxonsCrudPanel({
         size: value,
       },
     })
+  }
+
+  function updateCasteSize(key: 'worker' | 'queen' | 'male', value: string) {
+    setModalCasteSizes((current) => ({ ...current, [key]: value }))
   }
 
   function addCriterion(levelKey: keyof TaxonDetailsDraft) {
@@ -369,7 +380,11 @@ export function TaxonsCrudPanel({
 
   async function saveDetailsModal() {
     if (!modalTaxon || !modalDraft) return
-    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft)
+    await saveTaxonLevelDetails(modalTaxon.id, modalDraft, swarmingDraft, {
+      worker: modalCasteSizes.worker || null,
+      queen: modalCasteSizes.queen || null,
+      male: modalCasteSizes.male || null,
+    })
     closeDetailsModal()
   }
 
@@ -481,6 +496,15 @@ export function TaxonsCrudPanel({
             </div>
 
             {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modalDraft[levelKey], modalTaxon))}
+
+            <div className="mb-4 rounded-lg border border-slate-200 p-3">
+              <p className="font-medium text-slate-800">Tailles par caste (valeurs utilisées par défaut)</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <input className="rounded border p-2" placeholder="Ouvrière (ex: 2-3 mm)" value={modalCasteSizes.worker} onChange={(e) => updateCasteSize('worker', e.target.value)} />
+                <input className="rounded border p-2" placeholder="Reine (ex: 4-5 mm)" value={modalCasteSizes.queen} onChange={(e) => updateCasteSize('queen', e.target.value)} />
+                <input className="rounded border p-2" placeholder="Mâle (ex: 2-3 mm)" value={modalCasteSizes.male} onChange={(e) => updateCasteSize('male', e.target.value)} />
+              </div>
+            </div>
 
             <div className="mt-2 flex justify-end gap-2">
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>

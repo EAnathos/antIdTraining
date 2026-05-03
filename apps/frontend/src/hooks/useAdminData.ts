@@ -244,7 +244,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }, 'Taxon supprimé.', 'Impossible de supprimer le taxon.')
   }
 
-  async function saveTaxonLevelDetails(taxonId: string, levelDetails: LevelDetailsDraft, swarmingPeriod: SwarmingPeriodDraft) {
+  async function saveTaxonLevelDetails(
+    taxonId: string,
+    levelDetails: LevelDetailsDraft,
+    swarmingPeriod: SwarmingPeriodDraft,
+    sizes: { worker?: string | null; queen?: string | null; male?: string | null } = {},
+  ) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
 
@@ -258,6 +263,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: found.species,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
+        sizeWorker: sizes.worker?.trim() || null,
+        sizeQueen: sizes.queen?.trim() || null,
+        sizeMale: sizes.male?.trim() || null,
         levelDetails: {
           subfamily: {
             description: levelDetails.subfamily.description.trim() || null,
@@ -411,7 +419,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await adminApi.post('/entries', formData)
-      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
       setEntryFiles(null)
       await loadAdminData()
       setMessage('Entrée créée.')
