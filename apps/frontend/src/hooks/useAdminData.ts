@@ -39,7 +39,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '' })
+  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
   const [suggestions, setSuggestions] = useState<import('../types/models').Suggestion[]>([])
@@ -202,6 +202,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           observedAt: found.observedAt.slice(0, 10),
           biotope: found.biotope,
           photoCredit: found.photoCredit,
+          caste: (found as any).caste ?? '',
         })
       }
     }
@@ -403,6 +404,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
     formData.append('photoCredit', entryForm.photoCredit)
+    formData.append('caste', (entryForm as any).caste || '')
     if (entryFiles) {
       Array.from(entryFiles).forEach((file) => formData.append('images', file))
     }
@@ -436,6 +438,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonGenus: entryForm.genus || '',
         subgenus: entryForm.subgenus || '',
         speciesGroup: entryForm.speciesGroup || '',
+        caste: (entryForm as any).caste || '',
         department: entryForm.department,
         observedAt: entryForm.observedAt,
         biotope: entryForm.biotope,

@@ -28,6 +28,12 @@ enum TaxonLevel {
   SPECIES
 }
 
+enum Caste {
+  WORKER
+  QUEEN
+  MALE
+}
+
 enum GameDifficulty {
   EASY
   MEDIUM
@@ -53,6 +59,9 @@ model Taxon {
   species      String
   swarmingStartMonth Int?
   swarmingEndMonth   Int?
+  sizeWorker   String?
+  sizeQueen    String?
+  sizeMale     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -105,6 +114,7 @@ model ObservationEntry {
   species      String?
   speciesGroup String?
   size         String?
+  caste        Caste?
   department   String
   observedAt   DateTime
   biotope      String

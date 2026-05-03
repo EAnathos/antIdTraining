@@ -69,6 +69,7 @@ export type Entry = {
   observedAt: string
   biotope: string
   photoCredit: string
+  caste?: 'WORKER' | 'QUEEN' | 'MALE' | null
   images: { id: string; imageUrl: string }[]
 }
 

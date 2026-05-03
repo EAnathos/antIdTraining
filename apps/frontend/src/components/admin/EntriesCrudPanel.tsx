@@ -163,6 +163,7 @@ type EntryForm = {
   observedAt: string
   biotope: string
   photoCredit: string
+  caste: string
 }
 
 const emptyEntryForm: EntryForm = {
@@ -175,6 +176,7 @@ const emptyEntryForm: EntryForm = {
   observedAt: '',
   biotope: '',
   photoCredit: '',
+  caste: '',
 }
 
 type Props = {
@@ -386,6 +388,7 @@ export function EntriesCrudPanel({
       observedAt: entry.observedAt.slice(0, 10),
       biotope: entry.biotope,
       photoCredit: entry.photoCredit,
+      caste: (entry as any).caste ?? '',
     })
     setEntryFiles(null)
     formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -450,6 +453,16 @@ export function EntriesCrudPanel({
             {speciesOptions.map((value) => (
               <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
             ))}
+          </select>
+          <select
+            className="rounded border p-2"
+            value={entryForm.caste}
+            onChange={(e) => patchEntryForm({ caste: e.target.value })}
+          >
+            <option value="">Castes (optionnel)</option>
+            <option value="WORKER">Ouvrière</option>
+            <option value="QUEEN">Reine</option>
+            <option value="MALE">Mâle</option>
           </select>
           
           <input

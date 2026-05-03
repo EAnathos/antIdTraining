@@ -26,6 +26,8 @@ const entrySchema = z.object({
   observedAt: z.coerce.date(),
   biotope: z.string().min(1),
   photoCredit: z.string().min(1),
+  size: z.string().optional().nullable(),
+  caste: z.enum(['WORKER', 'QUEEN', 'MALE']).optional().nullable(),
 })
 
 export const entriesRouter = Router()
@@ -137,6 +139,8 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
 
     const createData: Prisma.ObservationEntryUncheckedCreateInput = {
       ...taxonSelection,
+      caste: parsed.data.caste ?? undefined,
+      size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
       department: parsed.data.department,
       observedAt: parsed.data.observedAt,
       biotope: parsed.data.biotope,
@@ -178,6 +182,8 @@ entriesRouter.put('/:id', async (req, res) => {
 
   const updateData: Prisma.ObservationEntryUncheckedUpdateInput = {
     ...taxonSelection,
+    caste: parsed.data.caste ?? undefined,
+    size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
     department: parsed.data.department,
     observedAt: parsed.data.observedAt,
     biotope: parsed.data.biotope,

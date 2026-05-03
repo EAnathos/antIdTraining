@@ -7,6 +7,7 @@ export type EntryInput = {
   subgenus?: string | null
   speciesGroup?: string | null
   size?: string | null
+  caste?: 'WORKER' | 'QUEEN' | 'MALE' | null
   department: string
   observedAt: Date
   biotope: string
@@ -58,6 +59,9 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
+    const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
+    const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+
     return {
       taxonId: null,
       taxonLevel: 'SUBFAMILY' as const,
@@ -65,6 +69,7 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       subfamily: match.subfamily,
       genus: null,
       species: null,
+      size: sizeValue,
     }
   }
 
@@ -83,6 +88,9 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
+    const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
+    const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+
     return {
       taxonId: match.id,
       taxonLevel: 'GENUS' as const,
@@ -90,6 +98,7 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       subfamily: match.subfamily,
       genus: match.genus,
       species: null,
+      size: sizeValue,
     }
   }
 
@@ -116,6 +125,9 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
     return null
   }
 
+  const sizeFromTaxon = input.caste === 'QUEEN' ? match.sizeQueen ?? null : input.caste === 'MALE' ? match.sizeMale ?? null : match.sizeWorker ?? null
+  const sizeValue = (input.size && input.size.trim()) || sizeFromTaxon || null
+
   return {
     taxonId: match.id,
     taxonLevel: 'SPECIES' as const,
@@ -123,5 +135,6 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
     subfamily: match.subfamily,
     genus: match.genus,
     species: match.species,
+    size: sizeValue,
   }
 }

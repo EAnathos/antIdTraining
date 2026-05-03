@@ -27,6 +27,9 @@ export const taxonSchema = z
         species: levelDetailSchema.optional(),
       })
       .optional(),
+    sizeWorker: z.string().optional().nullable(),
+    sizeQueen: z.string().optional().nullable(),
+    sizeMale: z.string().optional().nullable(),
   })
   .superRefine((value, context) => {
     const startMonth = value.swarmingStartMonth ?? null
@@ -61,6 +64,9 @@ function normalizeTaxonData(data: TaxonInput) {
     swarmingStartMonth: data.swarmingStartMonth ?? null,
     swarmingEndMonth: data.swarmingEndMonth ?? null,
     levelDetails: data.levelDetails,
+    sizeWorker: data.sizeWorker?.trim() || null,
+    sizeQueen: data.sizeQueen?.trim() || null,
+    sizeMale: data.sizeMale?.trim() || null,
   }
 }
 
@@ -76,6 +82,9 @@ function buildTaxonWriteData(data: TaxonInput): Prisma.TaxonUncheckedCreateInput
     species: normalized.species,
     swarmingStartMonth: normalized.swarmingStartMonth,
     swarmingEndMonth: normalized.swarmingEndMonth,
+    sizeWorker: normalized.sizeWorker,
+    sizeQueen: normalized.sizeQueen,
+    sizeMale: normalized.sizeMale,
   }
 }
 
