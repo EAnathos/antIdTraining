@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
-import { ScientificTaxonName } from '../../lib/taxonDisplay'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
 import { ALL_FRENCH_DEPARTMENT_CODES, type FrenchDepartmentCode } from '../../lib/frenchDepartments'
@@ -613,7 +612,7 @@ export function TaxonsCrudPanel({
           <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl" role="dialog" aria-labelledby="modal-title" aria-modal="true">
             <div className="mb-4 flex items-center justify-between">
               <h3 id="modal-title" className="text-base font-semibold text-slate-900">
-                Critères et description — <ScientificTaxonName taxon={modal.taxon} />
+                Critères et description — <em>{modal.taxon.genus}</em> <em>{modal.taxon.species}</em>
               </h3>
               <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal} aria-label="Fermer la boîte de dialogue">
                 Fermer
