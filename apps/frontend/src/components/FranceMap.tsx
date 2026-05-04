@@ -72,7 +72,23 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
 
             const handleClick = () => {
               if (IDF_DEPARTMENTS.includes(location.id)) {
-                activateDepartment(IDF_CODE)
+                // Pour les IDF, on toggle tous les départements IDF individuels
+                const allIDFSelected = IDF_DEPARTMENTS.every(dept => selectedSet.has(dept))
+                if (allIDFSelected) {
+                  // Si tous les IDF sont sélectionnés, on les retire tous
+                  IDF_DEPARTMENTS.forEach(dept => {
+                    if (selectedSet.has(dept)) {
+                      activateDepartment(dept)
+                    }
+                  })
+                } else {
+                  // Sinon, on les ajoute tous
+                  IDF_DEPARTMENTS.forEach(dept => {
+                    if (!selectedSet.has(dept)) {
+                      activateDepartment(dept)
+                    }
+                  })
+                }
               } else {
                 activateDepartment(location.id)
               }

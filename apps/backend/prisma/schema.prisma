@@ -55,6 +55,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   adminHistoryEvents AdminHistoryEvent[]
+  gameSessions       GameSession[]
 }
 
 model AdminHistoryEvent {
@@ -165,15 +166,18 @@ model GameSession {
   id            String         @id @default(cuid())
   level         GameDifficulty
   entryId       String?
+  userId        String?
   finalCorrect  Boolean?
   validatedAt   DateTime?
   createdAt     DateTime       @default(now())
 
   entry ObservationEntry? @relation(fields: [entryId], references: [id], onDelete: SetNull)
+  user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([level])
   @@index([createdAt])
   @@index([finalCorrect])
+  @@index([userId])
 }
 
 model EntryImage {

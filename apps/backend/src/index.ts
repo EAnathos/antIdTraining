@@ -11,6 +11,7 @@ import { entriesRouter } from './routes/entries.js'
 import { gameRouter } from './routes/game.js'
 import { openApiDocument } from './openapi.js'
 import { adminReferencesRouter, publicReferencesRouter } from './routes/references.js'
+import { publicStatsRouter } from './routes/publicStats.js'
 import { statsRouter } from './routes/stats.js'
 import { adminTaxonsRouter, publicTaxonsRouter } from './routes/taxons.js'
 import { requireAdmin, requireAuth } from './middleware/auth.js'
@@ -112,6 +113,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/game', gameRouter)
 app.use('/api/taxons', publicTaxonsRouter)
 app.use('/api/references', publicReferencesRouter)
+app.use('/api/stats', publicStatsRouter)
 
 import { adminStatsToolsRouter } from './routes/adminStatsTools.js'
 app.use('/api/admin/entries', requireAuth, requireAdmin, entriesRouter)

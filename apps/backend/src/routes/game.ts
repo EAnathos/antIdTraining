@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
 import { getGameQuestion, validateGameAnswer, validateGameAnswerSchema } from '../services/game.js'
+import { optionalAuth } from '../middleware/auth.js'
 
 export const gameRouter = Router()
 
-gameRouter.get('/question', async (req, res) => {
-  const question = await getGameQuestion(req.query.level)
+gameRouter.get('/question', optionalAuth, async (req, res) => {
+  const question = await getGameQuestion(req.query.level, req.user?.userId ?? null)
   return res.json(question)
 })
 

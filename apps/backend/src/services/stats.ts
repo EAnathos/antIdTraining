@@ -94,3 +94,56 @@ export async function getEntryStats(periodInput: unknown) {
 
   return { period, totalPhotos, postsByTaxon }
 }
+
+export async function getLeaderboard(limitInput?: unknown) {
+  const limit = Math.max(1, Math.min(Number(limitInput ?? 10) || 10, 50))
+
+  const grouped = await prisma.gameSession.groupBy({
+    by: ['userId', 'finalCorrect'],
+    where: { userId: { not: null } },
+    _count: { _all: true },
+  })
+
+  const leaderboardMap = new Map<string, { userId: string; gamesPlayed: number; correctCount: number }>()
+
+  grouped.forEach((group) => {
+    if (!group.userId) {
+      return
+    }
+
+    const current = leaderboardMap.get(group.userId) ?? { userId: group.userId, gamesPlayed: 0, correctCount: 0 }
+    current.gamesPlayed += group._count._all
+    if (group.finalCorrect === true) {
+      current.correctCount += group._count._all
+    }
+    leaderboardMap.set(group.userId, current)
+  })
+
+  const sessions = Array.from(leaderboardMap.values())
+    .map((item) => ({
+      ...item,
+      wrongCount: item.gamesPlayed - item.correctCount,
+      points: item.correctCount * 5 - (item.gamesPlayed - item.correctCount) * 2,
+    }))
+    .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.points - a.points)
+    .slice(0, limit)
+
+  const userIds = sessions.map((session) => session.userId)
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, username: true },
+  })
+
+  const userMap = new Map(users.map((user) => [user.id, user.username]))
+
+  return {
+    items: sessions.map((session) => ({
+      userId: session.userId,
+      username: userMap.get(session.userId) ?? 'Joueur inconnu',
+      gamesPlayed: session.gamesPlayed,
+      correctCount: session.correctCount,
+      wrongCount: session.wrongCount,
+      points: session.points,
+    })),
+  }
+}

@@ -85,7 +85,7 @@ async function resolveEntrySize(entry: { species?: string | null; genus?: string
   return null
 }
 
-export async function getGameQuestion(rawLevel: unknown) {
+export async function getGameQuestion(rawLevel: unknown, userId?: string | null) {
   const level = normalizeGameLevel(rawLevel)
 
   const entries = await prisma.observationEntry.findMany({
@@ -123,6 +123,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       data: {
         level: toDbGameDifficulty(level),
         entryId: entry.id,
+        ...(userId ? { userId } : {}),
       },
     })
 
@@ -176,6 +177,7 @@ export async function getGameQuestion(rawLevel: unknown) {
       data: {
         level: toDbGameDifficulty(level),
         entryId: entry.id,
+        ...(userId ? { userId } : {}),
       },
     })
 
@@ -239,6 +241,7 @@ export async function getGameQuestion(rawLevel: unknown) {
     data: {
       level: toDbGameDifficulty(level),
       entryId: entry.id,
+      ...(userId ? { userId } : {}),
     },
   })
 

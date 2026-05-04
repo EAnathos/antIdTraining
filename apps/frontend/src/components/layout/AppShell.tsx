@@ -172,8 +172,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLink className={navClass} to="/about">
             À propos
           </NavLink>
-          <NavLink className={adminNavClass} to="/admin/login">
-            Admin
+          <NavLink className={navClass} to="/classement">
+            Classement
+          </NavLink>
+          <NavLink className={adminNavClass} to="/connexion">
+            Connexion
           </NavLink>
           {installPromptEvent && (
             <button className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700" type="button" onClick={() => void installApp()}>

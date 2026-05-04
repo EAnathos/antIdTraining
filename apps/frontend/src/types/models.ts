@@ -103,6 +103,30 @@ export type GameLevelStats = {
 
 export type GameStatsPeriod = '7d' | '30d' | 'all'
 
+export type LeaderboardItem = {
+  userId: string
+  username: string
+  gamesPlayed: number
+  correctCount: number
+  wrongCount: number
+  points: number
+}
+
+export type LeaderboardResponse = {
+  items: LeaderboardItem[]
+}
+
+export type AuthResponse = {
+  token: string
+  role: 'ADMIN' | 'USER'
+}
+
+export type AuthMeResponse = {
+  userId: string
+  role: 'ADMIN' | 'USER'
+  username: string | null
+}
+
 export type CrudMode = 'create' | 'update' | 'delete'
 export type AdminHistoryItem = {
   id: string

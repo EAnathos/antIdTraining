@@ -40,6 +40,9 @@ export default function AboutPage() {
         Merci à Ilhan et Dambal pour leur aide dans l'aggrégation de données et la relecture.
       </p>
       <p className="mt-2 text-slate-700">
+        Nous remercions tous les contributeurs qui ont fourni des photographies pour enrichir les entrées du jeu et améliorer la base de données.
+      </p>
+      <p className="mt-2 text-slate-700">
         Les images utilisées sur ce site ne sont pas libre d'utilisation : leur utilisation suppose d'avoir obtenu l'accord préalable des propriétaires.
       </p>
       <p className="mt-2 text-slate-700">

@@ -12,6 +12,7 @@ export const openApiDocument = {
     { name: 'Game' },
     { name: 'Taxons' },
     { name: 'References' },
+    { name: 'Stats' },
     { name: 'Admin' },
   ],
   components: {
@@ -120,6 +121,28 @@ export const openApiDocument = {
           role: 'ADMIN',
         },
       },
+      LeaderboardItem: {
+        type: 'object',
+        required: ['userId', 'username', 'gamesPlayed', 'correctCount', 'wrongCount', 'points'],
+        properties: {
+          userId: { type: 'string' },
+          username: { type: 'string' },
+          gamesPlayed: { type: 'integer', minimum: 0 },
+          correctCount: { type: 'integer', minimum: 0 },
+          wrongCount: { type: 'integer', minimum: 0 },
+          points: { type: 'integer' },
+        },
+      },
+      LeaderboardResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/LeaderboardItem' },
+          },
+        },
+      },
       GameValidateInput: {
         type: 'object',
         required: ['level', 'selected'],
@@ -195,7 +218,7 @@ export const openApiDocument = {
     '/auth/login': {
       post: {
         tags: ['Auth'],
-        summary: 'Connexion administrateur/utilisateur',
+        summary: 'Connexion',
         requestBody: {
           required: true,
           content: {
@@ -227,6 +250,43 @@ export const openApiDocument = {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
                 example: { message: 'Identifiants invalides.' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/auth/register': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Création d’un compte joueur',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/LoginInput' },
+              example: {
+                username: 'joueur1',
+                password: 'motdepasse',
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Compte créé.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/LoginResponse' },
+              },
+            },
+          },
+          409: {
+            description: 'Nom d’utilisateur déjà utilisé.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorMessage' },
+                example: { message: 'Ce nom d’utilisateur est déjà utilisé.' },
               },
             },
           },
@@ -374,6 +434,31 @@ export const openApiDocument = {
                     },
                   },
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/stats/leaderboard': {
+      get: {
+        tags: ['Stats'],
+        summary: 'Classement des joueurs',
+        parameters: [
+          {
+            in: 'query',
+            name: 'limit',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 50 },
+            description: 'Nombre maximum de joueurs renvoyés (défaut: 10).',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Classement renvoyé.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/LeaderboardResponse' },
               },
             },
           },

@@ -29,7 +29,10 @@ export function AdminDashboardPage() {
 
   async function logoutToLogin() {
     await api.post('/auth/logout').catch(() => undefined)
-    navigate('/admin/login', { replace: true })
+    window.localStorage.removeItem('antidtraining-auth-token')
+    window.localStorage.removeItem('antidtraining-auth-role')
+    window.localStorage.removeItem('antidtraining-auth-username')
+    navigate('/connexion', { replace: true })
   }
 
   const data = useAdminData(null, () => {

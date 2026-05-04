@@ -60,6 +60,8 @@ export function GamePage() {
   const [dynamicGenusOptions, setDynamicGenusOptions] = useState<string[]>([])
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{ url: string; index: number } | null>(null)
+  const [sessionScore, setSessionScore] = useState(0)
+  const isConnected = typeof window !== 'undefined' && !!window.localStorage.getItem('antidtraining-auth-token')
 
   useEffect(() => {
     let cancelled = false
@@ -93,6 +95,10 @@ export function GamePage() {
     setDynamicGenusOptions([])
     setImageLoadFailed(false)
     setFullscreenImage(null)
+  }
+
+  function applyScoreDelta(correct: boolean) {
+    setSessionScore((current) => current + (correct ? 5 : -2))
   }
 
   function handleLevelChange(nextLevel: ActiveLevel) {
@@ -181,6 +187,7 @@ export function GamePage() {
       })
 
       if (data.correct) {
+        applyScoreDelta(true)
         try {
           const { data: generaData } = await api.get<string[]>('/taxons/genera', {
             params: {
@@ -200,6 +207,7 @@ export function GamePage() {
       }
 
       setSubfamilyValidation(null)
+      applyScoreDelta(false)
       setStepFeedback('')
       setMediumStep('done')
       setResult(data)
@@ -223,12 +231,28 @@ export function GamePage() {
       setMediumStep('done')
       setStepFeedback('')
     }
+    applyScoreDelta(data.correct)
     setResult(data)
   }
 
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Lancer un niveau</h2>
+      <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        {isConnected ? (
+          <>
+            Créez un compte joueur si vous voulez suivre votre progression dans le classement. Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
+          </>
+        ) : (
+          <>
+            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous voulez suivre votre progression dans le classement. Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
+          </>
+        )}
+      </p>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        Score de la session : <span className="font-semibold text-slate-900">{sessionScore}</span>
+      </div>
 
       <div className="grid gap-2 md:grid-cols-3">
         <button
