@@ -241,7 +241,7 @@ export function GamePage() {
       <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
         {isConnected ? (
           <>
-            Créez un compte joueur si vous voulez suivre votre progression dans le classement. Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
+            Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
           </>
         ) : (
           <>
