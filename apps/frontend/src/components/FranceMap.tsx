@@ -68,6 +68,7 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
             const isSelected =
               selectedSet.has(location.id) || (selectedSet.has(IDF_CODE) && IDF_DEPARTMENTS.includes(location.id))
             const departmentName = getDepartmentLabel(location.id)
+            const labelOffset = location.id === '54' ? { x: -10, y: 14 } : { x: 0, y: 0 }
 
             const handleClick = () => {
               if (IDF_DEPARTMENTS.includes(location.id)) {
@@ -105,8 +106,8 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
                 </path>
                 {!IDF_DEPARTMENTS.includes(location.id) && labelPositions[location.id] && (
                   <text
-                    x={labelPositions[location.id].x}
-                    y={labelPositions[location.id].y}
+                    x={labelPositions[location.id].x + labelOffset.x}
+                    y={labelPositions[location.id].y + labelOffset.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     className="fill-slate-700 text-[10px] font-semibold"
