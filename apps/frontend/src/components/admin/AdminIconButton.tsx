@@ -5,16 +5,24 @@ type Props = {
   tone?: 'default' | 'danger'
   onClick: () => void
   icon: ReactNode
+  disabled?: boolean
 }
 
-export function AdminIconButton({ title, tone = 'default', onClick, icon }: Props) {
+export function AdminIconButton({ title, tone = 'default', onClick, icon, disabled = false }: Props) {
   const classes =
     tone === 'danger'
       ? 'rounded bg-red-100 px-2 py-1 text-red-700'
       : 'rounded bg-slate-100 px-2 py-1 text-slate-700'
 
   return (
-    <button className={classes} type="button" title={title} onClick={onClick} aria-label={title}>
+    <button
+      className={`${classes} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+      type="button"
+      title={title}
+      onClick={onClick}
+      aria-label={title}
+      disabled={disabled}
+    >
       {icon}
     </button>
   )
@@ -37,6 +45,22 @@ export function TrashIcon() {
       <path d="M19 6l-1 14H6L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  )
+}
+
+export function ArrowUpIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  )
+}
+
+export function ArrowDownIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
     </svg>
   )
 }

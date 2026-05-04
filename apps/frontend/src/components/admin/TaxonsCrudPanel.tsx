@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
-import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
+import { AdminIconButton, ArrowDownIcon, ArrowUpIcon, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
 import { ALL_FRENCH_DEPARTMENT_CODES, type FrenchDepartmentCode } from '../../lib/frenchDepartments'
 
@@ -342,6 +342,30 @@ export function TaxonsCrudPanel({
     }))
   }
 
+  const moveCriterion = (levelKey: keyof TaxonDetailsDraft, index: number, direction: -1 | 1) => {
+    if (!modal.draft) return
+
+    const targetIndex = index + direction
+    const criteria = modal.draft[levelKey].criteria
+    if (targetIndex < 0 || targetIndex >= criteria.length) {
+      return
+    }
+
+    const nextCriteria = [...criteria]
+    ;[nextCriteria[index], nextCriteria[targetIndex]] = [nextCriteria[targetIndex], nextCriteria[index]]
+
+    setModal(prev => ({
+      ...prev,
+      draft: {
+        ...prev.draft!,
+        [levelKey]: {
+          ...prev.draft![levelKey],
+          criteria: nextCriteria,
+        },
+      },
+    }))
+  }
+
   const renderLevelTitle = (levelKey: TaxonDetailLevelKey, taxon: Taxon) => {
     if (levelKey === 'subfamily') {
       return <>Sous-famille ({taxon.subfamily})</>
@@ -471,6 +495,13 @@ export function TaxonsCrudPanel({
                 placeholder="Critère"
                 value={criterion}
                 onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
+              />
+              <AdminIconButton title="Monter" onClick={() => moveCriterion(levelKey, index, -1)} icon={<ArrowUpIcon />} disabled={index === 0} />
+              <AdminIconButton
+                title="Descendre"
+                onClick={() => moveCriterion(levelKey, index, 1)}
+                icon={<ArrowDownIcon />}
+                disabled={index === levelDraft.criteria.length - 1}
               />
               <AdminIconButton title="Supprimer" tone="danger" onClick={() => removeCriterion(levelKey, index)} icon={<TrashIcon />} />
             </div>
