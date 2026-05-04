@@ -15,7 +15,7 @@ export default function AboutPage() {
       </p>
 
       <p className="mt-4 text-slate-700">
-        Les critères listés sont ceux qui nous paraissent les plus simples à prendre en main, mais d'autres critères peuvent exister et être utiles selon les groupes.
+        Les critères listés sont ceux qui nous paraissent les plus simples à prendre en main, mais d'autres critères peuvent exister et être utiles selon les taxons.
       </p>
 
       <h3 className="mt-6 text-lg font-medium text-slate-800">Qualité des données</h3>
