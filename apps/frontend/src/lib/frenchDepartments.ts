@@ -15,6 +15,8 @@ export const FRENCH_DEPARTMENTS: Record<string, DepartmentInfo> = Object.fromEnt
   FranceDepartmentsMap.locations.map((location: { id: string; name: string }) => [location.id, { name: location.name, label: location.id }]),
 )
 
+export const ALL_FRENCH_DEPARTMENT_CODES: FrenchDepartmentCode[] = FranceDepartmentsMap.locations.map((location: { id: string }) => location.id)
+
 // Add the grouped Île-de-France entry
 FRENCH_DEPARTMENTS[IDF_CODE] = { name: 'Île-de-France', label: IDF_CODE }
 

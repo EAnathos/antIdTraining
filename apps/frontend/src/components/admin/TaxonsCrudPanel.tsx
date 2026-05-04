@@ -4,7 +4,7 @@ import type { Taxon } from '../../types/models'
 import { ScientificTaxonName } from '../../lib/taxonDisplay'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
-import type { FrenchDepartmentCode } from '../../lib/frenchDepartments'
+import { ALL_FRENCH_DEPARTMENT_CODES, type FrenchDepartmentCode } from '../../lib/frenchDepartments'
 
 type TaxonForm = {
   subfamily: string
@@ -626,16 +626,28 @@ export function TaxonsCrudPanel({
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <label className="block text-sm font-medium text-slate-700">Aire de répartition</label>
-                  <button
-                    className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
-                    type="button"
-                    onClick={() => setModal(prev => ({
-                      ...prev,
-                      distribution: [],
-                    }))}
-                  >
-                    Réinitialiser
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                      type="button"
+                      onClick={() => setModal(prev => ({
+                        ...prev,
+                        distribution: [],
+                      }))}
+                    >
+                      Réinitialiser
+                    </button>
+                    <button
+                      className="rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white hover:bg-indigo-700"
+                      type="button"
+                      onClick={() => setModal(prev => ({
+                        ...prev,
+                        distribution: [...ALL_FRENCH_DEPARTMENT_CODES],
+                      }))}
+                    >
+                      Toute la France
+                    </button>
+                  </div>
                 </div>
                 <FranceMap
                   selectedDepartments={modal.distribution}
