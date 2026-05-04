@@ -190,6 +190,7 @@ type Props = {
   createEntry: (event: FormEvent) => Promise<void>
   updateEntry: (event: FormEvent) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
+  reorderEntryImages: (entryId: string, imageIds: string[]) => Promise<void>
 }
 
 export function EntriesCrudPanel({
@@ -203,7 +204,10 @@ export function EntriesCrudPanel({
   createEntry,
   updateEntry,
   deleteEntry,
+  reorderEntryImages,
 }: Props) {
+  const [reordering, setReordering] = useState<Record<string, boolean>>({})
+  const [dragging, setDragging] = useState<{ entryId: string; index: number } | null>(null)
   const [query, setQuery] = useState('')
   const [previewImage, setPreviewImage] = useState<{ images: string[]; index: number; alt: string } | null>(null)
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
@@ -548,24 +552,59 @@ export function EntriesCrudPanel({
 
               {entry.images.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {entry.images.map((image) => (
-                    <img
+                  {entry.images.map((image, idx) => (
+                    <div
                       key={image.id}
-                      src={resolveImageUrl(image.imageUrl)}
-                      alt={entry.taxonValue}
-                      className="h-16 w-16 cursor-zoom-in rounded border object-cover"
-                      loading="lazy"
-                      decoding="async"
-                      width={64}
-                      height={64}
-                      onClick={() =>
-                        openPreview(
-                          entry.images.map((entryImage) => resolveImageUrl(entryImage.imageUrl)),
-                          entry.images.findIndex((entryImage) => entryImage.id === image.id),
-                          entry.taxonValue,
-                        )
-                      }
-                    />
+                      className={`flex items-center gap-2 ${dragging && dragging.entryId === entry.id && dragging.index === idx ? 'opacity-50' : ''} ${reordering[entry.id] ? 'pointer-events-none opacity-70' : ''}`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', String(idx))
+                        e.dataTransfer.effectAllowed = 'move'
+                        setDragging({ entryId: entry.id, index: idx })
+                      }}
+                      onDragEnd={() => setDragging(null)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        const from = Number(e.dataTransfer.getData('text/plain'))
+                        const to = idx
+                        if (Number.isNaN(from) || from === to) {
+                          setDragging(null)
+                          return
+                        }
+
+                        setReordering((s) => ({ ...s, [entry.id]: true }))
+                        try {
+                          const ids = entry.images.map((i) => i.id)
+                          const moved = ids.splice(from, 1)[0]
+                          ids.splice(to, 0, moved)
+                          await reorderEntryImages(entry.id, ids)
+                        } finally {
+                          setReordering((s) => ({ ...s, [entry.id]: false }))
+                          setDragging(null)
+                        }
+                      }}
+                    >
+                      <img
+                        src={resolveImageUrl(image.imageUrl)}
+                        alt={entry.taxonValue}
+                          className={`h-16 w-16 rounded border object-cover ${reordering[entry.id] ? 'cursor-wait' : 'cursor-grab'}`}
+                        loading="lazy"
+                        decoding="async"
+                        width={64}
+                        height={64}
+                        onClick={() =>
+                          openPreview(
+                            entry.images.map((entryImage) => resolveImageUrl(entryImage.imageUrl)),
+                            entry.images.findIndex((entryImage) => entryImage.id === image.id),
+                            entry.taxonValue,
+                          )
+                        }
+                      />
+                      {reordering[entry.id] && idx === 0 && (
+                        <span className="text-xs text-slate-500">Réordonnancement…</span>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

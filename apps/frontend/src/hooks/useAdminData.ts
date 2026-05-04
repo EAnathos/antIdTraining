@@ -521,6 +521,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }, 'Entrée supprimée.', 'Impossible de supprimer l’entrée.')
   }
 
+  async function reorderEntryImages(entryId: string, imageIds: string[]) {
+    await runAdminAction(async () => {
+      await adminApi.put(`/entries/${entryId}/images/order`, { imageIds })
+    }, 'Ordre des images mis à jour.', 'Impossible de réordonner les images.')
+  }
+
   async function exportDatabaseSnapshot() {
     setMessage('')
     try {
@@ -657,6 +663,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     createEntry,
     updateEntry,
     deleteEntry,
+    reorderEntryImages,
     suggestions,
     setSuggestionStatus,
     history,

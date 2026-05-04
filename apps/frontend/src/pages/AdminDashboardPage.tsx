@@ -123,6 +123,7 @@ export function AdminDashboardPage() {
             createEntry={data.createEntry}
             updateEntry={data.updateEntry}
             deleteEntry={data.deleteEntry}
+            reorderEntryImages={data.reorderEntryImages}
           />
         )}
 

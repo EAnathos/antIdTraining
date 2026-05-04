@@ -73,7 +73,7 @@ export type Entry = {
   biotope: string
   photoCredit: string
   caste?: 'WORKER' | 'QUEEN' | 'MALE' | null
-  images: { id: string; imageUrl: string }[]
+  images: { id: string; imageUrl: string; position?: number | null }[]
 }
 
 export type GameQuestion = {

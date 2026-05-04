@@ -180,6 +180,7 @@ model EntryImage {
   id        String   @id @default(cuid())
   entryId   String
   imageUrl  String
+  position  Int?
   createdAt DateTime @default(now())
 
   entry ObservationEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)

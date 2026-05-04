@@ -120,6 +120,7 @@ export const databaseSnapshotSchema = z.object({
         id: z.string(),
         entryId: z.string(),
         imageUrl: z.string(),
+        position: z.number().int().nullable().optional(),
         createdAt: z.coerce.date(),
       }),
     ),
@@ -234,7 +235,7 @@ export async function getDatabaseSnapshot() {
       orderBy: [{ type: 'asc' }, { title: 'asc' }],
     }),
     prisma.observationEntry.findMany({ orderBy: { createdAt: 'asc' } }),
-    prisma.entryImage.findMany({ orderBy: { createdAt: 'asc' } }),
+    prisma.entryImage.findMany({ orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] }),
     prisma.gameSession.findMany({ orderBy: { createdAt: 'asc' } }),
   ])
 

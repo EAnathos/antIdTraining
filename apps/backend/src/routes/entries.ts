@@ -109,7 +109,7 @@ const uploadEntryImages: RequestHandler = (req, res, next) => {
 
 entriesRouter.get('/', async (_req, res) => {
   const entries = await prisma.observationEntry.findMany({
-    include: { images: true },
+    include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
     orderBy: { observedAt: 'desc' },
   })
   return res.json(entries)
@@ -154,7 +154,7 @@ entriesRouter.post('/', uploadEntryImages, async (req, res) => {
       data: {
         ...createData,
         images: {
-          create: optimizedFileNames.map((filename) => ({ imageUrl: `/uploads/${filename}` })),
+          create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
         },
       },
       include: { images: true },
@@ -216,6 +216,44 @@ entriesRouter.put('/:id', async (req, res) => {
   })
 
   return res.json(updated)
+})
+
+entriesRouter.put('/:id/images/order', async (req, res) => {
+  const bodySchema = z.object({ imageIds: z.array(z.string()) })
+  const parsed = bodySchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError(400, 'Requête invalide.')
+  }
+
+  const { imageIds } = parsed.data
+  const entryId = req.params.id
+
+  const existing = await prisma.entryImage.findMany({ where: { entryId } })
+  const existingIds = new Set(existing.map((i) => i.id))
+
+  // Ensure provided ids belong to the entry
+  for (const id of imageIds) {
+    if (!existingIds.has(id)) {
+      throw new AppError(400, 'Une des images n’appartient pas à cette entrée.')
+    }
+  }
+
+  // Apply new positions in a transaction
+  await prisma.$transaction(
+    imageIds.map((id, index) => prisma.entryImage.update({ where: { id }, data: ({ position: index } as any) })),
+  )
+
+  const updatedImages = await prisma.entryImage.findMany({ where: { entryId }, orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] })
+
+  await recordAdminAudit(req, {
+    action: 'Ordre des images modifié',
+    detail: `Entrée ${entryId}`,
+    tone: 'INFO',
+    entityType: 'entry',
+    entityId: entryId,
+  })
+
+  return res.json(updatedImages)
 })
 
 entriesRouter.delete('/:id', async (req, res) => {
