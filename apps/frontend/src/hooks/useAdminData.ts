@@ -43,6 +43,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
   const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
+  const [entryStats, setEntryStats] = useState<any>(null)
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<AdminHistoryItem[]>([])
@@ -135,7 +136,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return allItems
     }
 
-    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes] = await Promise.all([
+    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes] = await Promise.all([
       listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
@@ -143,6 +144,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>('/stats/game', {
         params: { period: statsPeriod },
       }),
+      adminApi.get<any>('/stats/entries', { params: { period: statsPeriod } }),
     ])
 
     setTaxons(taxonRes)
@@ -150,6 +152,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setReferences(refRes.data)
     setEntries(entryRes.data)
     setGameStats(statsRes.data.levels)
+    setEntryStats(entryStatsRes.data)
 
     try {
       const { data: historyData } = await adminApi.get<AdminHistoryItem[]>('/history')
@@ -454,6 +457,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }
 
     const formData = new FormData()
+    if (!(entryForm as any).caste) {
+      setMessage('La caste est requise.')
+      return
+    }
     const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
     const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
     formData.append('taxonLevel', taxonLevel)
@@ -465,7 +472,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
     formData.append('photoCredit', entryForm.photoCredit)
-    formData.append('caste', (entryForm as any).caste || '')
+    formData.append('caste', (entryForm as any).caste)
     if (entryFiles) {
       Array.from(entryFiles).forEach((file) => formData.append('images', file))
     }
@@ -491,6 +498,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function updateEntry(event: FormEvent) {
     event.preventDefault()
     if (!selectedEntryId) return
+    if (!(entryForm as any).caste) {
+      setMessage('La caste est requise.')
+      return
+    }
     await runAdminAction(async () => {
       const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
       const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
@@ -500,7 +511,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonGenus: entryForm.genus || '',
         subgenus: entryForm.subgenus || '',
         speciesGroup: entryForm.speciesGroup || '',
-        caste: (entryForm as any).caste || '',
+        caste: (entryForm as any).caste,
         department: entryForm.department,
         observedAt: entryForm.observedAt,
         biotope: entryForm.biotope,
@@ -651,6 +662,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
     // Entries
     entries,
+    entryStats,
     gameStats,
     statsPeriod,
     setStatsPeriod,

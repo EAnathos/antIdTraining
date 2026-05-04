@@ -73,3 +73,24 @@ export async function getGameStats(periodInput: unknown) {
 
   return { period, levels }
 }
+
+export async function getEntryStats(periodInput: unknown) {
+  const period = normalizePeriod(periodInput)
+  const startDate = getPeriodDate(period)
+
+  // Total photos (optionally filtered by period)
+  const totalPhotos = await prisma.entryImage.count({ ...(startDate ? { where: { createdAt: { gte: startDate } } } : {}) })
+
+  // Number of posts per taxonValue (optionally filtered by period)
+  const groupByTaxon = await prisma.observationEntry.groupBy({
+    by: ['taxonValue'],
+    ...(startDate ? { where: { createdAt: { gte: startDate } } } : {}),
+    _count: { _all: true },
+  })
+
+  const postsByTaxon = groupByTaxon
+    .map((g) => ({ taxon: g.taxonValue, count: g._count._all }))
+    .sort((a, b) => b.count - a.count)
+
+  return { period, totalPhotos, postsByTaxon }
+}

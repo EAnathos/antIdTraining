@@ -106,13 +106,51 @@ export const databaseSnapshotSchema = z.object({
         taxonValue: z.string(),
         subfamily: z.string(),
         genus: z.string().nullable(),
+        subgenus: z.string().nullable(),
         species: z.string().nullable(),
+        speciesGroup: z.string().nullable(),
+        size: z.string().nullable().optional(),
+        caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
         department: z.string(),
         observedAt: z.coerce.date(),
         biotope: z.string(),
         photoCredit: z.string(),
         createdAt: z.coerce.date(),
         updatedAt: z.coerce.date(),
+      }),
+    ),
+    users: z.array(
+      z.object({
+        id: z.string(),
+        username: z.string(),
+        passwordHash: z.string(),
+        role: z.string(),
+        createdAt: z.coerce.date(),
+        updatedAt: z.coerce.date(),
+      }),
+    ),
+    adminHistoryEvents: z.array(
+      z.object({
+        id: z.string(),
+        createdAt: z.coerce.date(),
+        action: z.string(),
+        detail: z.string(),
+        tone: z.string(),
+        actorUserId: z.string().nullable(),
+        actorUsername: z.string().nullable(),
+        entityType: z.string().nullable(),
+        entityId: z.string().nullable(),
+      }),
+    ),
+    suggestions: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string().nullable(),
+        email: z.string().nullable(),
+        message: z.string(),
+        status: z.string(),
+        createdAt: z.coerce.date(),
+        processedAt: z.coerce.date().nullable().optional(),
       }),
     ),
     entryImages: z.array(
@@ -264,7 +302,22 @@ export async function getDatabaseSnapshot() {
         updatedAt: reference.updatedAt,
       })),
       referenceTaxons: flattenedReferenceTaxons,
-      observationEntries,
+      observationEntries: observationEntries.map((entry) => ({
+        id: entry.id,
+        taxonId: entry.taxonId ?? null,
+        taxonLevel: entry.taxonLevel,
+        taxonValue: entry.taxonValue,
+        subfamily: entry.subfamily,
+        genus: entry.genus ?? null,
+        species: entry.species ?? null,
+        caste: entry.caste,
+        department: entry.department,
+        observedAt: entry.observedAt,
+        biotope: entry.biotope,
+        photoCredit: entry.photoCredit,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      })),
       entryImages,
       gameSessions,
     },
@@ -330,7 +383,13 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     }
 
     if (snapshot.data.observationEntries.length > 0) {
-      await tx.observationEntry.createMany({ data: snapshot.data.observationEntries })
+      // Ensure legacy snapshots without `caste` field get a default value
+      const entriesToCreate = snapshot.data.observationEntries.map((e: any) => ({
+        ...e,
+        caste: (e as any).caste ?? 'WORKER',
+      }))
+
+      await tx.observationEntry.createMany({ data: entriesToCreate })
     }
 
     if (snapshot.data.entryImages.length > 0) {

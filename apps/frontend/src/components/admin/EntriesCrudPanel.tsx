@@ -209,7 +209,12 @@ export function EntriesCrudPanel({
   const [reordering, setReordering] = useState<Record<string, boolean>>({})
   const [dragging, setDragging] = useState<{ entryId: string; index: number } | null>(null)
   const [query, setQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'date' | 'taxon'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [previewImage, setPreviewImage] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [filterDepartment, setFilterDepartment] = useState('')
+  const [filterCaste, setFilterCaste] = useState('')
+  const [filterPhotoCredit, setFilterPhotoCredit] = useState('')
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
   const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
   const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
@@ -361,13 +366,53 @@ export function EntriesCrudPanel({
   }
 
   const filteredEntries = useMemo(() => {
-    const value = query.trim().toLowerCase()
-    if (!value) return entries
-    return entries.filter((entry) => {
-      const haystack = [entry.subfamily, entry.genus ?? '', entry.species ?? '', entry.taxonValue, entry.department, entry.biotope, entry.photoCredit].join(' ').toLowerCase()
-      return haystack.includes(value)
+    let result = [...entries]
+    
+    // Search filter
+    const searchValue = query.trim().toLowerCase()
+    if (searchValue) {
+      result = result.filter((entry) => {
+        const haystack = [entry.subfamily, entry.genus ?? '', entry.species ?? '', entry.taxonValue, entry.department, entry.biotope, entry.photoCredit].join(' ').toLowerCase()
+        return haystack.includes(searchValue)
+      })
+    }
+    
+    // Department filter
+    if (filterDepartment) {
+      result = result.filter((entry) => entry.department.includes(filterDepartment))
+    }
+    
+    // Caste filter
+    if (filterCaste) {
+      result = result.filter((entry) => (entry as any).caste === filterCaste)
+    }
+    
+    // Photo credit filter
+    if (filterPhotoCredit) {
+      result = result.filter((entry) => entry.photoCredit.toLowerCase().includes(filterPhotoCredit.toLowerCase()))
+    }
+    
+    return result
+  }, [entries, query, filterDepartment, filterCaste, filterPhotoCredit])
+
+  const sortedEntries = useMemo(() => {
+    const list = [...filteredEntries]
+    list.sort((a, b) => {
+      if (sortBy === 'date') {
+        const da = new Date(a.observedAt).getTime()
+        const db = new Date(b.observedAt).getTime()
+        return sortOrder === 'asc' ? da - db : db - da
+      }
+
+      // taxon sort: subfamily, genus, species
+      const ka = `${a.subfamily}\u0000${a.genus ?? ''}\u0000${a.species ?? ''}`.toLowerCase()
+      const kb = `${b.subfamily}\u0000${b.genus ?? ''}\u0000${b.species ?? ''}`.toLowerCase()
+      if (ka < kb) return sortOrder === 'asc' ? -1 : 1
+      if (ka > kb) return sortOrder === 'asc' ? 1 : -1
+      return 0
     })
-  }, [entries, query])
+    return list
+  }, [filteredEntries, sortBy, sortOrder])
 
   function submitEntry(event: FormEvent) {
     setIsSubmitting(true)
@@ -462,8 +507,9 @@ export function EntriesCrudPanel({
             className="rounded border p-2"
             value={entryForm.caste}
             onChange={(e) => patchEntryForm({ caste: e.target.value })}
+            required
           >
-            <option value="">Castes (optionnel)</option>
+            <option value="">Choisir la caste</option>
             <option value="WORKER">Ouvrière</option>
             <option value="QUEEN">Reine</option>
             <option value="MALE">Mâle</option>
@@ -515,15 +561,75 @@ export function EntriesCrudPanel({
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
-        <input
-          className="w-full rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
-          placeholder="Rechercher une entrée"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 w-full">
+            <input
+            className="flex-1 rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
+            placeholder="Rechercher une entrée"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            />
 
-        <ul className="mt-3 space-y-2 text-sm">
-          {filteredEntries.map((entry) => (
+            <label className="text-sm text-slate-700">
+              Trier
+              <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+                <option value="date">Date</option>
+                <option value="taxon">Taxon</option>
+              </select>
+            </label>
+
+            <button
+              title="Inverser l'ordre"
+              className="rounded bg-slate-100 px-2 py-1 text-slate-700"
+              onClick={() => setSortOrder((s) => (s === 'asc' ? 'desc' : 'asc'))}
+              type="button"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+            >
+              <option value="">Tous les depts</option>
+              {Array.from(new Set(entries.map((e) => e.department)))
+                .sort()
+                .map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+            </select>
+            
+            <select
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              value={filterCaste}
+              onChange={(e) => setFilterCaste(e.target.value)}
+            >
+              <option value="">Toutes les castes</option>
+              <option value="WORKER">Ouvrière</option>
+              <option value="QUEEN">Reine</option>
+              <option value="MALE">Mâle</option>
+            </select>
+            
+            <input
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              placeholder="Crédit photo"
+              value={filterPhotoCredit}
+              onChange={(e) => setFilterPhotoCredit(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <p className="mt-3 mb-2 text-sm text-slate-600">
+          <strong>{sortedEntries.length}</strong> entrée{sortedEntries.length !== 1 ? 's' : ''}
+        </p>
+
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          {sortedEntries.map((entry) => (
             <li
               key={entry.id}
               className={`rounded border p-2 ${selectedEntryId === entry.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}

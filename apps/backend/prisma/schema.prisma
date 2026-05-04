@@ -140,7 +140,7 @@ model ObservationEntry {
   species      String?
   speciesGroup String?
   size         String?
-  caste        Caste?
+  caste        Caste
   department   String
   observedAt   DateTime
   biotope      String
