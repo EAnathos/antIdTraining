@@ -22,7 +22,7 @@ export type Taxon = {
   species: string
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
-  distribution: { departments?: string[]; regions?: string[] } | null
+  distribution: { departments?: string[] } | null
   levelDetails: {
     subfamily: TaxonLevelDetail
     genus: TaxonLevelDetail

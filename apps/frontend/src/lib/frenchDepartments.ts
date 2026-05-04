@@ -18,13 +18,6 @@ export const FRENCH_DEPARTMENTS: Record<string, DepartmentInfo> = Object.fromEnt
 // Add the grouped Île-de-France entry
 FRENCH_DEPARTMENTS[IDF_CODE] = { name: 'Île-de-France', label: IDF_CODE }
 
-const DEPARTMENT_CODES = new Set(FranceDepartmentsMap.locations.map((location: { id: string }) => location.id))
-DEPARTMENT_CODES.add(IDF_CODE)
-
-export function isValidDepartmentCode(code: unknown): code is FrenchDepartmentCode {
-  return typeof code === 'string' && DEPARTMENT_CODES.has(code)
-}
-
 export function getDepartmentLabel(code: FrenchDepartmentCode): string {
   return FRENCH_DEPARTMENTS[code]?.name ?? code
 }

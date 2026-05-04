@@ -26,7 +26,6 @@ export const taxonSchema = z
     distribution: z
       .object({
         departments: z.array(z.string()).optional(),
-        regions: z.array(z.string()).optional(),
       })
       .optional()
       .nullable(),
@@ -61,7 +60,7 @@ function capitalizeWords(value: string) {
 }
 
 function normalizeTaxonData(data: TaxonInput) {
-  const distribution = data.distribution?.departments ?? data.distribution?.regions ?? []
+  const distribution = data.distribution?.departments ?? []
 
   return {
     subfamily: capitalizeWords(data.subfamily),

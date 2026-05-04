@@ -429,7 +429,7 @@ export function TaxonsCrudPanel({
           <div className="mt-2 grid grid-cols-3 gap-2">
             <input
               className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder="Ouvrière (ex: 2-3 mm)"
+              placeholder={isAutoCalculatedSize ? undefined : 'Ouvrière (ex: 2-3 mm)'}
               value={levelDraft.sizeWorker}
               readOnly={isAutoCalculatedSize}
               disabled={isAutoCalculatedSize}
@@ -439,7 +439,7 @@ export function TaxonsCrudPanel({
             />
             <input
               className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder="Reine (ex: 4-5 mm)"
+              placeholder={isAutoCalculatedSize ? undefined : 'Reine (ex: 4-5 mm)'}
               value={levelDraft.sizeQueen}
               readOnly={isAutoCalculatedSize}
               disabled={isAutoCalculatedSize}
@@ -449,7 +449,7 @@ export function TaxonsCrudPanel({
             />
             <input
               className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder="Mâle (ex: 2-3 mm)"
+              placeholder={isAutoCalculatedSize ? undefined : 'Mâle (ex: 2-3 mm)'}
               value={levelDraft.sizeMale}
               readOnly={isAutoCalculatedSize}
               disabled={isAutoCalculatedSize}

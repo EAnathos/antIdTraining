@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import AdmZip from 'adm-zip'
 import sharp from 'sharp'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
@@ -35,6 +36,9 @@ export const databaseSnapshotSchema = z.object({
           species: z.string(),
           swarmingStartMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
           swarmingEndMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
+          distribution: z.object({
+            departments: z.array(z.string()).optional(),
+          }).nullable().optional(),
           createdAt: z.coerce.date(),
           updatedAt: z.coerce.date(),
         })
@@ -57,7 +61,10 @@ export const databaseSnapshotSchema = z.object({
         level: taxonLevelSchema,
         value: z.string(),
         description: z.string().nullable(),
-        createdAt: z.coerce.date(),
+          sizeWorker: z.string().nullable().optional(),
+          sizeQueen: z.string().nullable().optional(),
+          sizeMale: z.string().nullable().optional(),
+          createdAt: z.coerce.date(),
         updatedAt: z.coerce.date(),
       }),
     ),
@@ -274,7 +281,12 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     await tx.taxon.deleteMany()
 
     if (snapshot.data.taxons.length > 0) {
-      await tx.taxon.createMany({ data: snapshot.data.taxons })
+      await tx.taxon.createMany({
+        data: snapshot.data.taxons.map((taxon) => ({
+          ...taxon,
+          distribution: taxon.distribution ?? Prisma.DbNull,
+        })),
+      })
     }
 
     if (snapshot.data.taxonLevelProfiles.length > 0) {

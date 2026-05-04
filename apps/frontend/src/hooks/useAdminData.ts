@@ -18,6 +18,24 @@ type SwarmingPeriodDraft = {
 const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_ENTRY_IMAGES = 3
 const HISTORY_LIMIT = 12
+const TAXONS_CACHE_PREFIX = 'taxons-page-cache:v1:'
+
+function clearPublicTaxonsCache() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.sessionStorage.key(index)
+      if (key?.startsWith(TAXONS_CACHE_PREFIX)) {
+        window.sessionStorage.removeItem(key)
+      }
+    }
+  } catch {
+    // Ignore storage access failures.
+  }
+}
 
 export function useAdminData(token: string | null, onUnauthorized?: () => void) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
@@ -187,7 +205,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus: found.subgenus ?? '',
           speciesGroup: found.speciesGroup ?? '',
           species: found.species,
-          distribution: (found.distribution?.departments ?? found.distribution?.regions ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
+          distribution: (found.distribution?.departments ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
         })
       }
     }
@@ -244,6 +262,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
       })
       setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
+      clearPublicTaxonsCache()
     }, 'Taxon créé.', 'Impossible de créer le taxon.')
   }
 
@@ -260,12 +279,14 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         species: taxonForm.species.trim(),
         distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
       })
+      clearPublicTaxonsCache()
     }, 'Taxon modifié.', 'Impossible de modifier le taxon.')
   }
 
   async function deleteTaxon(id: string) {
     await runAdminAction(async () => {
       await adminApi.delete(`/taxons/${id}`)
+      clearPublicTaxonsCache()
     }, 'Taxon supprimé.', 'Impossible de supprimer le taxon.')
   }
 
@@ -313,6 +334,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           },
         },
       })
+      clearPublicTaxonsCache()
     }, 'Critères et descriptions mis à jour.', 'Impossible de mettre à jour les critères.')
   }
 
@@ -547,6 +569,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         formData.append('bundle', file)
         const { data } = await adminApi.post<{ imagesRestored?: number }>('/database/import/bundle', formData)
         await loadAdminData()
+        clearPublicTaxonsCache()
 
         const restoredCount = typeof data?.imagesRestored === 'number' ? data.imagesRestored : 0
         setMessage(`Base et images importées (${restoredCount} image${restoredCount > 1 ? 's' : ''} restaurée${restoredCount > 1 ? 's' : ''}).`)
@@ -568,6 +591,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
     await runAdminAction(async () => {
       await adminApi.post('/database/import', payload)
+      clearPublicTaxonsCache()
     }, 'Base importée.', 'Impossible d’importer la base.')
   }
 

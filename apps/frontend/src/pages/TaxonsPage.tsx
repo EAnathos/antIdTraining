@@ -48,22 +48,6 @@ function getReferenceHref(reference: ReferenceItem) {
   return reference.url
 }
 
-function isMonthInRange(month: number, startMonth: number | null, endMonth: number | null) {
-  if (!startMonth || !endMonth) {
-    return false
-  }
-
-  return month >= startMonth && month <= endMonth
-}
-
-function isRangeEndpoint(month: number, startMonth: number | null, endMonth: number | null) {
-  if (!startMonth || !endMonth) {
-    return false
-  }
-
-  return month === startMonth || month === endMonth
-}
-
 function getTaxonsCacheKey(level: 'subfamily' | 'genus' | 'species', query: string) {
   return `${TAXONS_CACHE_PREFIX}${level}:${encodeURIComponent(query.trim().toLowerCase())}`
 }
@@ -304,13 +288,13 @@ export function TaxonsPage() {
       )}
 
       {!isLoadingTaxons && (
-      <div
-        ref={tableContainerRef}
-        className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
-        onScroll={(event) => setTableScrollTop(event.currentTarget.scrollTop)}
-      >
-        <table className="w-full text-left text-sm">
-          <thead>
+        <div
+          ref={tableContainerRef}
+          className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
+          onScroll={(event) => setTableScrollTop(event.currentTarget.scrollTop)}
+        >
+          <table className="w-full text-left text-sm">
+            <thead>
             <tr className="border-b border-slate-200 text-slate-700">
               <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
               <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
@@ -319,8 +303,8 @@ export function TaxonsPage() {
               <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
               <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
             </tr>
-          </thead>
-          <tbody>
+            </thead>
+            <tbody>
             {topSpacerHeight > 0 && (
               <tr>
                 <td colSpan={6} style={{ height: `${topSpacerHeight}px` }} />
@@ -393,9 +377,9 @@ export function TaxonsPage() {
                 </td>
               </tr>
             )}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+            </table>
+        </div>
       )}
 
       {isLoadingMoreTaxons && (
@@ -447,37 +431,16 @@ export function TaxonsPage() {
             {selectedDetail.level === 'species' && (
               <>
                 <p className="mt-3 font-medium text-slate-800">Période d'essaimage</p>
-                <div className="mt-2 space-y-2">
-                  <div className="grid grid-cols-12 justify-items-center gap-2">
-                    {monthLabels.map((month, index) => {
-                      const monthValue = index + 1
-                      return (
-                        <span
-                          key={month}
-                          className={`shrink-0 rounded-full border ${
-                            isRangeEndpoint(monthValue, selectedDetail.taxon.swarmingStartMonth, selectedDetail.taxon.swarmingEndMonth)
-                              ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
-                              : isMonthInRange(monthValue, selectedDetail.taxon.swarmingStartMonth, selectedDetail.taxon.swarmingEndMonth)
-                                ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
-                                : 'h-4 w-4 border-slate-500 bg-slate-300'
-                          }`}
-                        />
-                      )
-                    })}
-                  </div>
-                  <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500">
-                    {monthLabels.map((month) => (
-                      <span key={`label-${month}`} className="w-6 text-center">{month.slice(0, 1)}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedDetail.taxon.swarmingStartMonth && selectedDetail.taxon.swarmingEndMonth ? (
-                  <p className="mt-1 text-slate-700">
-                    {monthLabels[selectedDetail.taxon.swarmingStartMonth - 1]} à {monthLabels[selectedDetail.taxon.swarmingEndMonth - 1]}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-slate-700">Aucune période d'essaimage renseignée pour cette espèce.</p>
+                {selectedDetail.taxon.swarmingStartMonth && selectedDetail.taxon.swarmingEndMonth ? (() => {
+                  const startMonth = selectedDetail.taxon.swarmingStartMonth
+                  const endMonth = selectedDetail.taxon.swarmingEndMonth
+                  return (
+                    <p className="mt-2 text-slate-700">
+                      {monthLabels[startMonth - 1]} à {monthLabels[endMonth - 1]}
+                    </p>
+                  )
+                })() : (
+                  <p className="mt-2 text-slate-700">Aucune période d'essaimage renseignée.</p>
                 )}
               </>
             )}
@@ -510,7 +473,7 @@ export function TaxonsPage() {
                 <p className="mt-3 font-medium text-slate-800">Aire de répartition</p>
                 <div className="mt-1">
                   {(() => {
-                    const raw = (selectedDetail.taxon.distribution?.departments ?? selectedDetail.taxon.distribution?.regions ?? []) as unknown[]
+                      const raw = (selectedDetail.taxon.distribution?.departments ?? []) as unknown[]
                     const codes = raw.filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
 
                     if (codes.length === 0) {
