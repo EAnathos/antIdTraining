@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { getDepartmentLabel, getDepartmentMapData, type FrenchDepartmentCode, IDF_CODE, IDF_DEPARTMENTS } from '../lib/frenchDepartments'
 
 type Props = {
@@ -18,6 +19,35 @@ function getDepartmentStyle(isSelected: boolean, readonly: boolean) {
 
 export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, readonly = false }: Props) {
   const selectedSet = new Set(selectedDepartments)
+  const pathRefs = useRef<Record<string, SVGPathElement | null>>({})
+  const [labelPositions, setLabelPositions] = useState<Record<string, { x: number; y: number }>>({})
+
+  useLayoutEffect(() => {
+    const nextPositions: Record<string, { x: number; y: number }> = {}
+
+    for (const location of MAP_DATA.locations as Array<{ id: string; name: string; path?: string }>) {
+      if (IDF_DEPARTMENTS.includes(location.id)) {
+        continue
+      }
+
+      const node = pathRefs.current[location.id]
+      if (!node) {
+        continue
+      }
+
+      try {
+        const bbox = node.getBBox()
+        nextPositions[location.id] = {
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+        }
+      } catch {
+        // Ignore SVG measurement errors.
+      }
+    }
+
+    setLabelPositions(nextPositions)
+  }, [])
 
   const activateDepartment = (departmentCode: FrenchDepartmentCode) => {
     if (!readonly) {
@@ -48,28 +78,44 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
             }
 
             return (
-              <path
-                key={location.id}
-                d={location.path}
-                className={getDepartmentStyle(isSelected, readonly)}
-                strokeWidth="1.25"
-                strokeLinejoin="round"
-                style={{ cursor: readonly ? 'default' : 'pointer', transition: 'fill 120ms ease, stroke 120ms ease' }}
-                tabIndex={readonly ? -1 : 0}
-                role={readonly ? undefined : 'button'}
-                aria-label={departmentName}
-                aria-pressed={isSelected}
-                onClick={handleClick}
-                onKeyDown={(event) => {
-                  if (readonly) return
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    handleClick()
-                  }
-                }}
-              >
-                <title>{departmentName}</title>
-              </path>
+              <g key={location.id}>
+                <path
+                  ref={(node) => {
+                    pathRefs.current[location.id] = node
+                  }}
+                  d={location.path}
+                  className={getDepartmentStyle(isSelected, readonly)}
+                  strokeWidth="1.25"
+                  strokeLinejoin="round"
+                  style={{ cursor: readonly ? 'default' : 'pointer', transition: 'fill 120ms ease, stroke 120ms ease' }}
+                  tabIndex={readonly ? -1 : 0}
+                  role={readonly ? undefined : 'button'}
+                  aria-label={departmentName}
+                  aria-pressed={isSelected}
+                  onClick={handleClick}
+                  onKeyDown={(event) => {
+                    if (readonly) return
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleClick()
+                    }
+                  }}
+                >
+                  <title>{departmentName}</title>
+                </path>
+                {!IDF_DEPARTMENTS.includes(location.id) && labelPositions[location.id] && (
+                  <text
+                    x={labelPositions[location.id].x}
+                    y={labelPositions[location.id].y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-slate-700 text-[10px] font-semibold"
+                    style={{ pointerEvents: 'none', paintOrder: 'stroke', stroke: '#ffffff', strokeWidth: 3 }}
+                  >
+                    {location.id}
+                  </text>
+                )}
+              </g>
             )
           })}
 
@@ -83,18 +129,6 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
         </svg>
       </div>
 
-      {selectedDepartments.length > 0 && (
-        <div className="rounded-lg bg-indigo-50 p-3">
-          <p className="text-sm font-medium text-slate-700">Départements sélectionnés ({selectedDepartments.length})</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedDepartments.map((code) => (
-              <span key={code} className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-xs font-medium text-white">
-                {getDepartmentLabel(code)}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
