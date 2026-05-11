@@ -37,6 +37,8 @@ echo "DATABASE_URL (masked): ${MASKED_DBURL:0:60}..."
 	cd "$REPO_DIR/apps/backend"
 	# If the genusValue migration previously failed, mark it rolled back so deploy can continue.
 	npx prisma migrate resolve --schema=./prisma/schema.prisma --rolled-back 20260511120000_add_genus_value_to_taxon_level_profile >/dev/null 2>&1 || true
+	# The species backfill migration is no longer needed; ensure a stale failed state does not block deploy.
+	npx prisma migrate resolve --schema=./prisma/schema.prisma --rolled-back 20260511123000_backfill_species_profiles_by_genus >/dev/null 2>&1 || true
 	npx prisma migrate deploy --schema=./prisma/schema.prisma
 )
 
