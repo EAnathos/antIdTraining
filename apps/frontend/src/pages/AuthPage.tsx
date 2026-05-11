@@ -20,12 +20,14 @@ export function AuthPage() {
     window.localStorage.setItem('antidtraining-auth-token', token)
     window.localStorage.setItem('antidtraining-auth-role', roleValue)
     window.localStorage.setItem('antidtraining-auth-username', name)
+    window.dispatchEvent(new Event('antidtraining-auth-changed'))
   }
 
   function clearAuth() {
     window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
+    window.dispatchEvent(new Event('antidtraining-auth-changed'))
   }
 
   async function onSubmit(event: FormEvent) {

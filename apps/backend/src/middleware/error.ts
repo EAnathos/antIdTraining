@@ -12,6 +12,15 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     return res.status(error.status).json({ message: error.message })
   }
 
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: string }).type === 'entity.too.large'
+  ) {
+    return res.status(413).json({ message: 'Snapshot trop volumineux.' })
+  }
+
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ message: 'Archive trop volumineuse.' })

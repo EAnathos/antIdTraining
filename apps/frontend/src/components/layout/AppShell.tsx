@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { api } from '../../lib/api'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -19,14 +20,37 @@ function adminNavClass({ isActive }: { isActive: boolean }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
+  const [authState, setAuthState] = useState(() => ({
+    token: typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null,
+    role: typeof window !== 'undefined' ? (window.localStorage.getItem('antidtraining-auth-role') as 'ADMIN' | 'USER' | null) : null,
+  }))
   const [showSuggestionForm, setShowSuggestionForm] = useState(false)
   const [suggestionName, setSuggestionName] = useState('')
   const [suggestionEmail, setSuggestionEmail] = useState('')
   const [suggestionMessage, setSuggestionMessage] = useState('')
   const [suggestionSubmitted, setSuggestionSubmitted] = useState(false)
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      setAuthState({
+        token: window.localStorage.getItem('antidtraining-auth-token'),
+        role: window.localStorage.getItem('antidtraining-auth-role') as 'ADMIN' | 'USER' | null,
+      })
+    }
+
+    window.addEventListener('antidtraining-auth-changed', syncAuthState)
+    window.addEventListener('storage', syncAuthState)
+
+    return () => {
+      window.removeEventListener('antidtraining-auth-changed', syncAuthState)
+      window.removeEventListener('storage', syncAuthState)
+    }
+  }, [])
 
   async function submitSuggestion(e?: React.FormEvent) {
     e?.preventDefault()
@@ -155,11 +179,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function handleLogout() {
+    await api.post('/auth/logout').catch(() => undefined)
+    window.localStorage.removeItem('antidtraining-auth-token')
+    window.localStorage.removeItem('antidtraining-auth-role')
+    window.localStorage.removeItem('antidtraining-auth-username')
+    window.dispatchEvent(new Event('antidtraining-auth-changed'))
+    navigate(location.pathname.startsWith('/admin') ? '/connexion' : '/', { replace: true })
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-4 py-6">
       <header className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-900">Ant ID Training</h1>
-        <nav className="mt-3 flex flex-wrap gap-2">
+        <nav className="mt-3 flex flex-wrap items-center gap-2">
           <NavLink className={navClass} to="/" end>
             Jeu
           </NavLink>
@@ -175,14 +208,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLink className={navClass} to="/classement">
             Classement
           </NavLink>
-          <NavLink className={adminNavClass} to="/connexion">
-            Connexion
-          </NavLink>
-          {installPromptEvent && (
-            <button className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700" type="button" onClick={() => void installApp()}>
-              Installer l’app
-            </button>
-          )}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {authState.token ? (
+              <>
+                {authState.role === 'ADMIN' && (
+                  <NavLink className={adminNavClass} to="/admin">
+                    Admin
+                  </NavLink>
+                )}
+                <button className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700" type="button" onClick={() => void handleLogout()}>
+                  Déconnexion
+                </button>
+              </>
+            ) : (
+              <NavLink className={adminNavClass} to="/connexion">
+                Connexion
+              </NavLink>
+            )}
+            {installPromptEvent && (
+              <button className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700" type="button" onClick={() => void installApp()}>
+                Installer l’app
+              </button>
+            )}
+          </div>
         </nav>
       </header>
 

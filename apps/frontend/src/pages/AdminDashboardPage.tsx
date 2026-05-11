@@ -32,6 +32,7 @@ export function AdminDashboardPage() {
     window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
+    window.dispatchEvent(new Event('antidtraining-auth-changed'))
     navigate('/connexion', { replace: true })
   }
 
@@ -69,12 +70,6 @@ export function AdminDashboardPage() {
           setSection={setSection}
         />
 
-        <button
-          className="rounded-lg bg-red-600 px-3 py-2 text-sm text-white"
-          onClick={logoutToLogin}
-        >
-          Déconnexion
-        </button>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

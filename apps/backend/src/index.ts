@@ -50,7 +50,7 @@ app.use(
   }),
 )
 app.use(compression({ threshold: 1024, level: 6 }))
-app.use(express.json())
+app.use(express.json({ limit: '25mb' }))
 app.use(
   '/uploads',
   express.static(uploadsPath, {
