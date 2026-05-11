@@ -8,6 +8,7 @@ const ReferencesPage = lazy(() => import('./pages/ReferencesPage').then((module)
 const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((module) => ({ default: module.LeaderboardPage })))
+const ContributionPage = lazy(() => import('./pages/ContributionPage').then((module) => ({ default: module.ContributionPage })))
 const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ default: module.default })))
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/jeu" element={<Navigate to="/" replace />} />
           <Route path="/taxons" element={<TaxonsPage />} />
           <Route path="/references" element={<ReferencesPage />} />
+          <Route path="/contribution" element={<ContributionPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/classement" element={<LeaderboardPage />} />
           <Route path="/connexion" element={<AuthPage />} />

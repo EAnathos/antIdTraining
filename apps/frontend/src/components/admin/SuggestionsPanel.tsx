@@ -16,7 +16,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="mb-2 text-sm font-semibold text-slate-700">Suggestions</h3>
+      <h3 className="mb-2 text-sm font-semibold text-slate-700">Contribution</h3>
 
       <div className="flex gap-2">
         {(['ALL', 'PENDING', 'PROCESSED', 'REJECTED'] as const).map((f) => (

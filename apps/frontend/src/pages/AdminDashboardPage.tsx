@@ -16,10 +16,10 @@ const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'taxons', label: 'Taxons' },
   { id: 'references', label: 'Références' },
   { id: 'entries', label: 'Entrées' },
-    { id: 'suggestions', label: 'Suggestions' },
+  { id: 'suggestions', label: 'Contribution' },
   { id: 'stats', label: 'Statistiques' },
   { id: 'database', label: 'Base de données' },
-    { id: 'history', label: 'Historique' },
+  { id: 'history', label: 'Historique' },
 ]
 
 export function AdminDashboardPage() {

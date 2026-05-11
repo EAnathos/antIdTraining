@@ -97,8 +97,24 @@ export function GamePage() {
     setFullscreenImage(null)
   }
 
-  function applyScoreDelta(correct: boolean) {
-    setSessionScore((current) => current + (correct ? 5 : -2))
+  function applyScoreDelta(points: number) {
+    setSessionScore((current) => current + points)
+  }
+
+  function getScoreDelta(step: 'subfamily' | 'genus' | 'species', correct: boolean) {
+    if (!correct) {
+      return step === 'subfamily' ? -2 : -5
+    }
+
+    if (step === 'subfamily') {
+      return 5
+    }
+
+    if (step === 'genus') {
+      return 10
+    }
+
+    return 15
   }
 
   function handleLevelChange(nextLevel: ActiveLevel) {
@@ -187,7 +203,7 @@ export function GamePage() {
       })
 
       if (data.correct) {
-        applyScoreDelta(true)
+        applyScoreDelta(getScoreDelta('subfamily', true))
         try {
           const { data: generaData } = await api.get<string[]>('/taxons/genera', {
             params: {
@@ -206,8 +222,8 @@ export function GamePage() {
         return
       }
 
-      setSubfamilyValidation(null)
-      applyScoreDelta(false)
+        setSubfamilyValidation(null)
+        applyScoreDelta(getScoreDelta('subfamily', false))
       setStepFeedback('')
       setMediumStep('done')
       setResult(data)
@@ -231,7 +247,7 @@ export function GamePage() {
       setMediumStep('done')
       setStepFeedback('')
     }
-    applyScoreDelta(data.correct)
+    applyScoreDelta(getScoreDelta(level === 'medium' ? 'genus' : 'subfamily', data.correct))
     setResult(data)
   }
 
@@ -241,11 +257,11 @@ export function GamePage() {
       <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
         {isConnected ? (
           <>
-            Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
+            Le nombre de points gagnés ou perdus dépend du niveau de difficulté.
           </>
         ) : (
           <>
-            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous voulez suivre votre progression dans le classement. Chaque bonne réponse vaut 5 points, chaque mauvaise réponse enlève 2 points.
+            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous voulez suivre votre progression dans le classement.
           </>
         )}
       </p>

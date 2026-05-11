@@ -32,6 +32,7 @@ function parseCorsOrigins(value: string | undefined) {
 }
 
 const app = express()
+app.set('trust proxy', 1)
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const uploadsPath = path.resolve(currentDir, '../uploads')
 const corsOrigins = parseCorsOrigins(process.env.CORS_ORIGINS)

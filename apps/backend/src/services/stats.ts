@@ -99,23 +99,30 @@ export async function getLeaderboard(limitInput?: unknown) {
   const limit = Math.max(1, Math.min(Number(limitInput ?? 10) || 10, 50))
 
   const grouped = await prisma.gameSession.groupBy({
-    by: ['userId', 'finalCorrect'],
-    where: { userId: { not: null } },
+    by: ['userId', 'level', 'finalCorrect'],
+    where: { userId: { not: null }, finalCorrect: { not: null } },
     _count: { _all: true },
   })
 
-  const leaderboardMap = new Map<string, { userId: string; gamesPlayed: number; correctCount: number }>()
+  const leaderboardMap = new Map<string, { userId: string; gamesPlayed: number; correctCount: number; points: number }>()
+
+  const levelPoints: Record<'EASY' | 'MEDIUM' | 'HARD', { correct: number; wrong: number }> = {
+    EASY: { correct: 5, wrong: -5 },
+    MEDIUM: { correct: 15, wrong: -5 },
+    HARD: { correct: 30, wrong: -5 },
+  }
 
   grouped.forEach((group) => {
     if (!group.userId) {
       return
     }
 
-    const current = leaderboardMap.get(group.userId) ?? { userId: group.userId, gamesPlayed: 0, correctCount: 0 }
+    const current = leaderboardMap.get(group.userId) ?? { userId: group.userId, gamesPlayed: 0, correctCount: 0, points: 0 }
     current.gamesPlayed += group._count._all
     if (group.finalCorrect === true) {
       current.correctCount += group._count._all
     }
+    current.points += (group.finalCorrect === true ? levelPoints[group.level].correct : levelPoints[group.level].wrong) * group._count._all
     leaderboardMap.set(group.userId, current)
   })
 
@@ -123,8 +130,8 @@ export async function getLeaderboard(limitInput?: unknown) {
     .map((item) => ({
       ...item,
       wrongCount: item.gamesPlayed - item.correctCount,
-      points: item.correctCount * 5 - (item.gamesPlayed - item.correctCount) * 2,
     }))
+    .filter((item) => item.points > 200)
     .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.points - a.points)
     .slice(0, limit)
 

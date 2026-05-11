@@ -36,7 +36,10 @@ export function LeaderboardPage() {
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Classement</h2>
-      <p className="text-sm text-slate-600">Le classement est basé sur le nombre de parties jouées. Chaque bonne réponse rapporte 5 points, chaque mauvaise réponse retire 2 points.</p>
+      <p className="text-sm text-slate-600">
+        Le classement est basé sur les parties terminées. Le nombre de points gagnés ou perdus dépend du niveau de difficulté.
+        Seuls les joueurs ayant plus de 200 points apparaissent ici.
+      </p>
 
       {loading && <p className="text-sm text-slate-600">Chargement…</p>}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

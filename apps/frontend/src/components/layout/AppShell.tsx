@@ -29,11 +29,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     token: typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null,
     role: typeof window !== 'undefined' ? (window.localStorage.getItem('antidtraining-auth-role') as 'ADMIN' | 'USER' | null) : null,
   }))
-  const [showSuggestionForm, setShowSuggestionForm] = useState(false)
-  const [suggestionName, setSuggestionName] = useState('')
-  const [suggestionEmail, setSuggestionEmail] = useState('')
-  const [suggestionMessage, setSuggestionMessage] = useState('')
-  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false)
 
   useEffect(() => {
     const syncAuthState = () => {
@@ -51,25 +46,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener('storage', syncAuthState)
     }
   }, [])
-
-  async function submitSuggestion(e?: React.FormEvent) {
-    e?.preventDefault()
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL ?? '/api'}/suggestions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: suggestionName || null, email: suggestionEmail || null, message: suggestionMessage }),
-        credentials: 'include',
-      })
-      setSuggestionSubmitted(true)
-      setShowSuggestionForm(false)
-      setSuggestionName('')
-      setSuggestionEmail('')
-      setSuggestionMessage('')
-    } catch {
-      // ignore errors silently
-    }
-  }
 
   useEffect(() => {
     function handleOnline() {
@@ -202,6 +178,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLink className={navClass} to="/references">
             Références
           </NavLink>
+          <NavLink className={navClass} to="/contribution">
+            Contribution
+          </NavLink>
           <NavLink className={navClass} to="/about">
             À propos
           </NavLink>
@@ -259,28 +238,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </a>
             .
           </p>
-
-          {!suggestionSubmitted && (
-            <div className="mt-2">
-              {!showSuggestionForm ? (
-                <button className="rounded-lg bg-indigo-600 px-3 py-2 text-white" onClick={() => setShowSuggestionForm(true)}>Faire une suggestion</button>
-              ) : (
-                <form className="mt-2 space-y-2" onSubmit={submitSuggestion}>
-                  <input className="w-full rounded border p-2" placeholder="Nom (optionnel)" value={suggestionName} onChange={(e) => setSuggestionName(e.target.value)} />
-                  <input className="w-full rounded border p-2" placeholder="Email (optionnel)" value={suggestionEmail} onChange={(e) => setSuggestionEmail(e.target.value)} />
-                  <textarea className="w-full rounded border p-2" placeholder="Votre suggestion" value={suggestionMessage} onChange={(e) => setSuggestionMessage(e.target.value)} required />
-                  <div className="flex justify-center gap-2">
-                    <button className="rounded-lg bg-indigo-600 px-3 py-2 text-white" type="submit">Envoyer</button>
-                    <button type="button" className="rounded-lg bg-slate-100 px-3 py-2" onClick={() => setShowSuggestionForm(false)}>Annuler</button>
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
-
-          {suggestionSubmitted && (
-            <p className="mt-2 text-sm text-emerald-700">Merci pour votre suggestion.</p>
-          )}
         </div>
       </footer>
     </div>

@@ -42,7 +42,7 @@ authRouter.post('/register', async (req, res) => {
       throw new AppError(400, 'Requête invalide.')
     }
 
-    const auth = await registerUser(parsed.data.username, parsed.data.password)
+    const auth = await registerUser(parsed.data.username, parsed.data.password, req.ip)
 
     res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
