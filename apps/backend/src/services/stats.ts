@@ -1,5 +1,15 @@
 import { prisma } from '../prisma.js'
 
+type UserPointRow = {
+  userId: string
+  username: string
+  role: 'ADMIN' | 'USER'
+  gamesPlayed: number
+  correctCount: number
+  wrongCount: number
+  points: number
+}
+
 type DbLevel = 'EASY' | 'MEDIUM' | 'HARD'
 
 const LEVELS: { db: DbLevel; api: 'easy' | 'medium' | 'hard' }[] = [
@@ -7,6 +17,12 @@ const LEVELS: { db: DbLevel; api: 'easy' | 'medium' | 'hard' }[] = [
   { db: 'MEDIUM', api: 'medium' },
   { db: 'HARD', api: 'hard' },
 ]
+
+const GAME_POINTS_BY_LEVEL: Record<DbLevel, { correct: number; wrong: number }> = {
+  EASY: { correct: 5, wrong: -2 },
+  MEDIUM: { correct: 10, wrong: -5 },
+  HARD: { correct: 15, wrong: -5 },
+}
 
 export type StatsPeriod = '7d' | '30d' | 'all'
 
@@ -27,6 +43,79 @@ function getPeriodDate(period: StatsPeriod): Date | null {
   const now = new Date()
   const days = period === '7d' ? 7 : 30
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+}
+
+export async function buildUserPointRows(userIds?: string[]) {
+  if (userIds && userIds.length === 0) {
+    return []
+  }
+
+  const users = await prisma.user.findMany({
+    ...(userIds ? { where: { id: { in: userIds } } } : {}),
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      points: true,
+    },
+  })
+
+  if (!users.length) {
+    return []
+  }
+
+  const grouped = await prisma.gameSession.groupBy({
+    by: ['userId', 'level', 'finalCorrect'],
+    where: {
+      userId: { in: users.map((user) => user.id) },
+      finalCorrect: { not: null },
+    },
+    _count: { _all: true },
+  })
+
+  const rows = new Map<string, UserPointRow>(
+    users.map((user) => [
+      user.id,
+      {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        gamesPlayed: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        points: user.points,
+      },
+    ]),
+  )
+
+  grouped.forEach((group) => {
+    if (!group.userId) {
+      return
+    }
+
+    const current = rows.get(group.userId)
+    if (!current) {
+      return
+    }
+
+    current.gamesPlayed += group._count._all
+    if (group.finalCorrect === true) {
+      current.correctCount += group._count._all
+    }
+
+    const points = GAME_POINTS_BY_LEVEL[group.level]
+    current.points += (group.finalCorrect === true ? points.correct : points.wrong) * group._count._all
+  })
+
+  return Array.from(rows.values()).map((row) => ({
+    ...row,
+    wrongCount: row.gamesPlayed - row.correctCount,
+  }))
+}
+
+export async function getUserPoints(userId: string) {
+  const rows = await buildUserPointRows([userId])
+  return rows[0]?.points ?? 0
 }
 
 export async function getGameStats(periodInput: unknown) {
@@ -97,56 +186,15 @@ export async function getEntryStats(periodInput: unknown) {
 
 export async function getLeaderboard(limitInput?: unknown) {
   const limit = Math.max(1, Math.min(Number(limitInput ?? 10) || 10, 50))
-
-  const grouped = await prisma.gameSession.groupBy({
-    by: ['userId', 'level', 'finalCorrect'],
-    where: { userId: { not: null }, finalCorrect: { not: null } },
-    _count: { _all: true },
-  })
-
-  const leaderboardMap = new Map<string, { userId: string; gamesPlayed: number; correctCount: number; points: number }>()
-
-  const levelPoints: Record<'EASY' | 'MEDIUM' | 'HARD', { correct: number; wrong: number }> = {
-    EASY: { correct: 5, wrong: -5 },
-    MEDIUM: { correct: 15, wrong: -5 },
-    HARD: { correct: 30, wrong: -5 },
-  }
-
-  grouped.forEach((group) => {
-    if (!group.userId) {
-      return
-    }
-
-    const current = leaderboardMap.get(group.userId) ?? { userId: group.userId, gamesPlayed: 0, correctCount: 0, points: 0 }
-    current.gamesPlayed += group._count._all
-    if (group.finalCorrect === true) {
-      current.correctCount += group._count._all
-    }
-    current.points += (group.finalCorrect === true ? levelPoints[group.level].correct : levelPoints[group.level].wrong) * group._count._all
-    leaderboardMap.set(group.userId, current)
-  })
-
-  const sessions = Array.from(leaderboardMap.values())
-    .map((item) => ({
-      ...item,
-      wrongCount: item.gamesPlayed - item.correctCount,
-    }))
+  const sessions = (await buildUserPointRows())
     .filter((item) => item.points > 200)
     .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.points - a.points)
     .slice(0, limit)
 
-  const userIds = sessions.map((session) => session.userId)
-  const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: { id: true, username: true },
-  })
-
-  const userMap = new Map(users.map((user) => [user.id, user.username]))
-
   return {
     items: sessions.map((session) => ({
       userId: session.userId,
-      username: userMap.get(session.userId) ?? 'Joueur inconnu',
+      username: session.username,
       gamesPlayed: session.gamesPlayed,
       correctCount: session.correctCount,
       wrongCount: session.wrongCount,

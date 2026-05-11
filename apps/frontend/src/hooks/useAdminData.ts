@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
-import type { AdminHistoryItem, Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
+import type { AdminHistoryItem, AdminUserPointsItem, Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
@@ -47,6 +47,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<AdminHistoryItem[]>([])
+  const [users, setUsers] = useState<AdminUserPointsItem[]>([])
 
   const [taxonForm, setTaxonForm] = useState<{
     subfamily: string
@@ -136,7 +137,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return allItems
     }
 
-    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes] = await Promise.all([
+    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes, usersRes] = await Promise.all([
       listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
@@ -145,6 +146,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         params: { period: statsPeriod },
       }),
       adminApi.get<any>('/stats/entries', { params: { period: statsPeriod } }),
+      adminApi.get<AdminUserPointsItem[]>('/users'),
     ])
 
     setTaxons(taxonRes)
@@ -153,6 +155,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setEntries(entryRes.data)
     setGameStats(statsRes.data.levels)
     setEntryStats(entryStatsRes.data)
+    setUsers(usersRes.data)
 
     try {
       const { data: historyData } = await adminApi.get<AdminHistoryItem[]>('/history')
@@ -184,6 +187,16 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       const resolvedMessage = resolveAdminErrorMessage(error, failureMessage)
       setMessage(resolvedMessage)
     }
+  }
+
+  async function setUserPoints(id: string, points: number) {
+    await runAdminAction(async () => {
+      await adminApi.put(`/users/${id}/points`, { points })
+      const { data } = await adminApi.get<AdminUserPointsItem[]>('/users')
+      setUsers(data)
+      // Dispatch event to notify LeaderboardPage to refresh
+      window.dispatchEvent(new Event('antidtraining-user-points-changed'))
+    }, 'Points utilisateur mis à jour.', 'Impossible de mettre à jour les points utilisateur.')
   }
 
   useEffect(() => {
@@ -679,6 +692,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     suggestions,
     setSuggestionStatus,
     history,
+    users,
+    setUserPoints,
     exportDatabaseSnapshot,
     importDatabaseSnapshot,
     cleanupUploads,

@@ -125,6 +125,15 @@ export type AuthMeResponse = {
   userId: string
   role: 'ADMIN' | 'USER'
   username: string | null
+  points: number
+}
+
+export type AdminUserPointsItem = {
+  id: string
+  username: string
+  role: 'ADMIN' | 'USER'
+  points: number
+  createdAt: string
 }
 
 export type CrudMode = 'create' | 'update' | 'delete'
@@ -145,4 +154,4 @@ export type Suggestion = {
   processedAt?: string | null
 }
 
-export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'history'
+export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'points' | 'history'

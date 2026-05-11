@@ -9,6 +9,7 @@ import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
 import { StatsPanel } from '../components/admin/StatsPanel'
 import { SuggestionsPanel } from '../components/admin/SuggestionsPanel'
+import { UserPointsPanel } from '../components/admin/UserPointsPanel'
 import { AdminHistoryPanel } from '../components/admin/AdminHistoryPanel'
 import { api } from '../lib/api'
 
@@ -17,6 +18,7 @@ const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'references', label: 'Références' },
   { id: 'entries', label: 'Entrées' },
   { id: 'suggestions', label: 'Contribution' },
+  { id: 'points', label: 'Points' },
   { id: 'stats', label: 'Statistiques' },
   { id: 'database', label: 'Base de données' },
   { id: 'history', label: 'Historique' },
@@ -36,7 +38,8 @@ export function AdminDashboardPage() {
     navigate('/connexion', { replace: true })
   }
 
-  const data = useAdminData(null, () => {
+  const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
+  const data = useAdminData(token, () => {
     void logoutToLogin()
   })
 
@@ -129,6 +132,13 @@ export function AdminDashboardPage() {
           <SuggestionsPanel
             suggestions={data.suggestions}
             setSuggestionStatus={data.setSuggestionStatus}
+          />
+        )}
+
+        {section === 'points' && (
+          <UserPointsPanel
+            users={data.users}
+            setUserPoints={data.setUserPoints}
           />
         )}
 

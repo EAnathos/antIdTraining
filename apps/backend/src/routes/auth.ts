@@ -4,6 +4,7 @@ import { getAdminCookieOptions, optionalAuth } from '../middleware/auth.js'
 import { AppError } from '../lib/errors.js'
 import { loginAdmin, registerUser } from '../services/auth.js'
 import { prisma } from '../prisma.js'
+import { getUserPoints } from '../services/stats.js'
 
 const loginSchema = z.object({
   username: z.string().min(2),
@@ -61,18 +62,18 @@ authRouter.post('/logout', (_req, res) => {
   return res.status(204).send()
 })
 
-authRouter.get('/me', optionalAuth, (req, res) => {
+authRouter.get('/me', optionalAuth, async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
 
-  return prisma.user
-    .findUnique({ where: { id: req.user.userId }, select: { username: true } })
-    .then((user) => {
-      return res.json({
-        userId: req.user!.userId,
-        role: req.user!.role,
-        username: user?.username ?? null,
-      })
-    })
+  const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { username: true } })
+  const points = await getUserPoints(req.user.userId)
+
+  return res.json({
+    userId: req.user.userId,
+    role: req.user.role,
+    username: user?.username ?? null,
+    points,
+  })
 })
