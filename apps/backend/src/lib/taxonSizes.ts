@@ -139,13 +139,23 @@ export async function buildTaxonSizeMaps() {
 export async function resolveTaxonSizeDetails(entry: { species?: string | null; genus?: string | null; subfamily: string }, caste?: 'WORKER' | 'QUEEN' | 'MALE' | null) {
   const sizeKey = caste === 'QUEEN' ? 'sizeQueen' : caste === 'MALE' ? 'sizeMale' : 'sizeWorker'
 
-  if (entry.species) {
+  if (entry.species && entry.genus) {
     const profile = await prisma.taxonLevelProfile.findUnique({
-      where: { level_value: { level: 'SPECIES', value: entry.species } },
+      where: { level_value_genusValue: { level: 'SPECIES', value: entry.species, genusValue: entry.genus } },
       select: { sizeWorker: true, sizeQueen: true, sizeMale: true },
     })
 
-    const details = buildSizeDetails(profile)
+    if (profile) {
+      const details = buildSizeDetails(profile)
+      return details[sizeKey]
+    }
+
+    const sharedProfile = await prisma.taxonLevelProfile.findFirst({
+      where: { level: 'SPECIES', value: entry.species, genusValue: null },
+      select: { sizeWorker: true, sizeQueen: true, sizeMale: true },
+    })
+
+    const details = buildSizeDetails(sharedProfile)
     return details[sizeKey]
   }
 
@@ -186,18 +196,18 @@ export async function resolveTaxonSizeDetails(entry: { species?: string | null; 
     return derivedSize
   }
 
-  const storedProfile = await prisma.taxonLevelProfile.findUnique({
-    where: {
-      level_value: entry.genus
-        ? {
-            level: 'GENUS',
-            value: entry.genus,
-          }
-        : {
-            level: 'SUBFAMILY',
-            value: entry.subfamily,
-          },
-    },
+  const storedProfile = await prisma.taxonLevelProfile.findFirst({
+    where: entry.genus
+      ? {
+          level: 'GENUS',
+          value: entry.genus,
+          genusValue: null,
+        }
+      : {
+          level: 'SUBFAMILY',
+          value: entry.subfamily,
+          genusValue: null,
+        },
     select: { sizeWorker: true, sizeQueen: true, sizeMale: true },
   })
 

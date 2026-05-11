@@ -104,6 +104,7 @@ model TaxonLevelProfile {
   id        String   @id @default(cuid())
   level     TaxonLevel
   value     String
+  genusValue String?
   description String?
   sizeWorker String?
   sizeQueen  String?
@@ -113,9 +114,10 @@ model TaxonLevelProfile {
 
   criteria TaxonLevelCriterion[]
 
-  @@unique([level, value])
+  @@unique([level, value, genusValue])
   @@index([level])
   @@index([value])
+  @@index([level, value])
 }
 
 model TaxonLevelCriterion {

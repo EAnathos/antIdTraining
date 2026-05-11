@@ -67,18 +67,30 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
 async function resolveEntrySize(entry: { species?: string | null; genus?: string | null; subfamily: string; }) {
   // Try most specific profile first: SPECIES, then GENUS, then SUBFAMILY
   // Return worker size since it's the most common caste
-  if (entry.species) {
-    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SPECIES', value: entry.species } } })
+  if (entry.species && entry.genus) {
+    const p = await prisma.taxonLevelProfile.findUnique({
+      where: { level_value_genusValue: { level: 'SPECIES', value: entry.species, genusValue: entry.genus } },
+      include: { criteria: { orderBy: { position: 'asc' } } },
+    })
     if (p?.sizeWorker) return p.sizeWorker
+
+    const shared = await prisma.taxonLevelProfile.findFirst({ where: { level: 'SPECIES', value: entry.species, genusValue: null } })
+    if (shared?.sizeWorker) return shared.sizeWorker
   }
 
   if (entry.genus) {
-    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'GENUS', value: entry.genus } } })
+    const p = await prisma.taxonLevelProfile.findFirst({
+      where: { level: 'GENUS', value: entry.genus, genusValue: null },
+      include: { criteria: { orderBy: { position: 'asc' } } },
+    })
     if (p?.sizeWorker) return p.sizeWorker
   }
 
   if (entry.subfamily) {
-    const p = await prisma.taxonLevelProfile.findUnique({ where: { level_value: { level: 'SUBFAMILY', value: entry.subfamily } } })
+    const p = await prisma.taxonLevelProfile.findFirst({
+      where: { level: 'SUBFAMILY', value: entry.subfamily, genusValue: null },
+      include: { criteria: { orderBy: { position: 'asc' } } },
+    })
     if (p?.sizeWorker) return p.sizeWorker
   }
 
@@ -325,12 +337,11 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
   }
 
   const subfamilyProfile = resolvedAnswer.subfamily
-    ? await prisma.taxonLevelProfile.findUnique({
+    ? await prisma.taxonLevelProfile.findFirst({
         where: {
-          level_value: {
-            level: 'SUBFAMILY',
-            value: resolvedAnswer.subfamily,
-          },
+          level: 'SUBFAMILY',
+          value: resolvedAnswer.subfamily,
+          genusValue: null,
         },
         include: {
           criteria: {
@@ -341,12 +352,11 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     : null
 
   const genusProfile = resolvedAnswer.genus
-    ? await prisma.taxonLevelProfile.findUnique({
+    ? await prisma.taxonLevelProfile.findFirst({
         where: {
-          level_value: {
-            level: 'GENUS',
-            value: resolvedAnswer.genus,
-          },
+          level: 'GENUS',
+          value: resolvedAnswer.genus,
+          genusValue: null,
         },
         include: {
           criteria: {
