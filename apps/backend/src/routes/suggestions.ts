@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { optionalAuth } from '../middleware/auth.js'
@@ -14,7 +15,7 @@ const suggestionSchema = z.object({
   message: z.string().min(1),
 })
 
-suggestionsRouter.post('/', optionalAuth, async (req, res) => {
+suggestionsRouter.post('/', optionalAuth, asyncHandler(async (req, res) => {
   const parsed = suggestionSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
@@ -40,4 +41,4 @@ suggestionsRouter.post('/', optionalAuth, async (req, res) => {
   })
 
   return res.status(201).json(created)
-})
+}))

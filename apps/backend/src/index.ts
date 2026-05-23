@@ -1,6 +1,7 @@
 import cors from 'cors'
 import express from 'express'
 import compression from 'compression'
+import helmet from 'helmet'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
@@ -34,6 +35,10 @@ function parseCorsOrigins(value: string | undefined) {
 
 const app = express()
 app.set('trust proxy', 1)
+
+// Security headers
+app.use(helmet())
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const uploadsPath = path.resolve(currentDir, '../uploads')
 const corsOrigins = parseCorsOrigins(process.env.CORS_ORIGINS)
@@ -104,7 +109,7 @@ app.use(
             scheme: 'bearer',
             bearerFormat: 'JWT',
           },
-          value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          value: '', // Laisser vide - l'utilisateur doit entrer son token
         },
       },
     },

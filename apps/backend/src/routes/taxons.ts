@@ -1,51 +1,52 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { createTaxon, deleteTaxon, getSpeciesMetadata, listGenera, listSpecies, listSubfamilies, listTaxons, listSubgenera, listSpeciesGroups, taxonSchema, updateTaxon } from '../services/taxons.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
 
-publicTaxonsRouter.get('/subfamilies', async (_req, res) => {
+publicTaxonsRouter.get('/subfamilies', asyncHandler(async (_req, res) => {
   const subfamilies = await listSubfamilies()
   return res.json(subfamilies)
-})
+}))
 
-publicTaxonsRouter.get('/genera', async (req, res) => {
+publicTaxonsRouter.get('/genera', asyncHandler(async (req, res) => {
   const genera = await listGenera(String(req.query.subfamily ?? ''))
   return res.json(genera)
-})
+}))
 
-publicTaxonsRouter.get('/subgenera', async (req, res) => {
+publicTaxonsRouter.get('/subgenera', asyncHandler(async (req, res) => {
   const subgenera = await listSubgenera(String(req.query.genus ?? ''))
   return res.json(subgenera)
-})
+}))
 
-publicTaxonsRouter.get('/species-groups', async (req, res) => {
+publicTaxonsRouter.get('/species-groups', asyncHandler(async (req, res) => {
   const groups = await listSpeciesGroups(String(req.query.genus ?? ''))
   return res.json(groups)
-})
+}))
 
-publicTaxonsRouter.get('/species', async (req, res) => {
+publicTaxonsRouter.get('/species', asyncHandler(async (req, res) => {
   const species = await listSpecies(String(req.query.genus ?? ''))
   return res.json(species)
-})
+}))
 
-publicTaxonsRouter.get('/species-metadata', async (req, res) => {
+publicTaxonsRouter.get('/species-metadata', asyncHandler(async (req, res) => {
   const metadata = await getSpeciesMetadata(String(req.query.genus ?? ''), String(req.query.species ?? ''))
   return res.json(metadata)
-})
+}))
 
-publicTaxonsRouter.get('/', async (req, res) => {
+publicTaxonsRouter.get('/', asyncHandler(async (req, res) => {
   const result = await listTaxons({
     level: req.query.level,
     q: req.query.q,
     offset: req.query.offset,
   })
   return res.json(result)
-})
+}))
 
-adminTaxonsRouter.post('/', async (req, res) => {
+adminTaxonsRouter.post('/', asyncHandler(async (req, res) => {
   const parsed = taxonSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
@@ -62,15 +63,15 @@ adminTaxonsRouter.post('/', async (req, res) => {
   })
 
   return res.status(201).json(created)
-})
+}))
 
-adminTaxonsRouter.put('/:id', async (req, res) => {
+adminTaxonsRouter.put('/:id', asyncHandler(async (req, res) => {
   const parsed = taxonSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
   }
 
-  const updated = await updateTaxon(req.params.id, parsed.data)
+  const updated = await updateTaxon(req.params.id as string, parsed.data)
   const taxonLabel = [updated.subfamily, updated.genus, updated.species].filter(Boolean).join(' · ')
   await recordAdminAudit(req, {
     action: 'Taxon modifié',
@@ -81,10 +82,10 @@ adminTaxonsRouter.put('/:id', async (req, res) => {
   })
 
   return res.json(updated)
-})
+}))
 
-adminTaxonsRouter.delete('/:id', async (req, res) => {
-  const deletedTaxon = await deleteTaxon(req.params.id)
+adminTaxonsRouter.delete('/:id', asyncHandler(async (req, res) => {
+  const deletedTaxon = await deleteTaxon(req.params.id as string)
 
   const taxonLabel = [deletedTaxon.subfamily, deletedTaxon.genus, deletedTaxon.species]
     .map((value) => value?.trim())
@@ -99,4 +100,4 @@ adminTaxonsRouter.delete('/:id', async (req, res) => {
   })
 
   return res.status(204).send()
-})
+}))

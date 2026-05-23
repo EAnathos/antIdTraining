@@ -7,6 +7,7 @@ import sharp from 'sharp'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
@@ -109,7 +110,7 @@ const uploadProposalImages: RequestHandler = (req, res, next) => {
 }
 
 // Get user's proposals and suggestions
-entryProposalsRouter.get('/my-contributions', async (req, res) => {
+entryProposalsRouter.get('/my-contributions', asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
@@ -127,10 +128,10 @@ entryProposalsRouter.get('/my-contributions', async (req, res) => {
   ])
 
   return res.json({ proposals, suggestions })
-})
+}))
 
 // Get proposal count for user (check limit)
-entryProposalsRouter.get('/user-counts', async (req, res) => {
+entryProposalsRouter.get('/user-counts', asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
@@ -152,81 +153,70 @@ entryProposalsRouter.get('/user-counts', async (req, res) => {
     canPropose: proposalCount < MAX_PROPOSALS_PER_USER,
     canSuggest: suggestionCount < MAX_SUGGESTIONS_PER_USER,
   })
-})
+}))
 
 // Create entry proposal
-entryProposalsRouter.post('/', uploadProposalImages, async (req, res) => {
+entryProposalsRouter.post('/', uploadProposalImages, asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
 
-  const savedFilePaths: string[] = []
-
-  try {
-    const parsed = proposalSchema.safeParse(req.body)
-    if (!parsed.success) {
-      throw new AppError(400, 'Requête invalide.')
-    }
-
-    // Check proposal limit
-    const proposalCount = await prisma.entryProposal.count({
-      where: { userId: req.user.userId },
-    })
-    if (proposalCount >= MAX_PROPOSALS_PER_USER) {
-      throw new AppError(400, `Limite de ${MAX_PROPOSALS_PER_USER} propositions atteinte.`)
-    }
-
-    const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
-    if (!taxonSelection) {
-      throw new AppError(400, 'Taxon introuvable pour ce niveau.')
-    }
-
-    const files = (req.files as Express.Multer.File[] | undefined) ?? []
-    const optimizedFileNames = await Promise.all(
-      files.map(async (file, index) => {
-        const result = await optimizeAndSaveImage(file, index)
-        savedFilePaths.push(...result.savedPaths)
-        return result.baseFileName
-      }),
-    )
-
-    const created = await prisma.entryProposal.create({
-      data: {
-        userId: req.user.userId,
-        taxonLevel: taxonSelection.taxonLevel,
-        taxonValue: taxonSelection.taxonValue,
-        subfamily: taxonSelection.subfamily,
-        genus: taxonSelection.genus,
-        species: taxonSelection.species,
-        caste: parsed.data.caste,
-        size: parsed.data.size?.trim() || taxonSelection.size || undefined,
-        department: parsed.data.department,
-        observedAt: parsed.data.observedAt,
-        biotope: parsed.data.biotope,
-        photoCredit: parsed.data.photoCredit,
-        subgenus: parsed.data.subgenus ?? undefined,
-        speciesGroup: parsed.data.speciesGroup ?? undefined,
-        images: {
-          create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
-        },
-      },
-      include: { images: true },
-    })
-
-    await recordAdminAudit(req, {
-      action: 'Proposition d\'entrée créée',
-      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) par ${req.user.userId}`,
-      tone: 'SUCCESS',
-      entityType: 'entryProposal',
-      entityId: created.id,
-    })
-
-    return res.status(201).json(created)
-  } catch (error) {
-    for (const filePath of savedFilePaths) {
-      fs.rmSync(filePath, { force: true })
-    }
-
-    throw error
+  const parsed = proposalSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError(400, 'Requête invalide.')
   }
-})
+
+  // Check proposal limit
+  const proposalCount = await prisma.entryProposal.count({
+    where: { userId: req.user.userId },
+  })
+  if (proposalCount >= MAX_PROPOSALS_PER_USER) {
+    throw new AppError(400, `Limite de ${MAX_PROPOSALS_PER_USER} propositions atteinte.`)
+  }
+
+  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
+  if (!taxonSelection) {
+    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+  }
+
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  const optimizedFileNames = await Promise.all(
+    files.map(async (file, index) => {
+      const result = await optimizeAndSaveImage(file, index)
+      return result.baseFileName
+    }),
+  )
+
+  const created = await prisma.entryProposal.create({
+    data: {
+      userId: req.user.userId,
+      taxonLevel: taxonSelection.taxonLevel,
+      taxonValue: taxonSelection.taxonValue,
+      subfamily: taxonSelection.subfamily,
+      genus: taxonSelection.genus,
+      species: taxonSelection.species,
+      caste: parsed.data.caste,
+      size: parsed.data.size?.trim() || taxonSelection.size || undefined,
+      department: parsed.data.department,
+      observedAt: parsed.data.observedAt,
+      biotope: parsed.data.biotope,
+      photoCredit: parsed.data.photoCredit,
+      subgenus: parsed.data.subgenus ?? undefined,
+      speciesGroup: parsed.data.speciesGroup ?? undefined,
+      images: {
+        create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
+      },
+    },
+    include: { images: true },
+  })
+
+  await recordAdminAudit(req, {
+    action: 'Proposition d\'entrée créée',
+    detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) par ${req.user.userId}`,
+    tone: 'SUCCESS',
+    entityType: 'entryProposal',
+    entityId: created.id,
+  })
+
+  return res.status(201).json(created)
+}))

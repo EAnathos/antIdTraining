@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
@@ -13,7 +14,7 @@ const approveProposalSchema = z.object({
 })
 
 // Get all pending proposals
-adminProposalsRouter.get('/', async (req, res) => {
+adminProposalsRouter.get('/', asyncHandler(async (req, res) => {
   const status = req.query.status as string | undefined
   const userId = req.query.userId as string | undefined
 
@@ -32,17 +33,17 @@ adminProposalsRouter.get('/', async (req, res) => {
   })
 
   return res.json(proposals)
-})
+}))
 
 // Accept or reject proposal
-adminProposalsRouter.put('/:id', async (req, res) => {
+adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
   const parsed = approveProposalSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
   }
 
   const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { images: true, user: true },
   })
 
@@ -82,7 +83,7 @@ adminProposalsRouter.put('/:id', async (req, res) => {
 
     // Update proposal status
     await prisma.entryProposal.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: {
         status: 'ACCEPTED',
         processedAt: new Date(),
@@ -94,7 +95,7 @@ adminProposalsRouter.put('/:id', async (req, res) => {
       detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) de ${proposal.user.username}`,
       tone: 'SUCCESS',
       entityType: 'entryProposal',
-      entityId: req.params.id,
+      entityId: req.params.id as string,
     })
 
     return res.json({ status: 'ACCEPTED', entry: created })
@@ -103,7 +104,7 @@ adminProposalsRouter.put('/:id', async (req, res) => {
     const rejectionMessage = parsed.data.rejectionMessage || 'Rejeté par l\'administrateur.'
 
     await prisma.entryProposal.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: {
         status: 'REJECTED',
         rejectionMessage,
@@ -116,16 +117,16 @@ adminProposalsRouter.put('/:id', async (req, res) => {
       detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department}) de ${proposal.user.username}`,
       tone: 'INFO',
       entityType: 'entryProposal',
-      entityId: req.params.id,
+      entityId: req.params.id as string,
     })
 
     return res.json({ status: 'REJECTED', rejectionMessage })
   }
-})
+}))
 
-adminProposalsRouter.delete('/:id', async (req, res) => {
+adminProposalsRouter.delete('/:id', asyncHandler(async (req, res) => {
   const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { user: true },
   })
 
@@ -138,7 +139,7 @@ adminProposalsRouter.delete('/:id', async (req, res) => {
   }
 
   await prisma.entryProposal.delete({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
   })
 
   await recordAdminAudit(req, {
@@ -146,8 +147,8 @@ adminProposalsRouter.delete('/:id', async (req, res) => {
     detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department})`,
     tone: 'INFO',
     entityType: 'entryProposal',
-    entityId: req.params.id,
+    entityId: req.params.id as string,
   })
 
   return res.status(204).send()
-})
+}))
