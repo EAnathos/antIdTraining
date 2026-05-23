@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "API backend d'Ant ID Training avec Express, Prisma et PostgreSQL.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,17 +10,13 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
     "user:create": "tsx scripts/create-user.ts",
     "user:delete": "tsx scripts/delete-user.ts",
     "user:list": "tsx scripts/list-users.ts"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
-  "keywords": [],
+  "keywords": ["api", "express", "prisma", "postgresql", "backend"],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "type": "module",
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
