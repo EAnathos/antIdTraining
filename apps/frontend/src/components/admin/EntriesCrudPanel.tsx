@@ -449,96 +449,131 @@ export function EntriesCrudPanel({
     <div className="mt-3 space-y-4">
       <div ref={formContainerRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Ajout / modification</h3>
-        <form className="grid gap-2 md:grid-cols-3" onSubmit={submitEntry}>
-          <select
-            className="rounded border p-2"
-            value={entryForm.subfamily}
-            onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
-            required
-          >
-            <option value="">Sous-famille</option>
-            {subfamilies.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-          <select
-            className="rounded border p-2"
-            value={entryForm.genus}
-            onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '' })}
-            disabled={!entryForm.subfamily}
-          >
-            <option value="">Genre (optionnel)</option>
-            {generaOptions.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-          <select
-            className="rounded border p-2"
-            value={entryForm.subgenus}
-            onChange={(e) => patchEntryForm({ subgenus: e.target.value })}
-            disabled={!entryForm.genus}
-          >
-            <option value="">Sous-genre (optionnel)</option>
-            {subgenusOptions.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-          <select
-            className="rounded border p-2"
-            value={entryForm.speciesGroup}
-            onChange={(e) => patchEntryForm({ speciesGroup: e.target.value })}
-            disabled={!entryForm.genus}
-          >
-            <option value="">groupe d'espèce (optionnel)</option>
-            {speciesGroupOptions.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-          <select
-            className="rounded border p-2"
-            value={entryForm.species}
-            onChange={handleSpeciesSelectChange}
-            disabled={!entryForm.genus}
-          >
-            <option value="">Espèce (optionnel)</option>
-            {speciesOptions.map((value) => (
-              <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
-            ))}
-          </select>
-            <select
-            className="rounded border p-2"
-            value={entryForm.caste}
-              onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
-            required
-          >
-            <option value="">Choisir la caste</option>
-            <option value="WORKER">Ouvrière</option>
-            <option value="QUEEN">Reine</option>
-            <option value="MALE">Mâle</option>
-          </select>
-          
-          <input
-            className="rounded border p-2"
-            list="department-suggestions"
-            placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
-            value={entryForm.department}
-            onChange={(e) => patchEntryForm({ department: e.target.value })}
-            onBlur={(e) => patchEntryForm({ department: parseDepartmentInput(e.target.value) })}
-            required
-          />
-          <datalist id="department-suggestions">
-            {departmentOptions.map((department) => (
-              <option key={department.code} value={`${department.code} - ${department.name}`} />
-            ))}
-          </datalist>
-          <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => patchEntryForm({ observedAt: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => patchEntryForm({ biotope: e.target.value })} required />
-          <input className="rounded border p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => patchEntryForm({ photoCredit: e.target.value })} required />
-          <div className="space-y-1">
-            <input className="rounded border p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
-            <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu’à 3).</p>
+        <form className="space-y-4" onSubmit={submitEntry}>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h4 className="mb-3 text-sm font-semibold text-slate-700">Sélection du taxon</h4>
+            <div className="grid gap-2 md:grid-cols-2">
+              <select
+                className="rounded border p-2"
+                value={entryForm.subfamily}
+                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
+                required
+              >
+                <option value="">Sous-famille</option>
+                {subfamilies.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+              <select
+                className="rounded border p-2"
+                value={entryForm.genus}
+                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
+                disabled={!entryForm.subfamily}
+              >
+                <option value="">Genre (optionnel)</option>
+                {generaOptions.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+              <select
+                className="rounded border p-2"
+                value={entryForm.subgenus}
+                onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
+                disabled={!entryForm.genus}
+              >
+                <option value="">Sous-genre (optionnel)</option>
+                {subgenusOptions.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+              <select
+                className="rounded border p-2"
+                value={entryForm.speciesGroup}
+                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
+                disabled={!entryForm.genus}
+              >
+                <option value="">Groupe d'espèce (optionnel)</option>
+                {speciesGroupOptions.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+              <select
+                className="rounded border p-2"
+                value={entryForm.species}
+                onChange={handleSpeciesSelectChange}
+                disabled={!entryForm.genus}
+              >
+                <option value="">Espèce (optionnel)</option>
+                {speciesOptions.map((value) => (
+                  <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
+                ))}
+              </select>
+              <select
+                className="rounded border p-2"
+                value={entryForm.caste}
+                onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
+                required
+              >
+                <option value="">Choisir la caste</option>
+                <option value="WORKER">Ouvrière</option>
+                <option value="QUEEN">Reine</option>
+                <option value="MALE">Mâle</option>
+              </select>
+            </div>
           </div>
-          <div className="md:col-span-3 flex flex-wrap gap-2">
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h4 className="mb-3 text-sm font-semibold text-slate-700">Détails de l'observation</h4>
+            <div className="grid gap-2 md:grid-cols-2">
+              <input
+                className="rounded border p-2"
+                list="department-suggestions"
+                placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
+                value={entryForm.department}
+                onChange={(e) => patchEntryForm({ department: e.target.value })}
+                onBlur={(e) => patchEntryForm({ department: parseDepartmentInput(e.target.value) })}
+                required
+              />
+              <datalist id="department-suggestions">
+                {departmentOptions.map((department) => (
+                  <option key={department.code} value={`${department.code} - ${department.name}`} />
+                ))}
+              </datalist>
+              <input
+                className="rounded border p-2"
+                type="date"
+                value={entryForm.observedAt}
+                onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
+                required
+              />
+              <input
+                className="rounded border p-2"
+                placeholder="Biotope"
+                value={entryForm.biotope}
+                onChange={(e) => patchEntryForm({ biotope: e.target.value })}
+                required
+              />
+              <input
+                className="rounded border p-2"
+                placeholder="Crédit photo"
+                value={entryForm.photoCredit}
+                onChange={(e) => patchEntryForm({ photoCredit: e.target.value })}
+                required
+              />
+              <div className="space-y-1">
+                <input
+                  className="rounded border p-2"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setEntryFiles(e.target.files)}
+                />
+                <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu’à 3).</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             <button 
               className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" 
               type="submit"

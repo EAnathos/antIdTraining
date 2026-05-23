@@ -17,10 +17,10 @@ export function AdminMobileMenu({
     taxons: 'Taxons',
     references: 'Références',
     entries: 'Entrées',
-    suggestions: 'Contribution',
+    suggestions: 'Contribuer',
     points: 'Points',
     stats: 'Statistiques',
-    database: 'Base de données',
+    database: 'Outils',
     history: 'Historique',
   }
 
@@ -28,11 +28,9 @@ export function AdminMobileMenu({
     { id: 'taxons', label: 'Taxons' },
     { id: 'references', label: 'Références' },
     { id: 'entries', label: 'Entrées' },
-    { id: 'suggestions', label: 'Contribution' },
+    { id: 'suggestions', label: 'Contribuer' },
     { id: 'points', label: 'Points' },
-    { id: 'stats', label: 'Statistiques' },
-    { id: 'database', label: 'Base de données' },
-    { id: 'history', label: 'Historique' },
+    { id: 'database', label: 'Outils' },
   ]
 
   return (

@@ -450,8 +450,8 @@ export function TaxonsCrudPanel({
           {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
         </p>
 
-        <div className="mt-4 overflow-auto rounded-lg border border-slate-200">
-          <table className="min-w-[900px] w-full text-left text-sm">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full min-w-full table-fixed text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700">
                 <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>

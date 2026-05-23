@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
-import type { AdminHistoryItem, AdminUserPointsItem, Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
+import type { AdminHistoryItem, AdminUserPointsItem, Entry, EntryProposal, GameLevelStats, GameStatsPeriod, ReferenceItem, Suggestion, Taxon, TaxonsPageResponse } from '../types/models'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
@@ -42,7 +42,6 @@ type LevelDetailPayload = {
 
 const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_ENTRY_IMAGES = 3
-const HISTORY_LIMIT = 12
 const TAXONS_CACHE_PREFIX = 'taxons-page-cache:v1:'
 
 function clearPublicTaxonsCache() {
@@ -71,7 +70,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [entryStats, setEntryStats] = useState<unknown>(null)
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
-  const [history, setHistory] = useState<AdminHistoryItem[]>([])
+  const [history] = useState<AdminHistoryItem[]>([])
   const [users, setUsers] = useState<AdminUserPointsItem[]>([])
 
   const [taxonForm, setTaxonForm] = useState<{
@@ -98,7 +97,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [entryForm, setEntryForm] = useState<EntryForm>({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
-  const [suggestions, setSuggestions] = useState<import('../types/models').Suggestion[]>([])
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [proposals, setProposals] = useState<EntryProposal[]>([])
 
   const adminApi = useMemo(() => createAdminApiClient(token, onUnauthorized), [token, onUnauthorized])
 
@@ -182,7 +182,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return allItems
     }
 
-    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes, usersRes] = await Promise.all([
+    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes, usersRes, suggestionsRes, proposalsRes] = await Promise.all([
       listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
@@ -192,6 +192,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       }),
       adminApi.get<unknown>('/stats/entries', { params: { period: statsPeriod } }),
       adminApi.get<AdminUserPointsItem[]>('/users'),
+      adminApi.get<Suggestion[]>('/suggestions'),
+      adminApi.get<EntryProposal[]>('/entry-proposals'),
     ])
 
     setTaxons(taxonRes)
@@ -201,20 +203,8 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setGameStats(statsRes.data.levels)
     setEntryStats(entryStatsRes.data)
     setUsers(usersRes.data)
-
-    try {
-      const { data: historyData } = await adminApi.get<AdminHistoryItem[]>('/history')
-      setHistory(Array.isArray(historyData) ? historyData.slice(0, HISTORY_LIMIT) : [])
-    } catch {
-      setHistory([])
-    }
-
-    try {
-      const { data: suggestionsData } = await adminApi.get<import('../types/models').Suggestion[]>('/suggestions')
-      setSuggestions(suggestionsData)
-    } catch {
-      setSuggestions([])
-    }
+    setSuggestions(suggestionsRes.data)
+    setProposals(proposalsRes.data)
   }, [adminApi, statsPeriod])
 
   async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
@@ -664,10 +654,48 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }
   }
 
-  async function setSuggestionStatus(id: string, status: 'PENDING' | 'PROCESSED' | 'REJECTED') {
+  async function setSuggestionStatus(id: string, status: 'PENDING' | 'PROCESSED' | 'REJECTED', rejectionMessage?: string) {
     await runAdminAction(async () => {
-      await adminApi.put(`/suggestions/${id}`, { status })
+      await adminApi.put(`/suggestions/${id}`, { status, rejectionMessage })
     }, 'Suggestion mise à jour.', 'Impossible de mettre à jour la suggestion.')
+  }
+
+  async function deleteSuggestion(id: string) {
+    await runAdminAction(async () => {
+      await adminApi.delete(`/suggestions/${id}`)
+    }, 'Suggestion supprimée.', 'Impossible de supprimer la suggestion.')
+  }
+
+  async function setProposalStatus(id: string, decision: 'ACCEPT' | 'REJECT', rejectionMessage?: string) {
+    await runAdminAction(async () => {
+      await adminApi.put(`/entry-proposals/${id}`, { decision, rejectionMessage })
+    }, 'Proposition mise à jour.', 'Impossible de mettre à jour la proposition.')
+  }
+
+  async function deleteProposal(id: string) {
+    await runAdminAction(async () => {
+      await adminApi.delete(`/entry-proposals/${id}`)
+    }, 'Proposition supprimée.', 'Impossible de supprimer la proposition.')
+  }
+
+  async function updateSuggestionRejectionMessage(id: string, rejectionMessage: string) {
+    await runAdminAction(async () => {
+      const current = suggestions.find((s) => s.id === id)
+      if (!current) {
+        throw new Error('Suggestion introuvable.')
+      }
+      await adminApi.put(`/suggestions/${id}`, { status: current.status, rejectionMessage })
+    }, 'Message mis à jour.', 'Impossible de mettre à jour le message.')
+  }
+
+  async function updateProposalRejectionMessage(id: string, rejectionMessage: string) {
+    await runAdminAction(async () => {
+      const current = proposals.find((p) => p.id === id)
+      if (!current) {
+        throw new Error('Proposition introuvable.')
+      }
+      await adminApi.put(`/entry-proposals/${id}`, { decision: current.status === 'ACCEPTED' ? 'ACCEPT' : 'REJECT', rejectionMessage })
+    }, 'Message mis à jour.', 'Impossible de mettre à jour le message.')
   }
 
   return {
@@ -716,6 +744,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     reorderEntryImages,
     suggestions,
     setSuggestionStatus,
+    deleteSuggestion,
+    updateSuggestionRejectionMessage,
+    proposals,
+    setProposalStatus,
+    deleteProposal,
+    updateProposalRejectionMessage,
     history,
     users,
     setUserPoints,
