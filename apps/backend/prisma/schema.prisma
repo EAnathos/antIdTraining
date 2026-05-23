@@ -31,6 +31,8 @@ enum AdminHistoryTone {
 enum TaxonLevel {
   SUBFAMILY
   GENUS
+  SUBGENUS
+  SPECIES_GROUP
   SPECIES
 }
 

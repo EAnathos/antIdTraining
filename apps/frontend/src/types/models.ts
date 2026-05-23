@@ -26,6 +26,8 @@ export type Taxon = {
   levelDetails: {
     subfamily: TaxonLevelDetail
     genus: TaxonLevelDetail
+    subgenus: TaxonLevelDetail | null
+    speciesGroup: TaxonLevelDetail | null
     species: TaxonLevelDetail
   }
 }

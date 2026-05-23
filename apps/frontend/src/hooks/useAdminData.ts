@@ -7,6 +7,8 @@ import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 type LevelDetailsDraft = {
   subfamily: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
   genus: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
+  subgenus: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
+  speciesGroup: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
   species: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
 }
 
@@ -340,6 +342,20 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
             sizeQueen: null,
             sizeMale: null,
             criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
+          },
+          subgenus: {
+            description: levelDetails.subgenus.description.trim() || null,
+            sizeWorker: null,
+            sizeQueen: null,
+            sizeMale: null,
+            criteria: levelDetails.subgenus.criteria.map((value) => value.trim()).filter(Boolean),
+          },
+          speciesGroup: {
+            description: levelDetails.speciesGroup.description.trim() || null,
+            sizeWorker: null,
+            sizeQueen: null,
+            sizeMale: null,
+            criteria: levelDetails.speciesGroup.criteria.map((value) => value.trim()).filter(Boolean),
           },
           species: {
             description: levelDetails.species.description.trim() || null,

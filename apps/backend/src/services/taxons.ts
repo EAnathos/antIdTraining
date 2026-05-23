@@ -33,6 +33,8 @@ export const taxonSchema = z
       .object({
         subfamily: levelDetailSchema.optional(),
         genus: levelDetailSchema.optional(),
+        subgenus: levelDetailSchema.optional(),
+        speciesGroup: levelDetailSchema.optional(),
         species: levelDetailSchema.optional(),
       })
       .optional(),
@@ -103,7 +105,7 @@ function normalizeLevelDetail(detail?: z.infer<typeof levelDetailSchema>) {
   }
 }
 
-async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES', value: string, detail?: z.infer<typeof levelDetailSchema>, genusValue?: string | null) {
+async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES' | 'SUBGENUS' | 'SPECIES_GROUP', value: string, detail?: z.infer<typeof levelDetailSchema>, genusValue?: string | null) {
   const normalizedDetail = normalizeLevelDetail(detail)
   if (!normalizedDetail) return
 
@@ -327,12 +329,16 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
   const subfamilies = [...new Set(taxons.map((taxon) => taxon.subfamily))]
   const genera = [...new Set(taxons.map((taxon) => taxon.genus))]
   const species = [...new Set(taxons.map((taxon) => taxon.species))]
+  const subgenera = [...new Set(taxons.map((taxon) => taxon.subgenus).filter(Boolean) as string[])]
+  const speciesGroups = [...new Set(taxons.map((taxon) => taxon.speciesGroup).filter(Boolean) as string[])]
 
-  const profiles = await prisma.taxonLevelProfile.findMany({
+  const profiles = (await prisma.taxonLevelProfile.findMany({
     where: {
       OR: [
         { level: 'SUBFAMILY', value: { in: subfamilies } },
         { level: 'GENUS', value: { in: genera } },
+        { level: 'SUBGENUS', value: { in: subgenera } },
+        { level: 'SPECIES_GROUP', value: { in: speciesGroups } },
         {
           level: 'SPECIES',
           OR: [
@@ -347,13 +353,15 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
         orderBy: { position: 'asc' },
       },
     },
-  })
+  })) as any[]
 
   const profileByKey = new Map(
-    profiles.map((profile) => [
-      profile.level === 'SPECIES' ? `${profile.level}:${profile.genusValue ?? ''}:${profile.value}` : `${profile.level}:${profile.value}`,
-      profile,
-    ]),
+    profiles.map((profile) => {
+      if (profile.level === 'SPECIES' || profile.level === 'SUBGENUS' || profile.level === 'SPECIES_GROUP') {
+        return [`${profile.level}:${profile.genusValue ?? ''}:${profile.value}`, profile]
+      }
+      return [`${profile.level}:${profile.value}`, profile]
+    }),
   )
   const derivedSizes = await buildTaxonSizeMaps()
 
@@ -378,6 +386,20 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
             criteria: profileByKey.get(`GENUS:${taxon.genus}`)?.criteria ?? [],
           }
         : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+      subgenus: taxon.subgenus
+        ? (() => {
+            const subgenusProfile = profileByKey.get(`SUBGENUS:${taxon.genus}:${taxon.subgenus}`) ?? profileByKey.get(`SUBGENUS::${taxon.subgenus}`)
+            return subgenusProfile
+              ? {
+                  description: subgenusProfile.description ?? null,
+                  sizeWorker: subgenusProfile.sizeWorker ?? null,
+                  sizeQueen: subgenusProfile.sizeQueen ?? null,
+                  sizeMale: subgenusProfile.sizeMale ?? null,
+                  criteria: subgenusProfile.criteria ?? [],
+                }
+              : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
+          })()
+        : null,
       species: (() => {
         const speciesProfile = profileByKey.get(`SPECIES:${taxon.genus}:${taxon.species}`) ?? profileByKey.get(`SPECIES::${taxon.species}`)
 
@@ -391,6 +413,20 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
             }
           : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
       })(),
+      speciesGroup: taxon.speciesGroup
+        ? (() => {
+            const groupProfile = profileByKey.get(`SPECIES_GROUP:${taxon.genus}:${taxon.speciesGroup}`) ?? profileByKey.get(`SPECIES_GROUP::${taxon.speciesGroup}`)
+            return groupProfile
+              ? {
+                  description: groupProfile.description ?? null,
+                  sizeWorker: groupProfile.sizeWorker ?? null,
+                  sizeQueen: groupProfile.sizeQueen ?? null,
+                  sizeMale: groupProfile.sizeMale ?? null,
+                  criteria: groupProfile.criteria ?? [],
+                }
+              : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
+          })()
+        : null,
     },
   }))
 
@@ -415,6 +451,12 @@ export async function createTaxon(input: TaxonInput) {
   const normalized = normalizeTaxonData(input)
   await upsertLevelProfile('SUBFAMILY', normalized.subfamily, normalized.levelDetails?.subfamily)
   await upsertLevelProfile('GENUS', normalized.genus, normalized.levelDetails?.genus)
+  if (normalized.subgenus) {
+    await upsertLevelProfile('SUBGENUS', normalized.subgenus, normalized.levelDetails?.subgenus, normalized.genus)
+  }
+  if (normalized.speciesGroup) {
+    await upsertLevelProfile('SPECIES_GROUP', normalized.speciesGroup, normalized.levelDetails?.speciesGroup, normalized.genus)
+  }
   await upsertLevelProfile('SPECIES', normalized.species, normalized.levelDetails?.species, normalized.genus)
 
   invalidateTaxonCatalogCache()
@@ -430,6 +472,12 @@ export async function updateTaxon(id: string, input: TaxonInput) {
   const normalized = normalizeTaxonData(input)
   await upsertLevelProfile('SUBFAMILY', normalized.subfamily, normalized.levelDetails?.subfamily)
   await upsertLevelProfile('GENUS', normalized.genus, normalized.levelDetails?.genus)
+  if (normalized.subgenus) {
+    await upsertLevelProfile('SUBGENUS', normalized.subgenus, normalized.levelDetails?.subgenus, normalized.genus)
+  }
+  if (normalized.speciesGroup) {
+    await upsertLevelProfile('SPECIES_GROUP', normalized.speciesGroup, normalized.levelDetails?.speciesGroup, normalized.genus)
+  }
   await upsertLevelProfile('SPECIES', normalized.species, normalized.levelDetails?.species, normalized.genus)
 
   invalidateTaxonCatalogCache()

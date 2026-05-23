@@ -1,0 +1,5 @@
+-- Add SUBGENUS and SPECIES_GROUP to the TaxonLevel enum
+-- Safe to run on PostgreSQL 14+ (uses IF NOT EXISTS)
+
+ALTER TYPE "TaxonLevel" ADD VALUE IF NOT EXISTS 'SUBGENUS';
+ALTER TYPE "TaxonLevel" ADD VALUE IF NOT EXISTS 'SPECIES_GROUP';

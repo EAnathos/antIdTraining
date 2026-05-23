@@ -17,7 +17,7 @@ import {
 } from '../lib/imageFiles.js'
 
 const referenceTypeSchema = z.enum(['WEBSITE', 'MYRMECOLOGY'])
-const taxonLevelSchema = z.enum(['SUBFAMILY', 'GENUS', 'SPECIES'])
+const taxonLevelSchema = z.enum(['SUBFAMILY', 'GENUS', 'SUBGENUS', 'SPECIES_GROUP', 'SPECIES'])
 const gameDifficultySchema = z.enum(['EASY', 'MEDIUM', 'HARD'])
 
 export const databaseSnapshotSchema = z.object({

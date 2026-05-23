@@ -35,6 +35,8 @@ type LevelDetailDraft = {
 type TaxonDetailsDraft = {
   subfamily: LevelDetailDraft
   genus: LevelDetailDraft
+  subgenus: LevelDetailDraft
+  speciesGroup: LevelDetailDraft
   species: LevelDetailDraft
 }
 
@@ -177,6 +179,20 @@ export function TaxonsCrudPanel({
         sizeQueen: taxon.levelDetails.genus.sizeQueen ?? '',
         sizeMale: taxon.levelDetails.genus.sizeMale ?? '',
         criteria: taxon.levelDetails.genus.criteria.map((criterion) => criterion.label),
+      },
+      subgenus: {
+        description: taxon.levelDetails.subgenus?.description ?? '',
+        sizeWorker: taxon.levelDetails.subgenus?.sizeWorker ?? '',
+        sizeQueen: taxon.levelDetails.subgenus?.sizeQueen ?? '',
+        sizeMale: taxon.levelDetails.subgenus?.sizeMale ?? '',
+        criteria: taxon.levelDetails.subgenus?.criteria.map((criterion) => criterion.label) ?? [],
+      },
+      speciesGroup: {
+        description: taxon.levelDetails.speciesGroup?.description ?? '',
+        sizeWorker: taxon.levelDetails.speciesGroup?.sizeWorker ?? '',
+        sizeQueen: taxon.levelDetails.speciesGroup?.sizeQueen ?? '',
+        sizeMale: taxon.levelDetails.speciesGroup?.sizeMale ?? '',
+        criteria: taxon.levelDetails.speciesGroup?.criteria.map((criterion) => criterion.label) ?? [],
       },
       species: {
         description: taxon.levelDetails.species.description ?? '',
@@ -375,6 +391,14 @@ export function TaxonsCrudPanel({
       return <>Genre (<em>{taxon.genus}</em>)</>
     }
 
+    if (levelKey === 'subgenus') {
+      return <>Sous-genre ({taxon.subgenus ? <em>{taxon.subgenus}</em> : '-'})</>
+    }
+
+    if (levelKey === 'speciesGroup') {
+      return <>Groupe d'espèce ({taxon.speciesGroup ? <em>{taxon.speciesGroup}</em> : '-'})</>
+    }
+
     return <>Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)</>
   }
 
@@ -483,7 +507,7 @@ export function TaxonsCrudPanel({
           </div>
         )}
 
-        {isAutoCalculatedSize && (
+        {isAutoCalculatedSize && (levelKey === 'subfamily' || levelKey === 'genus') && (
           <p className="mt-2 text-xs text-slate-500">Les tailles sont auto-calculées à partir des espèces enfants.</p>
         )}
 
@@ -521,7 +545,7 @@ export function TaxonsCrudPanel({
       alert('Période d\'essaimage invalide')
       return
     }
-    const hasEmptyCriteria = ['subfamily', 'genus', 'species'].some(key => {
+    const hasEmptyCriteria = ['subfamily', 'genus', 'subgenus', 'speciesGroup', 'species'].some(key => {
       return modal.draft![key as keyof TaxonDetailsDraft].criteria.some(c => !c.trim())
     })
     if (hasEmptyCriteria) {
@@ -650,7 +674,18 @@ export function TaxonsCrudPanel({
               </button>
             </div>
 
-            {(['subfamily', 'genus', 'species'] as const).map((levelKey) => renderLevelEditor(levelKey, modal.draft![levelKey], modal.taxon!))}
+            {(() => {
+              const levelKeys: TaxonDetailLevelKey[] = ['subfamily', 'genus']
+              if (modal.taxon.subgenus) {
+                levelKeys.push('subgenus')
+              }
+              if (modal.taxon.speciesGroup) {
+                levelKeys.push('speciesGroup')
+              }
+              levelKeys.push('species')
+
+              return levelKeys.map((levelKey) => renderLevelEditor(levelKey, modal.draft![levelKey], modal.taxon!))
+            })()}
 
             {modal.taxon.levelDetails.species && (
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">

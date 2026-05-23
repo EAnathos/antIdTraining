@@ -16,7 +16,7 @@ type TaxonsCacheEntry = {
 
 type SelectedDetail = {
   taxon: Taxon
-  level: 'subfamily' | 'genus' | 'species'
+  level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species'
   value: string
   detail: TaxonLevelDetail
 }
@@ -222,7 +222,7 @@ export function TaxonsPage() {
     }
   }, [level, debouncedQuery])
 
-  async function openSelectedDetail(taxon: Taxon, level: 'subfamily' | 'genus' | 'species', value: string, detail: TaxonLevelDetail) {
+  async function openSelectedDetail(taxon: Taxon, level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species', value: string, detail: TaxonLevelDetail) {
     setSelectedDetail({ taxon, level, value, detail })
   }
 
@@ -310,7 +310,13 @@ export function TaxonsPage() {
                 <td colSpan={6} style={{ height: `${topSpacerHeight}px` }} />
               </tr>
             )}
-            {visibleTaxons.map((taxon) => (
+            {visibleTaxons.map((taxon) => {
+              const subgenus = taxon.subgenus
+              const speciesGroup = taxon.speciesGroup
+              const subgenusDetail = taxon.levelDetails.subgenus
+              const speciesGroupDetail = taxon.levelDetails.speciesGroup
+
+              return (
                 <tr key={taxon.id} className="border-b border-slate-100">
                   <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.subfamily}>
                     <button
@@ -345,8 +351,46 @@ export function TaxonsPage() {
                       <em>{taxon.genus}</em>
                     </button>
                   </td>
-                  <td className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}>{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
-                  <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.speciesGroup ?? '-'}>{taxon.speciesGroup ?? '-'}</td>
+                  <td className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={subgenus ? `(${subgenus})` : '-'}>
+                    {subgenus && subgenusDetail ? (
+                      <button
+                        className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                        type="button"
+                        onClick={() =>
+                          openSelectedDetail(
+                            taxon,
+                            'subgenus',
+                            subgenus,
+                            subgenusDetail,
+                          )
+                        }
+                      >
+                        ({subgenus})
+                      </button>
+                    ) : (
+                      subgenus ? `(${subgenus})` : '-'
+                    )}
+                  </td>
+                  <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={speciesGroup ?? '-'}>
+                    {speciesGroup && speciesGroupDetail ? (
+                      <button
+                        className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                        type="button"
+                        onClick={() =>
+                          openSelectedDetail(
+                            taxon,
+                            'speciesGroup',
+                            speciesGroup,
+                            speciesGroupDetail,
+                          )
+                        }
+                      >
+                        {speciesGroup}
+                      </button>
+                    ) : (
+                      speciesGroup ?? '-'
+                    )}
+                  </td>
                   <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.species}>
                     <button
                       className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
@@ -364,7 +408,8 @@ export function TaxonsPage() {
                     </button>
                   </td>
                 </tr>
-            ))}
+              )
+            })}
             {bottomSpacerHeight > 0 && (
               <tr>
                 <td colSpan={6} style={{ height: `${bottomSpacerHeight}px` }} />
@@ -398,7 +443,7 @@ export function TaxonsPage() {
           <div className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <p className="font-medium text-slate-900">
-                {selectedDetail.level === 'subfamily' ? 'Sous-famille' : selectedDetail.level === 'genus' ? 'Genre' : 'Espèce'} : {selectedDetail.level === 'subfamily' ? selectedDetail.value : <em>{selectedDetail.value}</em>}
+                {selectedDetail.level === 'subfamily' ? 'Sous-famille' : selectedDetail.level === 'genus' ? 'Genre' : selectedDetail.level === 'subgenus' ? 'Sous-genre' : selectedDetail.level === 'speciesGroup' ? `Groupe d'espèces` : 'Espèce'} : {selectedDetail.level === 'subfamily' ? selectedDetail.value : <em>{selectedDetail.value}</em>}
               </p>
               <button className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700" type="button" onClick={() => setSelectedDetail(null)}>
                 Fermer
