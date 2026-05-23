@@ -1,84 +1,90 @@
 # Ant ID Training
 
-Application web d'entraînement à l'identification (React + TypeScript + Tailwind / Express + Prisma 7 + PostgreSQL).
+Plateforme d'entraînement à l'identification des fourmis.
 
-## Lancer en Docker (recommandé)
+Le projet est un monorepo avec:
+- un frontend en React + Vite + TypeScript + Tailwind CSS
+- un backend en Express + Prisma + PostgreSQL
+- un déploiement Docker Compose pour lancer l'ensemble rapidement
 
-Prérequis: Docker + Docker Compose.
+## Vue d'ensemble
 
-1. Créer les fichiers d'environnement:
+```mermaid
+architecture-beta
+	group compose(cloud)[Compose]
+	service frontend(server)[Frontend] in compose
+	service backend(server)[Backend] in compose
+	service db(database)[Database] in compose
+
+	frontend:R -- L:backend
+	backend:R -- L:db
+```
+
+## Structure du dépôt
+
+- [apps/frontend](apps/frontend) : interface utilisateur, pages publiques et administration
+- [apps/backend](apps/backend) : API, Prisma et outils admin
+- [Documentation frontend component map](docs/frontend-component-map.md) : carte des composants et intégration backend
+
+## Démarrage rapide avec Docker
+
+Prérequis: Docker et Docker Compose.
+
+1. Copier les variables d'environnement:
 
 ```bash
 cp .env.example .env
 cp apps/backend/.env.example apps/backend/.env
 ```
 
-2. Démarrer:
+2. Lancer l'application:
 
 ```bash
 npm run docker:up
 ```
 
-Services disponibles:
+3. Ouvrir:
+
 - Frontend: http://localhost:8080
-- Backend API: http://localhost:4000/api/health
+- Backend health: http://localhost:4000/api/health
 - Swagger UI: http://localhost:4000/api/docs
 - OpenAPI JSON: http://localhost:4000/api/openapi.json
-- PostgreSQL: localhost:5432 (db: `antidtraining`, user: `postgres`, pass: `postgres`)
+- PostgreSQL: localhost:5432
 
-Variables backend importantes:
-- `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` sont obligatoires
+## Démarrage en local
 
-À l'initialisation du conteneur backend:
-- `prisma generate`
-- `prisma db push`
-- `prisma seed` (création / mise à jour de l'admin)
-
-Arrêt:
-
-```bash
-npm run docker:down
-```
-
-Logs:
-
-```bash
-npm run docker:logs
-```
-
-## Lancer en local (sans Docker)
-
-1. Démarrer PostgreSQL local et créer la base `antidtraining`.
-2. Créer `apps/backend/.env` depuis `apps/backend/.env.example`.
-3. Exécuter:
+1. Installer les dépendances:
 
 ```bash
 npm install
-npm run db:generate
-npm run db:migrate
-npm run db:seed
+```
+
+2. Préparer l'environnement backend:
+
+```bash
+cp apps/backend/.env.example apps/backend/.env
+```
+
+3. Lancer la stack de développement:
+
+```bash
 npm run dev
 ```
 
-Frontend local: http://localhost:5173
-Backend local: http://localhost:4000
+Raccourcis utiles:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:4000
 
-## Admin initial
+## Scripts racine
 
-En local (modifiable via variables d'environnement):
-- Username: `admin`
-- Mot de passe: `admin123`
+- `npm run dev` : frontend + backend en mode développement
+- `npm run build` : build des deux applications
+- `npm run db:generate` : génération Prisma Client
+- `npm run db:migrate` : migration Prisma locale
+- `npm run docker:up` : démarrage Docker Compose
+- `npm run docker:down` : arrêt Docker Compose
+- `npm run docker:logs` : logs des conteneurs
 
-En production, `ADMIN_USERNAME` et `ADMIN_PASSWORD` doivent être fournis explicitement pour le seed.
+## Licence
 
-## Convention de messages API
-
-Pour garder une UX cohérente entre backend, frontend admin et OpenAPI:
-
-- Format: messages d'erreur en français, phrase courte, ponctuation finale (`.`).
-- Validation (`400`): préférer `Requête invalide.` ou `Le paramètre <nom> est ...`.
-- Auth (`401`/`403`): utiliser `Non autorisé.` et `Accès administrateur requis.`.
-- Ressource absente (`404`): utiliser `... introuvable.`.
-- Conflit (`409`): utiliser `Conflit : ...`.
-
-Quand un message change dans le runtime, mettre à jour aussi les exemples/descriptions dans `apps/backend/src/openapi.ts`.
+Le code source est publié sous une licence propriétaire restrictive. Voir [LICENSE](LICENSE).

@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Frontend
 
-Currently, two official plugins are available:
+Interface utilisateur du projet Ant ID Training.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Technologies:
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
 
-## React Compiler
+## Démarrage
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Avec Docker
+Le frontend est démarré automatiquement via Docker Compose depuis la racine du dépôt.
 
-## Expanding the ESLint configuration
+### En local
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Accès local: http://localhost:5173
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Variables d'environnement
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Copier l'exemple d'env depuis la racine et, si besoin, depuis le backend:
+
+```bash
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
 ```
+
+Les variables backend importantes: `DATABASE_URL`, `JWT_SECRET` (voir `apps/backend/README.md`).
+
+## Scripts utiles
+
+- `npm run dev` : serveur Vite en développement
+- `npm run build` : build de production
+- `npm run preview` : aperçu du build de production
+- `npm run lint` : vérification ESLint
+
+## Architecture et intégration
+
+La carte des composants et les points d'intégration avec le backend se trouvent dans la documentation centrale:
+
+- `docs/frontend-component-map.md` — carte des composants et flux
+- `docs/frontend-component-map.svg` — diagramme (placeholder)
+
+Intégration backend:
+- L'API backend (Express + Prisma) fournit les données principales: taxons, entrées, images, sessions joueurs, suggestions, statistiques.
+- Endpoints usuels: `/api/taxons`, `/api/entries`, `/api/auth` et endpoints d'upload d'images.
+- Pour modifier l'URL de l'API, consultez le client API dans `apps/frontend/src/lib`.
+
+## Bonnes pratiques
+
+- Vérifier `npm run lint` avant les commits.
+- Les uploads d'images sont traités par le backend et stockés dans `apps/backend/uploads`.
+
+## Pour aller plus loin
+
+- Documentation backend: `apps/backend/README.md`
+- Documentation centrale: [README racine](../README.md)
+

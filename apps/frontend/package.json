@@ -2,6 +2,7 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
+  "description": "Interface web d'Ant ID Training construite avec React, Vite et Tailwind CSS.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +11,8 @@
     "preview": "vite preview"
   },
   "author": "Anathos",
+  "keywords": ["react", "vite", "tailwindcss", "frontend", "ui"],
+  "license": "UNLICENSED",
   "dependencies": {
     "@svg-country-maps/france.departments": "^1.0.3",
     "react": "^19.2.6",

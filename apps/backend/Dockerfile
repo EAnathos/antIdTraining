@@ -11,4 +11,4 @@ RUN npm run prisma:generate && npm run build
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npm run prisma:generate && npx prisma db push --accept-data-loss && npm run prisma:seed && npm run start"]
+CMD ["sh", "-c", "npm run prisma:generate && npx prisma db push --accept-data-loss && npm run start"]

@@ -1,7 +1,7 @@
 {
   "name": "ant-id-training",
   "version": "1.0.0",
-  "description": "",
+  "description": "Plateforme d'entraînement à l'identification des fourmis avec frontend React/Vite et backend Express/Prisma.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,14 +9,13 @@
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
     "db:generate": "npm run prisma:generate -w apps/backend",
     "db:migrate": "npm run prisma:migrate -w apps/backend",
-    "db:seed": "npm run prisma:seed -w apps/backend",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
-  "keywords": [],
+  "keywords": ["ant", "identification", "training", "react", "express", "prisma"],
   "author": "Anathos",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "type": "commonjs",
   "private": true,
   "workspaces": [
