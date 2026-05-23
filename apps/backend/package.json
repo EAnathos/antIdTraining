@@ -14,7 +14,13 @@
     "user:delete": "tsx scripts/delete-user.ts",
     "user:list": "tsx scripts/list-users.ts"
   },
-  "keywords": ["api", "express", "prisma", "postgresql", "backend"],
+  "keywords": [
+    "api",
+    "express",
+    "prisma",
+    "postgresql",
+    "backend"
+  ],
   "author": "",
   "license": "UNLICENSED",
   "type": "module",
@@ -36,7 +42,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
