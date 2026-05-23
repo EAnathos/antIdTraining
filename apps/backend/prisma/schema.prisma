@@ -48,6 +48,12 @@ enum GameDifficulty {
   HARD
 }
 
+enum EntryProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -59,6 +65,8 @@ model User {
 
   adminHistoryEvents AdminHistoryEvent[]
   gameSessions       GameSession[]
+  suggestions        Suggestion[]
+  entryProposals     EntryProposal[]
 }
 
 model AdminHistoryEvent {
@@ -195,6 +203,47 @@ model EntryImage {
   entry ObservationEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 }
 
+model EntryProposal {
+  id           String   @id @default(cuid())
+  userId       String
+  taxonLevel   TaxonLevel
+  taxonValue   String
+  subfamily    String
+  genus        String?
+  subgenus     String?
+  species      String?
+  speciesGroup String?
+  size         String?
+  caste        Caste
+  department   String
+  observedAt   DateTime
+  biotope      String
+  photoCredit  String
+  status       EntryProposalStatus @default(PENDING)
+  rejectionMessage String?
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images EntryProposalImage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model EntryProposalImage {
+  id         String   @id @default(cuid())
+  proposalId String
+  imageUrl   String
+  position   Int?
+  createdAt  DateTime @default(now())
+
+  proposal EntryProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+}
+
 model Reference {
   id          String        @id @default(cuid())
   title       String
@@ -209,10 +258,18 @@ model Reference {
 
 model Suggestion {
   id         String           @id @default(cuid())
+  userId     String?
   name       String?
   email      String?
   message    String
   status     SuggestionStatus @default(PENDING)
+  rejectionMessage String?
   createdAt  DateTime         @default(now())
   processedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }

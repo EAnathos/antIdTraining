@@ -79,7 +79,7 @@ export function LeaderboardPage() {
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Classement</h2>
       <p className="text-sm text-slate-600">
-        Les meilleurs joueurs selon leurs points. Les points proviennent des r\u00e9ponses correctes et des ajustements administrateur.
+        Les meilleurs joueurs selon leurs points. Les points proviennent des réponses correctes et des ajustements administrateur. Il vous faut 200 points pour apparaître dans le classement.
       </p>
 
       {currentUserPoints !== null && (
