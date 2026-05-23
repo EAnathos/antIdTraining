@@ -178,12 +178,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLink className={navClass} to="/references">
             Références
           </NavLink>
-          <NavLink className={navClass} to="/contribution">
-            Contribution
-          </NavLink>
-          <NavLink className={navClass} to="/about">
-            À propos
-          </NavLink>
           <NavLink className={navClass} to="/classement">
             Classement
           </NavLink>
@@ -229,8 +223,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {children}
-      <footer className="mt-8 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-600 shadow-sm">
-        <div className="flex flex-col items-center gap-2">
+      <footer className="mt-8 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
+        <div className="flex flex-col items-center gap-4 text-center">
           <p>
             Site conçu et maintenu par{' '}
             <a className="font-medium text-indigo-700 underline decoration-indigo-300 underline-offset-4" href="https://anathos.me/" target="_blank" rel="noreferrer">
@@ -238,6 +232,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </a>
             .
           </p>
+
+          <nav aria-label="Liens de pied de page" className="flex flex-wrap items-center justify-center gap-3">
+            <NavLink className={navClass} to="/about">
+              À propos
+            </NavLink>
+            <NavLink className={navClass} to="/contribution">
+              Contribuer
+            </NavLink>
+          </nav>
         </div>
       </footer>
     </div>

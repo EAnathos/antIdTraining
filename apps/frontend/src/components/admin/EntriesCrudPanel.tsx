@@ -456,7 +456,7 @@ export function EntriesCrudPanel({
               <select
                 className="rounded border p-2"
                 value={entryForm.subfamily}
-                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
+                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
                 required
               >
                 <option value="">Sous-famille</option>
@@ -467,7 +467,7 @@ export function EntriesCrudPanel({
               <select
                 className="rounded border p-2"
                 value={entryForm.genus}
-                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '' })}
+                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
                 disabled={!entryForm.subfamily}
               >
                 <option value="">Genre (optionnel)</option>
@@ -478,7 +478,7 @@ export function EntriesCrudPanel({
               <select
                 className="rounded border p-2"
                 value={entryForm.subgenus}
-                onChange={(e) => patchEntryForm({ subgenus: e.target.value })}
+                onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
               >
                 <option value="">Sous-genre (optionnel)</option>
@@ -489,7 +489,7 @@ export function EntriesCrudPanel({
               <select
                 className="rounded border p-2"
                 value={entryForm.speciesGroup}
-                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value })}
+                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
               >
                 <option value="">Groupe d'espèce (optionnel)</option>

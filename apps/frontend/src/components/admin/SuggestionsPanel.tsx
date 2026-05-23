@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { EntryProposal, Suggestion } from '../../types/models'
+import { backendOrigin } from '../../lib/api'
+import { getResponsiveImageProps } from '../../lib/image'
 
 type Props = {
   suggestions: Suggestion[]
@@ -19,6 +21,16 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
   const [rejectMessage, setRejectMessage] = useState('')
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingMessage, setEditingMessage] = useState('')
+  const [preview, setPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+
+  function resolveImageUrl(imageUrl: string) {
+    if (!imageUrl) return imageUrl
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl
+    }
+
+    return `${backendOrigin}${imageUrl}`
+  }
 
   const filteredSuggestions = useMemo(() => {
     if (filter === 'ALL') return suggestions
@@ -32,7 +44,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
 
   return (
     <div className="space-y-4">
-      <h3 className="mb-2 text-sm font-semibold text-slate-700">Contribution</h3>
+      <h3 className="mb-2 text-sm font-semibold text-slate-700">Contribuer</h3>
 
       <div className="flex gap-2 border-b">
         <button
@@ -89,7 +101,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                   <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">Message de contribution</p>
                   <p className="mt-2 whitespace-pre-wrap">{s.message}</p>
                   {s.rejectionMessage && (
-                    <div className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                       {editingMessageId === s.id ? (
                         <>
                           <p className="mb-1 font-semibold uppercase tracking-wide">Modifier le message</p>
@@ -125,11 +137,12 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         </>
                       ) : (
                         <>
-                          <div className="mb-1 flex items-center justify-between">
-                            <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
+                          <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
+                          <p className="whitespace-pre-wrap">{s.rejectionMessage}</p>
+                          <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
                               onClick={() => {
                                 setEditingMessageId(s.id)
                                 setEditingMessage(s.rejectionMessage || '')
@@ -138,7 +151,6 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               Modifier
                             </button>
                           </div>
-                          <p className="whitespace-pre-wrap">{s.rejectionMessage}</p>
                         </>
                       )}
                     </div>
@@ -240,7 +252,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                   {p.size && <p className="text-xs text-slate-600">Size: {p.size}</p>}
                   {p.caste && <p className="text-xs text-slate-600">Caste: {p.caste}</p>}
                   {p.rejectionMessage && (
-                    <div className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                       {editingMessageId === p.id ? (
                         <>
                           <p className="mb-1 font-semibold uppercase tracking-wide">Modifier le message</p>
@@ -276,11 +288,12 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         </>
                       ) : (
                         <>
-                          <div className="mb-1 flex items-center justify-between">
-                            <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
+                          <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
+                          <p className="whitespace-pre-wrap">{p.rejectionMessage}</p>
+                          <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
                               onClick={() => {
                                 setEditingMessageId(p.id)
                                 setEditingMessage(p.rejectionMessage || '')
@@ -289,7 +302,6 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               Modifier
                             </button>
                           </div>
-                          <p className="whitespace-pre-wrap">{p.rejectionMessage}</p>
                         </>
                       )}
                     </div>
@@ -343,6 +355,35 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                 </div>
               </div>
 
+              {p.images.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {p.images.map((image, index) => (
+                    <button
+                      key={image.id}
+                      type="button"
+                      className="overflow-hidden rounded border border-slate-200 bg-slate-50"
+                      onClick={() =>
+                        setPreview({
+                          images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                          index,
+                          alt: `${p.user?.username ?? 'Utilisateur'} · ${p.taxonValue}`,
+                        })
+                      }
+                    >
+                      <img
+                        src={resolveImageUrl(image.imageUrl)}
+                        alt={`${p.user?.username ?? 'Utilisateur'} · ${p.taxonValue}`}
+                        className="h-16 w-16 object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        width={64}
+                        height={64}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {rejectingId === p.id && (
                 <div className="mt-3 space-y-2 border-t pt-2">
                   <textarea
@@ -375,6 +416,69 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
             </li>
           ))}
         </ul>
+      )}
+
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4" onClick={() => setPreview(null)}>
+          <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              onClick={() => setPreview(null)}
+            >
+              Fermer
+            </button>
+
+            <button
+              type="button"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                )
+              }
+              disabled={preview.images.length <= 1}
+              aria-label="Image précédente"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index + 1) % current.images.length },
+                )
+              }
+              disabled={preview.images.length <= 1}
+              aria-label="Image suivante"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+
+            <img
+              {...getResponsiveImageProps(preview.images[preview.index], {
+                sizes: '(max-width: 768px) 90vw, 50vw',
+              })}
+              alt={preview.alt}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
+            />
+
+            <p className="mt-2 text-center text-xs text-slate-200">
+              Image {preview.index + 1}/{preview.images.length}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   )

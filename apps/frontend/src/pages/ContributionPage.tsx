@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { api } from '../lib/api'
+import { api, backendOrigin } from '../lib/api'
+import { getResponsiveImageProps } from '../lib/image'
 import type { EntryProposal, Suggestion } from '../types/models'
 
 const departmentOptions = [
@@ -74,7 +75,6 @@ const departmentOptions = [
   { code: '67', name: 'Bas-Rhin' },
   { code: '68', name: 'Haut-Rhin' },
   { code: '69', name: 'Rhône' },
-  { code: '70', name: 'Haute-Saône' },
   { code: '71', name: 'Saône-et-Loire' },
   { code: '72', name: 'Sarthe' },
   { code: '73', name: 'Savoie' },
@@ -182,12 +182,23 @@ export function ContributionPage() {
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntryForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [proposalPreview, setProposalPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
   const suggestionFormRef = useRef<HTMLFormElement | null>(null)
 
   const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
   const username = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-username') ?? '' : ''
 
   const authApi = useMemo(() => api.create({ baseURL: '/api', headers: token ? { Authorization: `Bearer ${token}` } : {} }), [token])
+
+  function resolveImageUrl(imageUrl: string) {
+    if (!imageUrl) return imageUrl
+
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl
+    }
+
+    return `${backendOrigin}${imageUrl}`
+  }
 
   function patchEntryForm(patch: Partial<EntryForm>) {
     setEntryForm({ ...entryForm, ...patch })
@@ -406,37 +417,65 @@ export function ContributionPage() {
   }
 
   return (
-    <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="space-y-6 rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
         <div className="flex gap-2 text-sm">
-          <button className={`rounded-lg px-3 py-2 ${view === 'contributions' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setView('contributions')}>Mes contributions</button>
-          <button className={`rounded-lg px-3 py-2 ${view === 'entry' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setView('entry')}>Proposer une entrée</button>
-          <button className={`rounded-lg px-3 py-2 ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`} onClick={() => setView('suggestion')}>Suggestion</button>
+          <button className={`rounded-lg px-3 py-2 ${view === 'contributions' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('contributions')}>Mes contributions</button>
+          <button className={`rounded-lg px-3 py-2 ${view === 'entry' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('entry')}>Proposer une entrée</button>
+          <button className={`rounded-lg px-3 py-2 ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('suggestion')}>Suggestion</button>
         </div>
       </div>
 
-      {message && <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{message}</p>}
+      {message && <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">{message}</p>}
 
       {view === 'contributions' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="rounded-lg bg-amber-50 p-3"><p className="text-amber-700">Entrées proposées</p><p className="text-2xl font-bold text-amber-900">{counts.proposalCount}/{counts.proposalLimit}</p></div>
-            <div className="rounded-lg bg-blue-50 p-3"><p className="text-blue-700">Suggestions</p><p className="text-2xl font-bold text-blue-900">{counts.suggestionCount}/{counts.suggestionLimit}</p></div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-slate-600">Entrées proposées</p><p className="text-2xl font-bold text-slate-900">{counts.proposalCount}/{counts.proposalLimit}</p></div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-slate-600">Suggestions</p><p className="text-2xl font-bold text-slate-900">{counts.suggestionCount}/{counts.suggestionLimit}</p></div>
           </div>
 
           <div className="space-y-3">
             {proposals.map((p) => (
-              <div key={p.id} className="rounded-lg border p-3 text-sm">
+              <div key={p.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
                 <div className="flex justify-between gap-3">
                   <div>
                     <p className="font-medium">{p.subfamily} · {p.genus ?? '-'} · {p.species ?? '-'}</p>
                     <p className="text-xs text-slate-600">{p.department} · {p.caste}</p>
                   </div>
-                  <span className={`rounded px-2 py-1 text-xs ${p.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : p.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{p.status}</span>
+                  <span className={`rounded border px-2 py-1 text-xs ${p.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : p.status === 'ACCEPTED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{p.status}</span>
                 </div>
+                {p.images.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {p.images.map((image, index) => (
+                      <button
+                        key={image.id}
+                        type="button"
+                        className="overflow-hidden rounded border border-slate-200 bg-slate-50"
+                        onClick={() =>
+                          setProposalPreview({
+                            images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                            index,
+                            alt: `${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`,
+                          })
+                        }
+                      >
+                        <img
+                          src={resolveImageUrl(image.imageUrl)}
+                          alt={`${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`}
+                          className="h-16 w-16 object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          width={64}
+                          height={64}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {p.rejectionMessage && (
-                  <div className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                     <p className="mb-1 font-semibold uppercase tracking-wide">Message de l'administration</p>
                     <p className="whitespace-pre-wrap">{p.rejectionMessage}</p>
                   </div>
@@ -444,13 +483,13 @@ export function ContributionPage() {
               </div>
             ))}
             {suggestions.map((s) => (
-              <div key={s.id} className="rounded-lg border p-3 text-sm">
+              <div key={s.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
                 <div className="flex justify-between gap-3">
                   <p className="whitespace-pre-wrap">{s.message}</p>
-                  <span className={`rounded px-2 py-1 text-xs ${s.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : s.status === 'PROCESSED' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{s.status}</span>
+                  <span className={`rounded border px-2 py-1 text-xs ${s.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : s.status === 'PROCESSED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{s.status}</span>
                 </div>
                 {s.rejectionMessage && (
-                  <div className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                     <p className="mb-1 font-semibold uppercase tracking-wide">Message de l'administration</p>
                     <p className="whitespace-pre-wrap">{s.rejectionMessage}</p>
                   </div>
@@ -469,7 +508,7 @@ export function ContributionPage() {
               <select
                 className="rounded border p-2"
                 value={entryForm.subfamily}
-                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '' })}
+                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
                 required
               >
                 <option value="">Sous-famille</option>
@@ -480,7 +519,7 @@ export function ContributionPage() {
               <select
                 className="rounded border p-2"
                 value={entryForm.genus}
-                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '' })}
+                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
                 disabled={!entryForm.subfamily}
               >
                 <option value="">Genre (optionnel)</option>
@@ -491,7 +530,7 @@ export function ContributionPage() {
               <select
                 className="rounded border p-2"
                 value={entryForm.subgenus}
-                onChange={(e) => patchEntryForm({ subgenus: e.target.value })}
+                onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
               >
                 <option value="">Sous-genre (optionnel)</option>
@@ -502,7 +541,7 @@ export function ContributionPage() {
               <select
                 className="rounded border p-2"
                 value={entryForm.speciesGroup}
-                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value })}
+                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
               >
                 <option value="">Groupe d'espèce (optionnel)</option>
@@ -553,10 +592,10 @@ export function ContributionPage() {
                 ))}
               </datalist>
               <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => patchEntryForm({ observedAt: e.target.value })} required />
-              <input className="rounded border p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => patchEntryForm({ biotope: e.target.value })} required />
-              <input className="rounded border p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => patchEntryForm({ photoCredit: e.target.value })} />
+              <input className="rounded border border-slate-200 p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => patchEntryForm({ biotope: e.target.value })} required />
+              <input className="rounded border border-slate-200 p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => patchEntryForm({ photoCredit: e.target.value })} />
               <div className="space-y-1">
-                <input className="w-full rounded border p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
+                <input className="w-full rounded border border-slate-200 p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
                 <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu'à 3).</p>
               </div>
             </div>
@@ -574,9 +613,75 @@ export function ContributionPage() {
 
       {view === 'suggestion' && (
         <form ref={suggestionFormRef} className="space-y-3" onSubmit={submitSuggestion}>
-          <textarea name="message" className="min-h-32 w-full rounded-lg border p-2" placeholder="Votre suggestion" required />
+          <textarea name="message" className="min-h-32 w-full rounded-lg border border-slate-200 p-2" placeholder="Votre suggestion" required />
           <button className="rounded-lg bg-slate-900 px-4 py-2 text-white" type="submit" disabled={loading}>Envoyer la suggestion</button>
         </form>
+      )}
+
+      {proposalPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+          onClick={() => setProposalPreview(null)}
+        >
+          <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              onClick={() => setProposalPreview(null)}
+            >
+              Fermer
+            </button>
+
+            <button
+              type="button"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setProposalPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                )
+              }
+              disabled={proposalPreview.images.length <= 1}
+              aria-label="Image précédente"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setProposalPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index + 1) % current.images.length },
+                )
+              }
+              disabled={proposalPreview.images.length <= 1}
+              aria-label="Image suivante"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+
+            <img
+              {...getResponsiveImageProps(proposalPreview.images[proposalPreview.index], {
+                sizes: '(max-width: 768px) 90vw, 50vw',
+              })}
+              alt={proposalPreview.alt}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
+            />
+
+            <p className="mt-2 text-center text-xs text-slate-200">
+              Image {proposalPreview.index + 1}/{proposalPreview.images.length}
+            </p>
+          </div>
+        </div>
       )}
     </section>
   )

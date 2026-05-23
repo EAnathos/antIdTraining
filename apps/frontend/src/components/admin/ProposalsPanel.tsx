@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { EntryProposal } from '../../types/models'
+import { backendOrigin } from '../../lib/api'
+import { getResponsiveImageProps } from '../../lib/image'
 
 type Props = {
   proposals: EntryProposal[]
@@ -11,6 +13,16 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [preview, setPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+
+  function resolveImageUrl(imageUrl: string) {
+    if (!imageUrl) return imageUrl
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl
+    }
+
+    return `${backendOrigin}${imageUrl}`
+  }
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return proposals
@@ -104,6 +116,35 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
               </div>
             </div>
 
+            {p.images.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {p.images.map((image, index) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className="overflow-hidden rounded border border-slate-200 bg-slate-50"
+                    onClick={() =>
+                      setPreview({
+                        images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                        index,
+                        alt: `${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`,
+                      })
+                    }
+                  >
+                    <img
+                      src={resolveImageUrl(image.imageUrl)}
+                      alt={`${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`}
+                      className="h-16 w-16 object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      width={64}
+                      height={64}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
             {rejectingId === p.id && (
               <div className="mt-3 space-y-2 border-t pt-2">
                 <textarea
@@ -135,6 +176,72 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
           </li>
         ))}
       </ul>
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+          onClick={() => setPreview(null)}
+        >
+          <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              onClick={() => setPreview(null)}
+            >
+              Fermer
+            </button>
+
+            <button
+              type="button"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                )
+              }
+              disabled={preview.images.length <= 1}
+              aria-label="Image précédente"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() =>
+                setPreview((current) =>
+                  !current || current.images.length <= 1
+                    ? current
+                    : { ...current, index: (current.index + 1) % current.images.length },
+                )
+              }
+              disabled={preview.images.length <= 1}
+              aria-label="Image suivante"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+
+            <img
+              {...getResponsiveImageProps(preview.images[preview.index], {
+                sizes: '(max-width: 768px) 90vw, 50vw',
+              })}
+              alt={preview.alt}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              decoding="async"
+            />
+
+            <p className="mt-2 text-center text-xs text-slate-200">
+              Image {preview.index + 1}/{preview.images.length}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
