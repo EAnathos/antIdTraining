@@ -132,7 +132,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
                               onClick={() => {
                                 setEditingMessageId(s.id)
-                                setEditingMessage(s.rejectionMessage)
+                                setEditingMessage(s.rejectionMessage || '')
                               }}
                             >
                               Modifier
@@ -283,7 +283,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
                               onClick={() => {
                                 setEditingMessageId(p.id)
-                                setEditingMessage(p.rejectionMessage)
+                                setEditingMessage(p.rejectionMessage || '')
                               }}
                             >
                               Modifier

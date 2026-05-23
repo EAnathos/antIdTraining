@@ -193,9 +193,13 @@ entryProposalsRouter.post('/', uploadProposalImages, async (req, res) => {
     const created = await prisma.entryProposal.create({
       data: {
         userId: req.user.userId,
-        ...taxonSelection,
+        taxonLevel: taxonSelection.taxonLevel,
+        taxonValue: taxonSelection.taxonValue,
+        subfamily: taxonSelection.subfamily,
+        genus: taxonSelection.genus,
+        species: taxonSelection.species,
         caste: parsed.data.caste,
-        size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
+        size: parsed.data.size?.trim() || taxonSelection.size || undefined,
         department: parsed.data.department,
         observedAt: parsed.data.observedAt,
         biotope: parsed.data.biotope,

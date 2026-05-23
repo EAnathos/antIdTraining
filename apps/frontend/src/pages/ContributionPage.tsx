@@ -361,11 +361,7 @@ export function ContributionPage() {
     try {
       const formData = new FormData()
       const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
-      const taxonValue = entryForm.species
-        ? `${entryForm.genus.trim()} ${entryForm.species.trim()}`.trim()
-        : entryForm.genus
-          ? entryForm.genus.trim()
-          : entryForm.subfamily.trim()
+      const taxonValue = entryForm.species ? entryForm.species.trim() : entryForm.genus ? entryForm.genus.trim() : entryForm.subfamily.trim()
 
       formData.append('taxonLevel', taxonLevel)
       formData.append('taxonValue', taxonValue)
@@ -386,9 +382,7 @@ export function ContributionPage() {
         })
       }
 
-      await authApi.post('/entry-proposals', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      await authApi.post('/entry-proposals', formData)
 
       setEntryForm(emptyEntryForm)
       setEntryFiles(null)
