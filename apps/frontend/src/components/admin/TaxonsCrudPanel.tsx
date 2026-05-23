@@ -16,6 +16,8 @@ type TaxonForm = {
   distribution: FrenchDepartmentCode[]
 }
 
+type TaxonFormKey = Exclude<keyof TaxonForm, 'distribution'>
+
 type ModalState = {
   taxon: Taxon | null
   draft: TaxonDetailsDraft | null
@@ -131,7 +133,7 @@ export function TaxonsCrudPanel({
   const [query, setQuery] = useState('')
   const [modal, setModal] = useState<ModalState>(INITIAL_MODAL_STATE)
 
-  const handleTaxonChange = useCallback((field: keyof TaxonForm, value: any) => {
+  const handleTaxonChange = useCallback((field: TaxonFormKey, value: string) => {
     setTaxonForm({ ...taxonForm, [field]: value })
   }, [taxonForm, setTaxonForm])
 

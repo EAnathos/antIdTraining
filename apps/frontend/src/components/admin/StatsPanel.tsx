@@ -29,8 +29,8 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
       await api.post('/admin/stats-tools/reset')
       setShowConfirm(false)
       window.location.reload()
-    } catch (err: any) {
-      setResetError(err?.message || 'Erreur lors de la réinitialisation')
+    } catch (error: unknown) {
+      setResetError(error instanceof Error && error.message ? error.message : 'Erreur lors de la réinitialisation')
     } finally {
       setResetLoading(false)
     }

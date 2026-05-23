@@ -153,6 +153,8 @@ type SpeciesMetadata = {
   speciesGroup?: string | null
 }
 
+type EntryCaste = NonNullable<Entry['caste']>
+
 type EntryForm = {
   subfamily: string
   genus: string
@@ -163,7 +165,7 @@ type EntryForm = {
   observedAt: string
   biotope: string
   photoCredit: string
-  caste: string
+  caste: EntryCaste | ''
 }
 
 const emptyEntryForm: EntryForm = {
@@ -384,7 +386,7 @@ export function EntriesCrudPanel({
     
     // Caste filter
     if (filterCaste) {
-      result = result.filter((entry) => (entry as any).caste === filterCaste)
+      result = result.filter((entry) => entry.caste === filterCaste)
     }
     
     // Photo credit filter
@@ -437,7 +439,7 @@ export function EntriesCrudPanel({
       observedAt: entry.observedAt.slice(0, 10),
       biotope: entry.biotope,
       photoCredit: entry.photoCredit,
-      caste: (entry as any).caste ?? '',
+      caste: entry.caste ?? '',
     })
     setEntryFiles(null)
     formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -503,10 +505,10 @@ export function EntriesCrudPanel({
               <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
             ))}
           </select>
-          <select
+            <select
             className="rounded border p-2"
             value={entryForm.caste}
-            onChange={(e) => patchEntryForm({ caste: e.target.value })}
+              onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
             required
           >
             <option value="">Choisir la caste</option>
@@ -572,7 +574,7 @@ export function EntriesCrudPanel({
 
             <label className="text-sm text-slate-700">
               Trier
-              <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+              <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'taxon')}>
                 <option value="date">Date</option>
                 <option value="taxon">Taxon</option>
               </select>
