@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
 import type { AdminHistoryItem, AdminUserPointsItem, Entry, GameLevelStats, GameStatsPeriod, ReferenceItem, Taxon, TaxonsPageResponse } from '../types/models'
@@ -15,6 +15,21 @@ type LevelDetailsDraft = {
 type SwarmingPeriodDraft = {
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
+}
+
+type EntryCaste = NonNullable<Entry['caste']>
+
+type EntryForm = {
+  subfamily: string
+  genus: string
+  subgenus: string
+  species: string
+  speciesGroup: string
+  department: string
+  observedAt: string
+  biotope: string
+  photoCredit: string
+  caste: EntryCaste | ''
 }
 
 type LevelDetailPayload = {
@@ -53,7 +68,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
   const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
-  const [entryStats, setEntryStats] = useState<any>(null)
+  const [entryStats, setEntryStats] = useState<unknown>(null)
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<AdminHistoryItem[]>([])
@@ -80,12 +95,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
+  const [entryForm, setEntryForm] = useState<EntryForm>({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
   const [suggestions, setSuggestions] = useState<import('../types/models').Suggestion[]>([])
 
-  const adminApi = createAdminApiClient(token, onUnauthorized)
+  const adminApi = useMemo(() => createAdminApiClient(token, onUnauthorized), [token, onUnauthorized])
 
 
   function isUnauthorizedError(error: unknown) {
@@ -147,7 +162,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }
   }
 
-  async function loadAdminData() {
+  const loadAdminData = useCallback(async () => {
     const listAllTaxons = async () => {
       const allItems: Taxon[] = []
       let offset = 0
@@ -175,7 +190,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>('/stats/game', {
         params: { period: statsPeriod },
       }),
-      adminApi.get<any>('/stats/entries', { params: { period: statsPeriod } }),
+      adminApi.get<unknown>('/stats/entries', { params: { period: statsPeriod } }),
       adminApi.get<AdminUserPointsItem[]>('/users'),
     ])
 
@@ -200,7 +215,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     } catch {
       setSuggestions([])
     }
-  }
+  }, [adminApi, statsPeriod])
 
   async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
     setMessage('')
@@ -237,7 +252,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       }
       setMessage(resolveAdminErrorMessage(error, 'Impossible de charger les données.'))
     })
-  }, [token, statsPeriod])
+  }, [loadAdminData])
 
   // Sync taxon form when selectedTaxonId changes
   useEffect(() => {
@@ -289,7 +304,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           observedAt: found.observedAt.slice(0, 10),
           biotope: found.biotope,
           photoCredit: found.photoCredit,
-          caste: (found as any).caste ?? '',
+          caste: found.caste ?? '',
         })
       }
     }
@@ -480,7 +495,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     }
 
     const formData = new FormData()
-    if (!(entryForm as any).caste) {
+    if (!entryForm.caste) {
       setMessage('La caste est requise.')
       return
     }
@@ -495,7 +510,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     formData.append('observedAt', entryForm.observedAt)
     formData.append('biotope', entryForm.biotope)
     formData.append('photoCredit', entryForm.photoCredit)
-    formData.append('caste', (entryForm as any).caste)
+    formData.append('caste', entryForm.caste)
     if (entryFiles) {
       Array.from(entryFiles).forEach((file) => formData.append('images', file))
     }
@@ -521,7 +536,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function updateEntry(event: FormEvent) {
     event.preventDefault()
     if (!selectedEntryId) return
-    if (!(entryForm as any).caste) {
+    if (!entryForm.caste) {
       setMessage('La caste est requise.')
       return
     }
@@ -534,7 +549,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         taxonGenus: entryForm.genus || '',
         subgenus: entryForm.subgenus || '',
         speciesGroup: entryForm.speciesGroup || '',
-        caste: (entryForm as any).caste,
+        caste: entryForm.caste,
         department: entryForm.department,
         observedAt: entryForm.observedAt,
         biotope: entryForm.biotope,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { getResponsiveImageProps } from '../lib/image'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
@@ -110,7 +110,7 @@ export function TaxonsPage() {
   const rowHeight = 45
   const overscan = 10
 
-  async function loadAllTaxons() {
+  const loadAllTaxons = useCallback(async () => {
     const currentRequestId = requestIdRef.current + 1
     requestIdRef.current = currentRequestId
     const cacheKey = getTaxonsCacheKey(level, debouncedQuery)
@@ -186,7 +186,7 @@ export function TaxonsPage() {
         setIsLoadingMoreTaxons(false)
       }
     }
-  }
+  }, [level, debouncedQuery])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -220,7 +220,7 @@ export function TaxonsPage() {
       tableContainerRef.current.scrollTop = 0
       setTableScrollTop(0)
     }
-  }, [level, debouncedQuery])
+  }, [loadAllTaxons])
 
   async function openSelectedDetail(taxon: Taxon, level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species', value: string, detail: TaxonLevelDetail) {
     setSelectedDetail({ taxon, level, value, detail })
@@ -228,7 +228,7 @@ export function TaxonsPage() {
 
   useEffect(() => {
     void loadAllTaxons()
-  }, [level, debouncedQuery])
+  }, [loadAllTaxons])
 
   useEffect(() => {
     setIsLoadingReferences(true)
