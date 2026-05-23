@@ -15,6 +15,19 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
     [users],
   )
 
+  async function handleSave(userId: string, currentPoints: number) {
+    const nextPoints = Number.parseInt(drafts[userId] ?? String(currentPoints), 10)
+    if (!Number.isFinite(nextPoints)) return
+
+    setSavingUserId(userId)
+    try {
+      await setUserPoints(userId, nextPoints)
+      setDrafts((current) => ({ ...current, [userId]: String(nextPoints) }))
+    } finally {
+      setSavingUserId(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-slate-700">Points des utilisateurs</h3>
@@ -38,6 +51,12 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   placeholder={String(user.points)}
                   value={draftValue}
                   onChange={(event) => setDrafts((current) => ({ ...current, [user.id]: event.target.value }))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      void handleSave(user.id, user.points)
+                    }
+                  }}
                   title={`Points: ${user.points}`}
                 />
 
@@ -45,20 +64,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   type="button"
                   className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={savingUserId === user.id}
-                  onClick={async () => {
-                    const nextPoints = Number.parseInt(drafts[user.id] ?? String(user.points), 10)
-                    if (!Number.isFinite(nextPoints)) {
-                      return
-                    }
-
-                    setSavingUserId(user.id)
-                    try {
-                      await setUserPoints(user.id, nextPoints)
-                      setDrafts((current) => ({ ...current, [user.id]: String(nextPoints) }))
-                    } finally {
-                      setSavingUserId(null)
-                    }
-                  }}
+                  onClick={() => void handleSave(user.id, user.points)}
                 >
                   {savingUserId === user.id ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
