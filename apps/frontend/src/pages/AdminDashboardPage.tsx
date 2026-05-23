@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AdminSection } from '../types/models'
 import { useAdminData } from '../hooks/useAdminData'
@@ -29,19 +29,17 @@ export function AdminDashboardPage() {
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
 
-  async function logoutToLogin() {
+  const logoutToLogin = useCallback(async () => {
     await api.post('/auth/logout').catch(() => undefined)
     window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
     window.dispatchEvent(new Event('antidtraining-auth-changed'))
     navigate('/connexion', { replace: true })
-  }
+  }, [navigate])
 
   const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
-  const data = useAdminData(token, () => {
-    void logoutToLogin()
-  })
+  const data = useAdminData(token, logoutToLogin)
 
   const normalizedMessage = data.message.toLowerCase()
   const isErrorMessage =
@@ -132,6 +130,12 @@ export function AdminDashboardPage() {
           <SuggestionsPanel
             suggestions={data.suggestions}
             setSuggestionStatus={data.setSuggestionStatus}
+            deleteSuggestion={data.deleteSuggestion}
+            updateSuggestionRejectionMessage={data.updateSuggestionRejectionMessage}
+            proposals={data.proposals}
+            setProposalStatus={data.setProposalStatus}
+            deleteProposal={data.deleteProposal}
+            updateProposalRejectionMessage={data.updateProposalRejectionMessage}
           />
         )}
 

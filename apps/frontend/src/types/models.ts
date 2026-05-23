@@ -146,14 +146,42 @@ export type AdminHistoryItem = {
   detail: string
   tone: 'success' | 'error' | 'info'
 }
+
+export type EntryProposal = {
+  id: string
+  userId: string
+  taxonLevel: 'SUBFAMILY' | 'GENUS' | 'SPECIES'
+  taxonValue: string
+  subfamily: string
+  genus: string | null
+  subgenus: string | null
+  species: string | null
+  speciesGroup: string | null
+  size: string | null
+  caste: 'WORKER' | 'QUEEN' | 'MALE' | null
+  department: string
+  observedAt: string
+  biotope: string
+  photoCredit: string
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  rejectionMessage: string | null
+  createdAt: string
+  processedAt: string | null
+  images: { id: string; imageUrl: string; position?: number | null }[]
+  user?: { username: string }
+}
+
 export type Suggestion = {
   id: string
+  userId?: string | null
   name?: string | null
   email?: string | null
   message: string
   status: 'PENDING' | 'PROCESSED' | 'REJECTED'
+  rejectionMessage?: string | null
   createdAt: string
   processedAt?: string | null
+  user?: { username: string }
 }
 
 export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'points' | 'history'

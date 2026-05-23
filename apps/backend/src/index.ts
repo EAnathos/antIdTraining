@@ -128,9 +128,13 @@ app.use('/api/admin/history', requireAuth, requireAdmin, adminHistoryRouter)
 app.use('/api/admin/users', requireAuth, requireAdmin, adminUsersRouter)
 import { suggestionsRouter } from './routes/suggestions.js'
 import { adminSuggestionsRouter } from './routes/adminSuggestions.js'
+import { entryProposalsRouter } from './routes/entryProposals.js'
+import { adminProposalsRouter } from './routes/adminProposals.js'
 
 app.use('/api/suggestions', suggestionsRouter)
 app.use('/api/admin/suggestions', requireAuth, requireAdmin, adminSuggestionsRouter)
+app.use('/api/entry-proposals', requireAuth, entryProposalsRouter)
+app.use('/api/admin/entry-proposals', requireAuth, requireAdmin, adminProposalsRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
