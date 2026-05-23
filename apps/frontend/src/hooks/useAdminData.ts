@@ -17,6 +17,14 @@ type SwarmingPeriodDraft = {
   swarmingEndMonth: number | null
 }
 
+type LevelDetailPayload = {
+  description: string | null
+  sizeWorker: string | null
+  sizeQueen: string | null
+  sizeMale: string | null
+  criteria: string[]
+}
+
 const MAX_ENTRY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_ENTRY_IMAGES = 3
 const HISTORY_LIMIT = 12
@@ -117,6 +125,26 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           .filter(Boolean),
       ),
     )
+  }
+
+  function serializeLevelDetail(detail: LevelDetailsDraft[keyof LevelDetailsDraft], includeSizes: boolean): LevelDetailPayload {
+    return {
+      description: detail.description.trim() || null,
+      sizeWorker: includeSizes ? detail.sizeWorker.trim() || null : null,
+      sizeQueen: includeSizes ? detail.sizeQueen.trim() || null : null,
+      sizeMale: includeSizes ? detail.sizeMale.trim() || null : null,
+      criteria: detail.criteria.map((value) => value.trim()).filter(Boolean),
+    }
+  }
+
+  function buildLevelDetailsPayload(levelDetails: LevelDetailsDraft) {
+    return {
+      subfamily: serializeLevelDetail(levelDetails.subfamily, false),
+      genus: serializeLevelDetail(levelDetails.genus, false),
+      subgenus: serializeLevelDetail(levelDetails.subgenus, false),
+      speciesGroup: serializeLevelDetail(levelDetails.speciesGroup, false),
+      species: serializeLevelDetail(levelDetails.species, true),
+    }
   }
 
   async function loadAdminData() {
@@ -318,53 +346,19 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     if (!found) return
 
     await runAdminAction(async () => {
+        const { subfamily, tribe, genus, subgenus, speciesGroup, species } = found
+
       await adminApi.put(`/taxons/${taxonId}`, {
-        subfamily: found.subfamily,
-        tribe: found.tribe,
-        genus: found.genus,
-        subgenus: found.subgenus,
-        speciesGroup: found.speciesGroup,
-        species: found.species,
+          subfamily,
+          tribe,
+          genus,
+          subgenus,
+          speciesGroup,
+          species,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
         distribution: distribution.length > 0 ? { departments: distribution } : null,
-        levelDetails: {
-          subfamily: {
-            description: levelDetails.subfamily.description.trim() || null,
-            sizeWorker: null,
-            sizeQueen: null,
-            sizeMale: null,
-            criteria: levelDetails.subfamily.criteria.map((value) => value.trim()).filter(Boolean),
-          },
-          genus: {
-            description: levelDetails.genus.description.trim() || null,
-            sizeWorker: null,
-            sizeQueen: null,
-            sizeMale: null,
-            criteria: levelDetails.genus.criteria.map((value) => value.trim()).filter(Boolean),
-          },
-          subgenus: {
-            description: levelDetails.subgenus.description.trim() || null,
-            sizeWorker: null,
-            sizeQueen: null,
-            sizeMale: null,
-            criteria: levelDetails.subgenus.criteria.map((value) => value.trim()).filter(Boolean),
-          },
-          speciesGroup: {
-            description: levelDetails.speciesGroup.description.trim() || null,
-            sizeWorker: null,
-            sizeQueen: null,
-            sizeMale: null,
-            criteria: levelDetails.speciesGroup.criteria.map((value) => value.trim()).filter(Boolean),
-          },
-          species: {
-            description: levelDetails.species.description.trim() || null,
-            sizeWorker: levelDetails.species.sizeWorker.trim() || null,
-            sizeQueen: levelDetails.species.sizeQueen.trim() || null,
-            sizeMale: levelDetails.species.sizeMale.trim() || null,
-            criteria: levelDetails.species.criteria.map((value) => value.trim()).filter(Boolean),
-          },
-        },
+          levelDetails: buildLevelDetailsPayload(levelDetails),
       })
       clearPublicTaxonsCache()
     }, 'Critères et descriptions mis à jour.', 'Impossible de mettre à jour les critères.')

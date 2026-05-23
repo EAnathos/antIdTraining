@@ -16,6 +16,8 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
   )
 
   async function handleSave(userId: string, currentPoints: number) {
+    if (savingUserId === userId) return
+
     const nextPoints = Number.parseInt(drafts[userId] ?? String(currentPoints), 10)
     if (!Number.isFinite(nextPoints)) return
 

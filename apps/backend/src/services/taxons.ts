@@ -78,9 +78,7 @@ function normalizeTaxonData(data: TaxonInput) {
   }
 }
 
-function buildTaxonWriteData(data: TaxonInput): Prisma.TaxonUncheckedCreateInput {
-  const normalized = normalizeTaxonData(data)
-
+function buildTaxonWriteDataFromNormalized(normalized: ReturnType<typeof normalizeTaxonData>): Prisma.TaxonUncheckedCreateInput {
   return {
     subfamily: normalized.subfamily,
     tribe: normalized.tribe,
@@ -94,6 +92,28 @@ function buildTaxonWriteData(data: TaxonInput): Prisma.TaxonUncheckedCreateInput
   }
 }
 
+async function syncLevelProfiles(normalized: ReturnType<typeof normalizeTaxonData>) {
+  await upsertLevelProfile('SUBFAMILY', normalized.subfamily, normalized.levelDetails?.subfamily)
+  await upsertLevelProfile('GENUS', normalized.genus, normalized.levelDetails?.genus)
+  if (normalized.subgenus) {
+    await upsertLevelProfile('SUBGENUS', normalized.subgenus, normalized.levelDetails?.subgenus, normalized.genus)
+  }
+  if (normalized.speciesGroup) {
+    await upsertLevelProfile('SPECIES_GROUP', normalized.speciesGroup, normalized.levelDetails?.speciesGroup, normalized.genus)
+  }
+  await upsertLevelProfile('SPECIES', normalized.species, normalized.levelDetails?.species, normalized.genus)
+}
+
+async function persistTaxonWithProfiles<T extends { id: string }>(
+  writeTaxon: () => Promise<T>,
+  normalized: ReturnType<typeof normalizeTaxonData>,
+) {
+  const savedTaxon = await writeTaxon()
+  await syncLevelProfiles(normalized)
+  invalidateTaxonCatalogCache()
+  return savedTaxon
+}
+
 function normalizeLevelDetail(detail?: z.infer<typeof levelDetailSchema>) {
   if (!detail) return null
   return {
@@ -102,6 +122,41 @@ function normalizeLevelDetail(detail?: z.infer<typeof levelDetailSchema>) {
     sizeQueen: detail.sizeQueen?.trim() || null,
     sizeMale: detail.sizeMale?.trim() || null,
     criteria: (detail.criteria ?? []).map((criterion) => criterion.trim()).filter(Boolean),
+  }
+}
+
+type TaxonLevelProfileRecord = {
+  description: string | null
+  sizeWorker: string | null
+  sizeQueen: string | null
+  sizeMale: string | null
+  criteria: { label: string }[]
+  level: 'SUBFAMILY' | 'GENUS' | 'SPECIES' | 'SUBGENUS' | 'SPECIES_GROUP'
+  value: string
+  genusValue: string | null
+}
+
+type TaxonLevelDetail = {
+  description: string | null
+  sizeWorker: string | null
+  sizeQueen: string | null
+  sizeMale: string | null
+  criteria: { label: string }[]
+}
+
+function emptyLevelDetail(): TaxonLevelDetail {
+  return { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
+}
+
+function mapLevelDetail(profile?: TaxonLevelProfileRecord | null, derivedSize?: { sizeWorker?: string | null; sizeQueen?: string | null; sizeMale?: string | null }): TaxonLevelDetail {
+  if (!profile) return emptyLevelDetail()
+
+  return {
+    description: profile.description ?? null,
+    sizeWorker: derivedSize?.sizeWorker ?? profile.sizeWorker ?? null,
+    sizeQueen: derivedSize?.sizeQueen ?? profile.sizeQueen ?? null,
+    sizeMale: derivedSize?.sizeMale ?? profile.sizeMale ?? null,
+    criteria: profile.criteria ?? [],
   }
 }
 
@@ -355,7 +410,7 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
     },
   })) as any[]
 
-  const profileByKey = new Map(
+  const profileByKey = new Map<string, TaxonLevelProfileRecord>(
     profiles.map((profile) => {
       if (profile.level === 'SPECIES' || profile.level === 'SUBGENUS' || profile.level === 'SPECIES_GROUP') {
         return [`${profile.level}:${profile.genusValue ?? ''}:${profile.value}`, profile]
@@ -364,68 +419,19 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
     }),
   )
   const derivedSizes = await buildTaxonSizeMaps()
+  const getProfile = (key: string) => profileByKey.get(key)
 
   const items = taxons.map((taxon) => ({
     ...taxon,
     levelDetails: {
-      subfamily: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)
-        ? {
-            description: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.description ?? null,
-            sizeWorker: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeWorker ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeWorker ?? null,
-            sizeQueen: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeQueen ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeQueen ?? null,
-            sizeMale: derivedSizes.subfamilySizes.get(taxon.subfamily)?.sizeMale ?? profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.sizeMale ?? null,
-            criteria: profileByKey.get(`SUBFAMILY:${taxon.subfamily}`)?.criteria ?? [],
-          }
-        : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-      genus: profileByKey.get(`GENUS:${taxon.genus}`)
-        ? {
-            description: profileByKey.get(`GENUS:${taxon.genus}`)?.description ?? null,
-            sizeWorker: derivedSizes.genusSizes.get(taxon.genus)?.sizeWorker ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeWorker ?? null,
-            sizeQueen: derivedSizes.genusSizes.get(taxon.genus)?.sizeQueen ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeQueen ?? null,
-            sizeMale: derivedSizes.genusSizes.get(taxon.genus)?.sizeMale ?? profileByKey.get(`GENUS:${taxon.genus}`)?.sizeMale ?? null,
-            criteria: profileByKey.get(`GENUS:${taxon.genus}`)?.criteria ?? [],
-          }
-        : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+      subfamily: mapLevelDetail(getProfile(`SUBFAMILY:${taxon.subfamily}`), derivedSizes.subfamilySizes.get(taxon.subfamily)),
+      genus: mapLevelDetail(getProfile(`GENUS:${taxon.genus}`), derivedSizes.genusSizes.get(taxon.genus)),
       subgenus: taxon.subgenus
-        ? (() => {
-            const subgenusProfile = profileByKey.get(`SUBGENUS:${taxon.genus}:${taxon.subgenus}`) ?? profileByKey.get(`SUBGENUS::${taxon.subgenus}`)
-            return subgenusProfile
-              ? {
-                  description: subgenusProfile.description ?? null,
-                  sizeWorker: subgenusProfile.sizeWorker ?? null,
-                  sizeQueen: subgenusProfile.sizeQueen ?? null,
-                  sizeMale: subgenusProfile.sizeMale ?? null,
-                  criteria: subgenusProfile.criteria ?? [],
-                }
-              : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
-          })()
+        ? mapLevelDetail(getProfile(`SUBGENUS:${taxon.genus}:${taxon.subgenus}`) ?? getProfile(`SUBGENUS::${taxon.subgenus}`))
         : null,
-      species: (() => {
-        const speciesProfile = profileByKey.get(`SPECIES:${taxon.genus}:${taxon.species}`) ?? profileByKey.get(`SPECIES::${taxon.species}`)
-
-        return speciesProfile
-          ? {
-              description: speciesProfile.description ?? null,
-              sizeWorker: speciesProfile.sizeWorker ?? null,
-              sizeQueen: speciesProfile.sizeQueen ?? null,
-              sizeMale: speciesProfile.sizeMale ?? null,
-              criteria: speciesProfile.criteria ?? [],
-            }
-          : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
-      })(),
+      species: mapLevelDetail(getProfile(`SPECIES:${taxon.genus}:${taxon.species}`) ?? getProfile(`SPECIES::${taxon.species}`)),
       speciesGroup: taxon.speciesGroup
-        ? (() => {
-            const groupProfile = profileByKey.get(`SPECIES_GROUP:${taxon.genus}:${taxon.speciesGroup}`) ?? profileByKey.get(`SPECIES_GROUP::${taxon.speciesGroup}`)
-            return groupProfile
-              ? {
-                  description: groupProfile.description ?? null,
-                  sizeWorker: groupProfile.sizeWorker ?? null,
-                  sizeQueen: groupProfile.sizeQueen ?? null,
-                  sizeMale: groupProfile.sizeMale ?? null,
-                  criteria: groupProfile.criteria ?? [],
-                }
-              : { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] }
-          })()
+        ? mapLevelDetail(getProfile(`SPECIES_GROUP:${taxon.genus}:${taxon.speciesGroup}`) ?? getProfile(`SPECIES_GROUP::${taxon.speciesGroup}`))
         : null,
     },
   }))
@@ -444,44 +450,19 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
 }
 
 export async function createTaxon(input: TaxonInput) {
-  const created = await prisma.taxon.create({
-    data: buildTaxonWriteData(input),
-  })
-
   const normalized = normalizeTaxonData(input)
-  await upsertLevelProfile('SUBFAMILY', normalized.subfamily, normalized.levelDetails?.subfamily)
-  await upsertLevelProfile('GENUS', normalized.genus, normalized.levelDetails?.genus)
-  if (normalized.subgenus) {
-    await upsertLevelProfile('SUBGENUS', normalized.subgenus, normalized.levelDetails?.subgenus, normalized.genus)
-  }
-  if (normalized.speciesGroup) {
-    await upsertLevelProfile('SPECIES_GROUP', normalized.speciesGroup, normalized.levelDetails?.speciesGroup, normalized.genus)
-  }
-  await upsertLevelProfile('SPECIES', normalized.species, normalized.levelDetails?.species, normalized.genus)
-
-  invalidateTaxonCatalogCache()
-  return created
+  return persistTaxonWithProfiles(
+    () => prisma.taxon.create({ data: buildTaxonWriteDataFromNormalized(normalized) }),
+    normalized,
+  )
 }
 
 export async function updateTaxon(id: string, input: TaxonInput) {
-  const updated = await prisma.taxon.update({
-    where: { id },
-    data: buildTaxonWriteData(input),
-  })
-
   const normalized = normalizeTaxonData(input)
-  await upsertLevelProfile('SUBFAMILY', normalized.subfamily, normalized.levelDetails?.subfamily)
-  await upsertLevelProfile('GENUS', normalized.genus, normalized.levelDetails?.genus)
-  if (normalized.subgenus) {
-    await upsertLevelProfile('SUBGENUS', normalized.subgenus, normalized.levelDetails?.subgenus, normalized.genus)
-  }
-  if (normalized.speciesGroup) {
-    await upsertLevelProfile('SPECIES_GROUP', normalized.speciesGroup, normalized.levelDetails?.speciesGroup, normalized.genus)
-  }
-  await upsertLevelProfile('SPECIES', normalized.species, normalized.levelDetails?.species, normalized.genus)
-
-  invalidateTaxonCatalogCache()
-  return updated
+  return persistTaxonWithProfiles(
+    () => prisma.taxon.update({ where: { id }, data: buildTaxonWriteDataFromNormalized(normalized) }),
+    normalized,
+  )
 }
 
 export async function deleteTaxon(id: string) {

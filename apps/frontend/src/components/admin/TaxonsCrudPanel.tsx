@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
-import { AdminIconButton, ArrowDownIcon, ArrowUpIcon, EditIcon, TrashIcon } from './AdminIconButton'
+import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
 import { ALL_FRENCH_DEPARTMENT_CODES, type FrenchDepartmentCode } from '../../lib/frenchDepartments'
+import { TaxonLevelEditor } from './TaxonLevelEditor'
 
 type TaxonForm = {
   subfamily: string
@@ -64,21 +65,6 @@ type Props = {
   ) => Promise<void>
 }
 
-const MONTH_OPTIONS = [
-  { value: 1, label: 'Janvier' },
-  { value: 2, label: 'Février' },
-  { value: 3, label: 'Mars' },
-  { value: 4, label: 'Avril' },
-  { value: 5, label: 'Mai' },
-  { value: 6, label: 'Juin' },
-  { value: 7, label: 'Juillet' },
-  { value: 8, label: 'Août' },
-  { value: 9, label: 'Septembre' },
-  { value: 10, label: 'Octobre' },
-  { value: 11, label: 'Novembre' },
-  { value: 12, label: 'Décembre' },
-] as const
-
 const INITIAL_MODAL_STATE: ModalState = {
   taxon: null,
   draft: null,
@@ -86,6 +72,48 @@ const INITIAL_MODAL_STATE: ModalState = {
   distribution: [],
   isSelectingSwarmingRange: false,
   selectionAnchorMonth: null,
+}
+
+const EMPTY_TAXON_FORM: TaxonForm = {
+  subfamily: '',
+  tribe: '',
+  genus: '',
+  subgenus: '',
+  speciesGroup: '',
+  species: '',
+  distribution: [],
+}
+
+function normalizeDistribution(departments: unknown[] | undefined): FrenchDepartmentCode[] {
+  return (departments ?? []).filter((department): department is FrenchDepartmentCode => typeof department === 'string')
+}
+
+function buildLevelDetailDraft(detail?: {
+  description?: string | null
+  sizeWorker?: string | null
+  sizeQueen?: string | null
+  sizeMale?: string | null
+  criteria?: { label: string }[] | null
+} | null): LevelDetailDraft {
+  return {
+    description: detail?.description ?? '',
+    sizeWorker: detail?.sizeWorker ?? '',
+    sizeQueen: detail?.sizeQueen ?? '',
+    sizeMale: detail?.sizeMale ?? '',
+    criteria: detail?.criteria?.map((criterion) => criterion.label) ?? [],
+  }
+}
+
+function buildTaxonDetailsDraft(taxon: Taxon): TaxonDetailsDraft {
+  const levelDetails = taxon.levelDetails
+
+  return {
+    subfamily: buildLevelDetailDraft(levelDetails.subfamily),
+    genus: buildLevelDetailDraft(levelDetails.genus),
+    subgenus: buildLevelDetailDraft(levelDetails.subgenus),
+    speciesGroup: buildLevelDetailDraft(levelDetails.speciesGroup),
+    species: buildLevelDetailDraft(levelDetails.species),
+  }
 }
 
 export function TaxonsCrudPanel({
@@ -147,7 +175,7 @@ export function TaxonsCrudPanel({
 
   const resetTaxonForm = () => {
     setSelectedTaxonId('')
-    setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
+    setTaxonForm(EMPTY_TAXON_FORM)
   }
 
   const loadTaxonInForm = (taxon: Taxon) => {
@@ -159,56 +187,15 @@ export function TaxonsCrudPanel({
       subgenus: taxon.subgenus ?? '',
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
-      distribution: (taxon.distribution?.departments ?? [])
-        .filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
+      distribution: normalizeDistribution(taxon.distribution?.departments),
     })
   }
 
-  const buildLevelDetailsFromTaxon = (taxon: Taxon): TaxonDetailsDraft => {
-    return {
-      subfamily: {
-        description: taxon.levelDetails.subfamily.description ?? '',
-        sizeWorker: taxon.levelDetails.subfamily.sizeWorker ?? '',
-        sizeQueen: taxon.levelDetails.subfamily.sizeQueen ?? '',
-        sizeMale: taxon.levelDetails.subfamily.sizeMale ?? '',
-        criteria: taxon.levelDetails.subfamily.criteria.map((criterion) => criterion.label),
-      },
-      genus: {
-        description: taxon.levelDetails.genus.description ?? '',
-        sizeWorker: taxon.levelDetails.genus.sizeWorker ?? '',
-        sizeQueen: taxon.levelDetails.genus.sizeQueen ?? '',
-        sizeMale: taxon.levelDetails.genus.sizeMale ?? '',
-        criteria: taxon.levelDetails.genus.criteria.map((criterion) => criterion.label),
-      },
-      subgenus: {
-        description: taxon.levelDetails.subgenus?.description ?? '',
-        sizeWorker: taxon.levelDetails.subgenus?.sizeWorker ?? '',
-        sizeQueen: taxon.levelDetails.subgenus?.sizeQueen ?? '',
-        sizeMale: taxon.levelDetails.subgenus?.sizeMale ?? '',
-        criteria: taxon.levelDetails.subgenus?.criteria.map((criterion) => criterion.label) ?? [],
-      },
-      speciesGroup: {
-        description: taxon.levelDetails.speciesGroup?.description ?? '',
-        sizeWorker: taxon.levelDetails.speciesGroup?.sizeWorker ?? '',
-        sizeQueen: taxon.levelDetails.speciesGroup?.sizeQueen ?? '',
-        sizeMale: taxon.levelDetails.speciesGroup?.sizeMale ?? '',
-        criteria: taxon.levelDetails.speciesGroup?.criteria.map((criterion) => criterion.label) ?? [],
-      },
-      species: {
-        description: taxon.levelDetails.species.description ?? '',
-        sizeWorker: taxon.levelDetails.species.sizeWorker ?? '',
-        sizeQueen: taxon.levelDetails.species.sizeQueen ?? '',
-        sizeMale: taxon.levelDetails.species.sizeMale ?? '',
-        criteria: taxon.levelDetails.species.criteria.map((criterion) => criterion.label),
-      },
-    }
-  }
-
   const openDetailsModal = (taxon: Taxon) => {
-    const distribution = (taxon.distribution?.departments ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+    const distribution = normalizeDistribution(taxon.distribution?.departments)
     setModal({
       taxon,
-      draft: buildLevelDetailsFromTaxon(taxon),
+      draft: buildTaxonDetailsDraft(taxon),
       swarming: {
         swarmingStartMonth: taxon.swarmingStartMonth,
         swarmingEndMonth: taxon.swarmingEndMonth,
@@ -382,163 +369,6 @@ export function TaxonsCrudPanel({
     }))
   }
 
-  const renderLevelTitle = (levelKey: TaxonDetailLevelKey, taxon: Taxon) => {
-    if (levelKey === 'subfamily') {
-      return <>Sous-famille ({taxon.subfamily})</>
-    }
-
-    if (levelKey === 'genus') {
-      return <>Genre (<em>{taxon.genus}</em>)</>
-    }
-
-    if (levelKey === 'subgenus') {
-      return <>Sous-genre ({taxon.subgenus ? <em>{taxon.subgenus}</em> : '-'})</>
-    }
-
-    if (levelKey === 'speciesGroup') {
-      return <>Groupe d'espèce ({taxon.speciesGroup ? <em>{taxon.speciesGroup}</em> : '-'})</>
-    }
-
-    return <>Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)</>
-  }
-
-  const renderSwarmingSelector = () => {
-    return (
-      <div className="mt-3 mb-4 space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
-          <span>Essaimage :</span>
-          {modal.swarming.swarmingStartMonth && modal.swarming.swarmingEndMonth && (
-            <>
-              <span>
-                {MONTH_OPTIONS[modal.swarming.swarmingStartMonth - 1].label} à {MONTH_OPTIONS[modal.swarming.swarmingEndMonth - 1].label}
-              </span>
-              <button
-                className="text-sm underline underline-offset-2"
-                type="button"
-                onClick={() => setModal(prev => ({
-                  ...prev,
-                  swarming: { swarmingStartMonth: null, swarmingEndMonth: null },
-                }))}
-              >
-                Réinitialiser
-              </button>
-            </>
-          )}
-        </div>
-        <div className="grid grid-cols-12 justify-items-center gap-2" role="group" aria-label="Sélection période d'essaimage">
-          {MONTH_OPTIONS.map((month) => (
-            <button
-              key={month.value}
-              type="button"
-              title={month.label}
-              aria-label={month.label}
-              aria-pressed={isMonthInSelectedRange(month.value)}
-              onPointerDown={() => beginSwarmingRangeSelection(month.value)}
-              onPointerEnter={() => continueSwarmingRangeSelection(month.value)}
-              onPointerUp={endSwarmingRangeSelection}
-              className={`shrink-0 rounded-full border transition ${
-                isMonthRangeEndpoint(month.value)
-                  ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
-                  : isMonthInSelectedRange(month.value)
-                    ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
-                    : 'h-4 w-4 border-slate-500 bg-slate-300 hover:border-slate-600'
-              }`}
-            />
-          ))}
-        </div>
-        <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500" aria-hidden>
-          {MONTH_OPTIONS.map((month) => (
-            <span key={`label-${month.value}`} className="w-6 text-center">{month.label.slice(0, 1)}</span>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  const renderLevelEditor = (levelKey: TaxonDetailLevelKey, levelDraft: LevelDetailDraft, taxon: Taxon): React.ReactNode => {
-    const isAutoCalculatedSize = levelKey !== 'species'
-
-    return (
-      <div key={levelKey} className="mb-4 rounded-lg border border-slate-200 p-3">
-        <p className="font-medium text-slate-800">
-          {renderLevelTitle(levelKey, taxon)}
-        </p>
-        {levelKey === 'species' && renderSwarmingSelector()}
-        <textarea
-          className="mt-2 w-full rounded border p-2"
-          placeholder="Description"
-          rows={2}
-          value={levelDraft.description}
-          onChange={(e) => updateLevelDescription(levelKey, e.target.value)}
-        />
-
-        {(levelKey === 'subfamily' || levelKey === 'genus' || levelKey === 'species') && (
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            <input
-              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder={isAutoCalculatedSize ? undefined : 'Ouvrière (ex: 2-3 mm)'}
-              value={levelDraft.sizeWorker}
-              readOnly={isAutoCalculatedSize}
-              disabled={isAutoCalculatedSize}
-              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
-              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Ouvrière'}
-              onChange={(e) => updateLevelSize(levelKey, 'sizeWorker', e.target.value)}
-            />
-            <input
-              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder={isAutoCalculatedSize ? undefined : 'Reine (ex: 4-5 mm)'}
-              value={levelDraft.sizeQueen}
-              readOnly={isAutoCalculatedSize}
-              disabled={isAutoCalculatedSize}
-              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
-              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Reine'}
-              onChange={(e) => updateLevelSize(levelKey, 'sizeQueen', e.target.value)}
-            />
-            <input
-              className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-              placeholder={isAutoCalculatedSize ? undefined : 'Mâle (ex: 2-3 mm)'}
-              value={levelDraft.sizeMale}
-              readOnly={isAutoCalculatedSize}
-              disabled={isAutoCalculatedSize}
-              title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
-              aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Mâle'}
-              onChange={(e) => updateLevelSize(levelKey, 'sizeMale', e.target.value)}
-            />
-          </div>
-        )}
-
-        {isAutoCalculatedSize && (levelKey === 'subfamily' || levelKey === 'genus') && (
-          <p className="mt-2 text-xs text-slate-500">Les tailles sont auto-calculées à partir des espèces enfants.</p>
-        )}
-
-        <div className="mt-2 space-y-2">
-          {levelDraft.criteria.map((criterion, index) => (
-            <div key={`${levelKey}-${index}`} className="flex gap-2">
-              <input
-                className="flex-1 rounded border p-2"
-                placeholder="Critère"
-                value={criterion}
-                onChange={(e) => updateCriterion(levelKey, index, e.target.value)}
-              />
-              <AdminIconButton title="Monter" onClick={() => moveCriterion(levelKey, index, -1)} icon={<ArrowUpIcon />} disabled={index === 0} />
-              <AdminIconButton
-                title="Descendre"
-                onClick={() => moveCriterion(levelKey, index, 1)}
-                icon={<ArrowDownIcon />}
-                disabled={index === levelDraft.criteria.length - 1}
-              />
-              <AdminIconButton title="Supprimer" tone="danger" onClick={() => removeCriterion(levelKey, index)} icon={<TrashIcon />} />
-            </div>
-          ))}
-        </div>
-
-        <button className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={() => addCriterion(levelKey)}>
-          + Ajouter un critère
-        </button>
-      </div>
-    )
-  }
-
   const saveDetailsModal = async () => {
     if (!modal.taxon || !modal.draft) return
     if (!validateSwarmingPeriod()) {
@@ -652,7 +482,7 @@ export function TaxonsCrudPanel({
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <AdminIconButton title="Modifier" onClick={() => loadTaxonInForm(taxon)} icon={<EditIcon />} />
-                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => { handleDeleteTaxon(taxon.id).catch(console.error) }} icon={<TrashIcon />} />
+                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => void handleDeleteTaxon(taxon.id)} icon={<TrashIcon />} />
                     </div>
                   </td>
                 </tr>
@@ -684,7 +514,26 @@ export function TaxonsCrudPanel({
               }
               levelKeys.push('species')
 
-              return levelKeys.map((levelKey) => renderLevelEditor(levelKey, modal.draft![levelKey], modal.taxon!))
+              return levelKeys.map((levelKey) => (
+                <TaxonLevelEditor
+                  key={levelKey}
+                  levelKey={levelKey}
+                  levelDraft={modal.draft![levelKey]}
+                  taxon={modal.taxon!}
+                  swarming={modal.swarming}
+                  isMonthInSelectedRange={isMonthInSelectedRange}
+                  isMonthRangeEndpoint={isMonthRangeEndpoint}
+                  onBeginSwarmingRangeSelection={beginSwarmingRangeSelection}
+                  onContinueSwarmingRangeSelection={continueSwarmingRangeSelection}
+                  onEndSwarmingRangeSelection={endSwarmingRangeSelection}
+                  onUpdateDescription={updateLevelDescription}
+                  onUpdateSize={updateLevelSize}
+                  onUpdateCriterion={updateCriterion}
+                  onMoveCriterion={moveCriterion}
+                  onRemoveCriterion={removeCriterion}
+                  onAddCriterion={addCriterion}
+                />
+              ))
             })()}
 
             {modal.taxon.levelDetails.species && (
@@ -732,7 +581,7 @@ export function TaxonsCrudPanel({
               <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>
                 Annuler
               </button>
-              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => { saveDetailsModal().catch(console.error) }}>
+              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => void saveDetailsModal()}>
                 Enregistrer
               </button>
             </div>
