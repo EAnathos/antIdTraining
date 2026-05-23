@@ -10,9 +10,9 @@ export const suggestionsRouter = Router()
 const MAX_SUGGESTIONS_PER_USER = 10
 
 const suggestionSchema = z.object({
-  name: z.string().optional().nullable(),
-  email: z.string().optional().nullable(),
-  message: z.string().min(1),
+  name: z.string().max(100, 'Nom trop long').trim().optional().nullable(),
+  email: z.string().email('Email invalide').max(255, 'Email trop long').optional().nullable(),
+  message: z.string().min(10, 'Le message doit contenir au moins 10 caractères').max(5000, 'Message trop long').trim(),
 })
 
 suggestionsRouter.post('/', optionalAuth, asyncHandler(async (req, res) => {

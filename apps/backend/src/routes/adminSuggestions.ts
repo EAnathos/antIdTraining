@@ -9,7 +9,7 @@ export const adminSuggestionsRouter = Router()
 
 const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
-  rejectionMessage: z.string().optional(),
+  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
 })
 
 adminSuggestionsRouter.get('/', asyncHandler(async (req, res) => {

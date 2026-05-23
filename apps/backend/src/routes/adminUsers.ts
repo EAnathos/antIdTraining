@@ -7,7 +7,7 @@ import { recordAdminAudit } from '../lib/adminAudit.js'
 import { buildUserPointRows } from '../services/stats.js'
 
 const updatePointsSchema = z.object({
-  points: z.number().int().min(-1000000).max(1000000),
+  points: z.number().int('Doit être un entier').gte(0, 'Doit être positif').lte(10000000, 'Valeur trop grande'),
 })
 
 export const adminUsersRouter = Router()

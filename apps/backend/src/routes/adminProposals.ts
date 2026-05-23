@@ -10,7 +10,7 @@ export const adminProposalsRouter = Router()
 
 const approveProposalSchema = z.object({
   decision: z.enum(['ACCEPT', 'REJECT']),
-  rejectionMessage: z.string().optional(),
+  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
 })
 
 // Get all pending proposals

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
+import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
 import { databaseRouter } from './routes/database.js'
 import { entriesRouter } from './routes/entries.js'
@@ -144,6 +145,19 @@ app.use('/api/admin/entry-proposals', requireAuth, requireAdmin, adminProposalsR
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`API démarrée sur http://localhost:${config.port}`)
 })
+
+// Graceful shutdown
+async function gracefulShutdown(signal: string) {
+  console.log(`\n${signal} reçu. Arrêt gracieux...`)
+  server.close(async () => {
+    await closeRedis()
+    console.log('Serveur et connexions fermés')
+    process.exit(0)
+  })
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))

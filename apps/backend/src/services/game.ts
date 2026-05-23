@@ -9,20 +9,20 @@ export const validateGameAnswerSchema = z.object({
   level: z.enum(['easy', 'medium', 'hard']),
   selected: z
     .object({
-      subfamily: z.string().optional(),
-      genus: z.string().optional(),
-      species: z.string().optional(),
+      subfamily: z.string().max(255, 'Trop long').trim().optional(),
+      genus: z.string().max(255, 'Trop long').trim().optional(),
+      species: z.string().max(255, 'Trop long').trim().optional(),
     })
     .default({}),
   answer: z
     .object({
-      subfamily: z.string().optional(),
-      genus: z.string().optional(),
-      species: z.string().optional(),
+      subfamily: z.string().max(255, 'Trop long').trim().optional(),
+      genus: z.string().max(255, 'Trop long').trim().optional(),
+      species: z.string().max(255, 'Trop long').trim().optional(),
     })
     .default({}),
-  entryId: z.string().optional(),
-  sessionId: z.string().optional(),
+  entryId: z.string().min(1, 'ID requis').optional(),
+  sessionId: z.string().min(1, 'ID session requis').optional(),
 })
 
 function normalizeGameLevel(value: unknown): GameLevel {

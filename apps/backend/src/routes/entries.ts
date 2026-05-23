@@ -20,15 +20,15 @@ const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 
 const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
-  taxonValue: z.string().min(1),
-  taxonGenus: z.string().optional().nullable(),
-  subgenus: z.string().optional().nullable(),
-  speciesGroup: z.string().optional().nullable(),
-  department: z.string().min(1),
-  observedAt: z.coerce.date(),
-  biotope: z.string().min(1),
-  photoCredit: z.string().min(1),
-  size: z.string().optional().nullable(),
+  taxonValue: z.string().min(1, 'Valeur requise').max(255, 'Valeur trop longue').trim(),
+  taxonGenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  subgenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  department: z.string().min(2, 'Département invalide').max(2, 'Département invalide').regex(/^[0-9]{2}$/, 'Département invalide').trim(),
+  observedAt: z.coerce.date().max(new Date(), 'La date ne peut pas être dans le futur'),
+  biotope: z.string().min(3, 'Biotope trop court').max(1000, 'Biotope trop long').trim(),
+  photoCredit: z.string().min(3, 'Crédit photo trop court').max(255, 'Crédit photo trop long').trim(),
+  size: z.string().max(100, 'Taille trop longue').trim().optional().nullable(),
   caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
 })
 
@@ -209,7 +209,7 @@ entriesRouter.put('/:id', asyncHandler(async (req, res) => {
 }))
 
 entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
-  const bodySchema = z.object({ imageIds: z.array(z.string()) })
+  const bodySchema = z.object({ imageIds: z.array(z.string().min(1)).min(1, 'Au moins une image requise').max(10, 'Max 10 images') })
   const parsed = bodySchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
