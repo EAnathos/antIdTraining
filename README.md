@@ -24,9 +24,7 @@ architecture-beta
 
 - [apps/frontend](apps/frontend) : interface utilisateur, pages publiques et administration
 - [apps/backend](apps/backend) : API, Prisma et outils admin
-- [README backend](apps/backend/README.md) : détail du backend
-- [README frontend](apps/frontend/README.md) : détail du frontend
- - [Documentation frontend component map](docs/frontend-component-map.md) : carte des composants et intégration backend
+- [Documentation frontend component map](docs/frontend-component-map.md) : carte des composants et intégration backend
 
 ## Démarrage rapide avec Docker
 
