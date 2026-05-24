@@ -6,6 +6,29 @@ FRONTEND_DIST="$REPO_DIR/apps/frontend/dist"
 DEPLOY_DIR="/var/www/ant-id-training"
 BACKEND_PROCESS="antIdTraining-backend"
 
+# Check critical dependencies
+printf '\n==> %s\n' "Vérification des dépendances"
+if ! command -v pg_isready &> /dev/null; then
+	echo "ERROR: pg_isready not found. Install PostgreSQL client tools first:"
+	echo "  Ubuntu: sudo apt-get install postgresql-client"
+	echo "  CentOS: sudo yum install postgresql"
+	exit 1
+fi
+
+if ! command -v redis-cli &> /dev/null; then
+	echo "ERROR: redis-cli not found. Install Redis first:"
+	echo "  Ubuntu: sudo apt-get install redis-server"
+	echo "  CentOS: sudo yum install redis"
+	exit 1
+fi
+
+if ! redis-cli ping > /dev/null 2>&1; then
+	echo "ERROR: Redis is not running or inaccessible."
+	echo "Start Redis with: sudo systemctl start redis-server"
+	exit 1
+fi
+echo "✓ Redis is running"
+
 printf '\n==> %s\n' "Mise à jour du dépôt"
 cd "$REPO_DIR"
 git pull --rebase
@@ -31,8 +54,30 @@ if [ -z "${DATABASE_URL:-}" ]; then
 	exit 1
 fi
 
+if ! pg_isready -d "$DATABASE_URL" > /dev/null 2>&1; then
+	echo "ERROR: PostgreSQL is not running or not reachable."
+	echo "Check your database service and DATABASE_URL, then retry."
+	exit 1
+fi
+echo "✓ PostgreSQL is running"
+
+# Ensure REDIS_URL is configured (defaults to localhost:6379 if not set)
+if [ -z "${REDIS_URL:-}" ]; then
+	export REDIS_URL="redis://localhost:6379"
+	echo "INFO: REDIS_URL not set, using default: $REDIS_URL"
+fi
+
+# Ensure CORS_ORIGINS is set in production
+if [ "${NODE_ENV:-production}" = "production" ] && [ -z "${CORS_ORIGINS:-}" ]; then
+	echo "ERROR: CORS_ORIGINS not set in production."
+	echo "Set CORS_ORIGINS in apps/backend/.env or export it before deployment."
+	echo "Example: CORS_ORIGINS=https://your-domain.com"
+	exit 1
+fi
+
 MASKED_DBURL="${DATABASE_URL//?/*}"
 echo "DATABASE_URL (masked): ${MASKED_DBURL:0:60}..."
+echo "REDIS_URL: ${REDIS_URL:-redis://localhost:6379}"
 (
 	cd "$REPO_DIR/apps/backend"
 	# If the genusValue migration previously failed, mark it rolled back so deploy can continue.

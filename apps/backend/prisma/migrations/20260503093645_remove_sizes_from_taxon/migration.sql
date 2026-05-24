@@ -8,12 +8,12 @@
 
 */
 -- AlterTable
-ALTER TABLE "Taxon" DROP COLUMN "sizeMale",
-DROP COLUMN "sizeQueen",
-DROP COLUMN "sizeWorker";
+ALTER TABLE "Taxon" DROP COLUMN IF EXISTS "sizeMale",
+DROP COLUMN IF EXISTS "sizeQueen",
+DROP COLUMN IF EXISTS "sizeWorker";
 
 -- AlterTable
-ALTER TABLE "TaxonLevelProfile" DROP COLUMN "size",
-ADD COLUMN     "sizeMale" TEXT,
-ADD COLUMN     "sizeQueen" TEXT,
-ADD COLUMN     "sizeWorker" TEXT;
+ALTER TABLE "TaxonLevelProfile" DROP COLUMN IF EXISTS "size",
+ADD COLUMN IF NOT EXISTS    "sizeMale" TEXT,
+ADD COLUMN IF NOT EXISTS     "sizeQueen" TEXT,
+ADD COLUMN IF NOT EXISTS     "sizeWorker" TEXT;

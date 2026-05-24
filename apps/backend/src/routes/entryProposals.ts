@@ -7,8 +7,10 @@ import sharp from 'sharp'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 
@@ -20,19 +22,34 @@ const MAX_SUGGESTIONS_PER_USER = 10
 
 const proposalSchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
-  taxonValue: z.string().min(1),
-  taxonGenus: z.string().optional().nullable(),
-  subgenus: z.string().optional().nullable(),
-  speciesGroup: z.string().optional().nullable(),
-  department: z.string().min(1),
-  observedAt: z.coerce.date(),
-  biotope: z.string().min(1),
-  photoCredit: z.string().min(1),
-  size: z.string().optional().nullable(),
+  taxonValue: z.string().min(1, 'Valeur requise').max(255, 'Valeur trop longue').trim(),
+  taxonGenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  subgenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  department: z.string().min(2, 'Département invalide').max(2, 'Département invalide').regex(/^[0-9]{2}$/, 'Département invalide').trim(),
+  observedAt: z.coerce.date().max(new Date(), 'La date ne peut pas être dans le futur'),
+  biotope: z.string().min(3, 'Biotope trop court').max(1000, 'Biotope trop long').trim(),
+  photoCredit: z.string().min(3, 'Crédit photo trop court').max(255, 'Crédit photo trop long').trim(),
+  size: z.string().max(100, 'Taille trop longue').trim().optional().nullable(),
   caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
 })
 
 export const entryProposalsRouter = Router()
+
+function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
+  return {
+    ...proposal,
+    photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+  }
+}
+
+function publicSuggestion<T extends { name: string | null; email: string | null }>(suggestion: T): T {
+  return {
+    ...suggestion,
+    name: suggestion.name ? (decryptSensitiveText(suggestion.name) ?? suggestion.name) : suggestion.name,
+    email: suggestion.email ? (decryptSensitiveText(suggestion.email) ?? suggestion.email) : suggestion.email,
+  }
+}
 
 function sanitizeFileStem(name: string) {
   const stem = name.replace(/\.[^.]+$/, '')
@@ -47,14 +64,32 @@ function sanitizeFileStem(name: string) {
 }
 
 async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
-  if (!file.mimetype.startsWith('image/')) {
-    throw new AppError(400, 'Seules les images sont acceptées.')
+  // Validate MIME type
+  const validMimes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!validMimes.includes(file.mimetype)) {
+    throw new AppError(400, 'Format d\'image non supporté. Utilisez JPEG, PNG ou WebP.')
   }
 
+  // Validate file size (8MB max from multer, but double-check)
+  if (file.buffer.length > 8 * 1024 * 1024) {
+    throw new AppError(413, 'Image trop volumineux (max 8MB).')
+  }
+
+  // Validate image metadata
   const image = sharp(file.buffer, { animated: false }).rotate()
   const metadata = await image.metadata()
+  
   if (!metadata.width || !metadata.height) {
-    throw new AppError(400, 'Image invalide.')
+    throw new AppError(400, 'Image invalide ou corrompue.')
+  }
+
+  // Validate dimensions (min 200x200, max 12000x12000)
+  if (metadata.width < 200 || metadata.height < 200) {
+    throw new AppError(400, 'Image trop petite (minimum 200x200 pixels).')
+  }
+  
+  if (metadata.width > 12000 || metadata.height > 12000) {
+    throw new AppError(400, 'Image trop grande (maximum 12000x12000 pixels).')
   }
 
   const safeStem = sanitizeFileStem(file.originalname)
@@ -109,7 +144,7 @@ const uploadProposalImages: RequestHandler = (req, res, next) => {
 }
 
 // Get user's proposals and suggestions
-entryProposalsRouter.get('/my-contributions', async (req, res) => {
+entryProposalsRouter.get('/my-contributions', asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
@@ -126,11 +161,14 @@ entryProposalsRouter.get('/my-contributions', async (req, res) => {
     }),
   ])
 
-  return res.json({ proposals, suggestions })
-})
+  return res.json({
+    proposals: proposals.map((proposal) => publicProposal(proposal)),
+    suggestions: suggestions.map((suggestion) => publicSuggestion(suggestion)),
+  })
+}))
 
 // Get proposal count for user (check limit)
-entryProposalsRouter.get('/user-counts', async (req, res) => {
+entryProposalsRouter.get('/user-counts', asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
@@ -152,81 +190,70 @@ entryProposalsRouter.get('/user-counts', async (req, res) => {
     canPropose: proposalCount < MAX_PROPOSALS_PER_USER,
     canSuggest: suggestionCount < MAX_SUGGESTIONS_PER_USER,
   })
-})
+}))
 
 // Create entry proposal
-entryProposalsRouter.post('/', uploadProposalImages, async (req, res) => {
+entryProposalsRouter.post('/', uploadProposalImages, asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new AppError(401, 'Non autorisé.')
   }
 
-  const savedFilePaths: string[] = []
-
-  try {
-    const parsed = proposalSchema.safeParse(req.body)
-    if (!parsed.success) {
-      throw new AppError(400, 'Requête invalide.')
-    }
-
-    // Check proposal limit
-    const proposalCount = await prisma.entryProposal.count({
-      where: { userId: req.user.userId },
-    })
-    if (proposalCount >= MAX_PROPOSALS_PER_USER) {
-      throw new AppError(400, `Limite de ${MAX_PROPOSALS_PER_USER} propositions atteinte.`)
-    }
-
-    const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
-    if (!taxonSelection) {
-      throw new AppError(400, 'Taxon introuvable pour ce niveau.')
-    }
-
-    const files = (req.files as Express.Multer.File[] | undefined) ?? []
-    const optimizedFileNames = await Promise.all(
-      files.map(async (file, index) => {
-        const result = await optimizeAndSaveImage(file, index)
-        savedFilePaths.push(...result.savedPaths)
-        return result.baseFileName
-      }),
-    )
-
-    const created = await prisma.entryProposal.create({
-      data: {
-        userId: req.user.userId,
-        taxonLevel: taxonSelection.taxonLevel,
-        taxonValue: taxonSelection.taxonValue,
-        subfamily: taxonSelection.subfamily,
-        genus: taxonSelection.genus,
-        species: taxonSelection.species,
-        caste: parsed.data.caste,
-        size: parsed.data.size?.trim() || taxonSelection.size || undefined,
-        department: parsed.data.department,
-        observedAt: parsed.data.observedAt,
-        biotope: parsed.data.biotope,
-        photoCredit: parsed.data.photoCredit,
-        subgenus: parsed.data.subgenus ?? undefined,
-        speciesGroup: parsed.data.speciesGroup ?? undefined,
-        images: {
-          create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
-        },
-      },
-      include: { images: true },
-    })
-
-    await recordAdminAudit(req, {
-      action: 'Proposition d\'entrée créée',
-      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) par ${req.user.userId}`,
-      tone: 'SUCCESS',
-      entityType: 'entryProposal',
-      entityId: created.id,
-    })
-
-    return res.status(201).json(created)
-  } catch (error) {
-    for (const filePath of savedFilePaths) {
-      fs.rmSync(filePath, { force: true })
-    }
-
-    throw error
+  const parsed = proposalSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError(400, 'Requête invalide.')
   }
-})
+
+  // Check proposal limit
+  const proposalCount = await prisma.entryProposal.count({
+    where: { userId: req.user.userId },
+  })
+  if (proposalCount >= MAX_PROPOSALS_PER_USER) {
+    throw new AppError(400, `Limite de ${MAX_PROPOSALS_PER_USER} propositions atteinte.`)
+  }
+
+  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
+  if (!taxonSelection) {
+    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+  }
+
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  const optimizedFileNames = await Promise.all(
+    files.map(async (file, index) => {
+      const result = await optimizeAndSaveImage(file, index)
+      return result.baseFileName
+    }),
+  )
+
+  const created = await prisma.entryProposal.create({
+    data: {
+      userId: req.user.userId,
+      taxonLevel: taxonSelection.taxonLevel,
+      taxonValue: taxonSelection.taxonValue,
+      subfamily: taxonSelection.subfamily,
+      genus: taxonSelection.genus,
+      species: taxonSelection.species,
+      caste: parsed.data.caste,
+      size: parsed.data.size?.trim() || taxonSelection.size || undefined,
+      department: parsed.data.department,
+      observedAt: parsed.data.observedAt,
+      biotope: parsed.data.biotope,
+      photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
+      subgenus: parsed.data.subgenus ?? undefined,
+      speciesGroup: parsed.data.speciesGroup ?? undefined,
+      images: {
+        create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
+      },
+    },
+    include: { images: true },
+  })
+
+  await recordAdminAudit(req, {
+    action: 'Proposition d\'entrée créée',
+    detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) par ${req.user.userId}`,
+    tone: 'SUCCESS',
+    entityType: 'entryProposal',
+    entityId: created.id,
+  })
+
+  return res.status(201).json(publicProposal(created))
+}))

@@ -1,31 +1,41 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminSuggestionsRouter = Router()
 
-const updateSchema = z.object({ 
+const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
-  rejectionMessage: z.string().optional(),
+  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
 })
 
-adminSuggestionsRouter.get('/', async (req, res) => {
+function publicSuggestion<T extends { name: string | null; email: string | null; user?: unknown }>(suggestion: T): T {
+  return {
+    ...suggestion,
+    name: suggestion.name ? (decryptSensitiveText(suggestion.name) ?? suggestion.name) : suggestion.name,
+    email: suggestion.email ? (decryptSensitiveText(suggestion.email) ?? suggestion.email) : suggestion.email,
+  }
+}
+
+adminSuggestionsRouter.get('/', asyncHandler(async (req, res) => {
   const rawStatus = req.query.status
   const statusSchema = z.enum(['PENDING', 'PROCESSED', 'REJECTED']).optional()
   const parsed = statusSchema.safeParse(rawStatus)
   const where = parsed.success && parsed.data ? { status: parsed.data } : undefined
 
-  const items = await prisma.suggestion.findMany({ 
-    where, 
+  const items = await prisma.suggestion.findMany({
+    where,
     include: { user: true },
-    orderBy: { createdAt: 'desc' } 
+    orderBy: { createdAt: 'desc' },
   })
-  return res.json(items)
-})
+  return res.json(items.map((item) => publicSuggestion(item)))
+}))
 
-adminSuggestionsRouter.put('/:id', async (req, res) => {
+adminSuggestionsRouter.put('/:id', asyncHandler(async (req, res) => {
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
@@ -41,12 +51,12 @@ adminSuggestionsRouter.put('/:id', async (req, res) => {
     data.processedAt = null
   }
 
-  const updated = await prisma.suggestion.update({ 
-    where: { id: req.params.id }, 
+  const updated = await prisma.suggestion.update({
+    where: { id: req.params.id as string },
     data,
     include: { user: true },
   })
-  
+
   await recordAdminAudit(req, {
     action: 'Suggestion mise à jour',
     detail: `Suggestion ${updated.id} → ${updated.status}${updated.user ? ` (${updated.user.username})` : ''}`,
@@ -54,12 +64,12 @@ adminSuggestionsRouter.put('/:id', async (req, res) => {
     entityType: 'suggestion',
     entityId: updated.id,
   })
-  return res.json(updated)
-})
+  return res.json(publicSuggestion(updated))
+}))
 
-adminSuggestionsRouter.delete('/:id', async (req, res) => {
+adminSuggestionsRouter.delete('/:id', asyncHandler(async (req, res) => {
   const existing = await prisma.suggestion.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
   })
 
   if (!existing) {
@@ -67,11 +77,11 @@ adminSuggestionsRouter.delete('/:id', async (req, res) => {
   }
 
   if (existing.status === 'PENDING') {
-    throw new AppError(400, 'Vous ne pouvez supprimer qu’une suggestion déjà traitée ou rejetée.')
+    throw new AppError(400, 'Vous ne pouvez supprimer qu\'une suggestion déjà traitée ou rejetée.')
   }
 
   await prisma.suggestion.delete({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
   })
 
   await recordAdminAudit(req, {
@@ -83,4 +93,4 @@ adminSuggestionsRouter.delete('/:id', async (req, res) => {
   })
 
   return res.status(204).send()
-})
+}))

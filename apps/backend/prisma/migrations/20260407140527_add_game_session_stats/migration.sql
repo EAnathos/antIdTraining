@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "GameDifficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+CREATE TYPE IF NOT EXISTS "GameDifficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
 
 -- CreateTable
-CREATE TABLE "GameSession" (
+CREATE TABLE IF NOT EXISTS "GameSession" (
     "id" TEXT NOT NULL,
     "level" "GameDifficulty" NOT NULL,
     "entryId" TEXT,
@@ -14,13 +14,19 @@ CREATE TABLE "GameSession" (
 );
 
 -- CreateIndex
-CREATE INDEX "GameSession_level_idx" ON "GameSession"("level");
+CREATE INDEX IF NOT EXISTS "GameSession_level_idx" ON "GameSession"("level");
 
 -- CreateIndex
-CREATE INDEX "GameSession_createdAt_idx" ON "GameSession"("createdAt");
+CREATE INDEX IF NOT EXISTS "GameSession_createdAt_idx" ON "GameSession"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "GameSession_finalCorrect_idx" ON "GameSession"("finalCorrect");
+CREATE INDEX IF NOT EXISTS "GameSession_finalCorrect_idx" ON "GameSession"("finalCorrect");
 
 -- AddForeignKey
-ALTER TABLE "GameSession" ADD CONSTRAINT "GameSession_entryId_fkey" FOREIGN KEY ("entryId") REFERENCES "ObservationEntry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'GameSession_entryId_fkey') THEN
+        ALTER TABLE "GameSession" ADD CONSTRAINT "GameSession_entryId_fkey" FOREIGN KEY ("entryId") REFERENCES "ObservationEntry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END
+$$;

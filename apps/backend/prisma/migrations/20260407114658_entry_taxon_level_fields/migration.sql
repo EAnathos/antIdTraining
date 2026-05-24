@@ -1,14 +1,14 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER');
+CREATE TYPE IF NOT EXISTS "UserRole" AS ENUM ('ADMIN', 'USER');
 
 -- CreateEnum
-CREATE TYPE "ReferenceType" AS ENUM ('WEBSITE', 'MYRMECOLOGY');
+CREATE TYPE IF NOT EXISTS "ReferenceType" AS ENUM ('WEBSITE', 'MYRMECOLOGY');
 
 -- CreateEnum
-CREATE TYPE "TaxonLevel" AS ENUM ('SUBFAMILY', 'GENUS', 'SPECIES');
+CREATE TYPE IF NOT EXISTS "TaxonLevel" AS ENUM ('SUBFAMILY', 'GENUS', 'SPECIES');
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Taxon" (
+CREATE TABLE IF NOT EXISTS "Taxon" (
     "id" TEXT NOT NULL,
     "subfamily" TEXT NOT NULL,
     "tribe" TEXT,
@@ -35,7 +35,7 @@ CREATE TABLE "Taxon" (
 );
 
 -- CreateTable
-CREATE TABLE "TaxonLevelProfile" (
+CREATE TABLE IF NOT EXISTS "TaxonLevelProfile" (
     "id" TEXT NOT NULL,
     "level" "TaxonLevel" NOT NULL,
     "value" TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE "TaxonLevelProfile" (
 );
 
 -- CreateTable
-CREATE TABLE "TaxonLevelCriterion" (
+CREATE TABLE IF NOT EXISTS "TaxonLevelCriterion" (
     "id" TEXT NOT NULL,
     "profileId" TEXT NOT NULL,
     "label" TEXT NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE "TaxonLevelCriterion" (
 );
 
 -- CreateTable
-CREATE TABLE "ObservationEntry" (
+CREATE TABLE IF NOT EXISTS "ObservationEntry" (
     "id" TEXT NOT NULL,
     "taxonId" TEXT,
     "taxonLevel" "TaxonLevel" NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE "ObservationEntry" (
 );
 
 -- CreateTable
-CREATE TABLE "EntryImage" (
+CREATE TABLE IF NOT EXISTS "EntryImage" (
     "id" TEXT NOT NULL,
     "entryId" TEXT NOT NULL,
     "imageUrl" TEXT NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE "EntryImage" (
 );
 
 -- CreateTable
-CREATE TABLE "Reference" (
+CREATE TABLE IF NOT EXISTS "Reference" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -100,61 +100,79 @@ CREATE TABLE "Reference" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE INDEX "Taxon_subfamily_idx" ON "Taxon"("subfamily");
+CREATE INDEX IF NOT EXISTS "Taxon_subfamily_idx" ON "Taxon"("subfamily");
 
 -- CreateIndex
-CREATE INDEX "Taxon_genus_idx" ON "Taxon"("genus");
+CREATE INDEX IF NOT EXISTS "Taxon_genus_idx" ON "Taxon"("genus");
 
 -- CreateIndex
-CREATE INDEX "Taxon_species_idx" ON "Taxon"("species");
+CREATE INDEX IF NOT EXISTS "Taxon_species_idx" ON "Taxon"("species");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Taxon_subfamily_tribe_genus_species_key" ON "Taxon"("subfamily", "tribe", "genus", "species");
+CREATE UNIQUE INDEX IF NOT EXISTS "Taxon_subfamily_tribe_genus_species_key" ON "Taxon"("subfamily", "tribe", "genus", "species");
 
 -- CreateIndex
-CREATE INDEX "TaxonLevelProfile_level_idx" ON "TaxonLevelProfile"("level");
+CREATE INDEX IF NOT EXISTS "TaxonLevelProfile_level_idx" ON "TaxonLevelProfile"("level");
 
 -- CreateIndex
-CREATE INDEX "TaxonLevelProfile_value_idx" ON "TaxonLevelProfile"("value");
+CREATE INDEX IF NOT EXISTS "TaxonLevelProfile_value_idx" ON "TaxonLevelProfile"("value");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TaxonLevelProfile_level_value_key" ON "TaxonLevelProfile"("level", "value");
+CREATE UNIQUE INDEX IF NOT EXISTS "TaxonLevelProfile_level_value_key" ON "TaxonLevelProfile"("level", "value");
 
 -- CreateIndex
-CREATE INDEX "TaxonLevelCriterion_profileId_idx" ON "TaxonLevelCriterion"("profileId");
+CREATE INDEX IF NOT EXISTS "TaxonLevelCriterion_profileId_idx" ON "TaxonLevelCriterion"("profileId");
 
 -- CreateIndex
-CREATE INDEX "TaxonLevelCriterion_profileId_position_idx" ON "TaxonLevelCriterion"("profileId", "position");
+CREATE INDEX IF NOT EXISTS "TaxonLevelCriterion_profileId_position_idx" ON "TaxonLevelCriterion"("profileId", "position");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_taxonLevel_idx" ON "ObservationEntry"("taxonLevel");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_taxonLevel_idx" ON "ObservationEntry"("taxonLevel");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_taxonValue_idx" ON "ObservationEntry"("taxonValue");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_taxonValue_idx" ON "ObservationEntry"("taxonValue");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_subfamily_idx" ON "ObservationEntry"("subfamily");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_subfamily_idx" ON "ObservationEntry"("subfamily");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_genus_idx" ON "ObservationEntry"("genus");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_genus_idx" ON "ObservationEntry"("genus");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_species_idx" ON "ObservationEntry"("species");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_species_idx" ON "ObservationEntry"("species");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_department_idx" ON "ObservationEntry"("department");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_department_idx" ON "ObservationEntry"("department");
 
 -- CreateIndex
-CREATE INDEX "ObservationEntry_observedAt_idx" ON "ObservationEntry"("observedAt");
+CREATE INDEX IF NOT EXISTS "ObservationEntry_observedAt_idx" ON "ObservationEntry"("observedAt");
 
 -- AddForeignKey
-ALTER TABLE "TaxonLevelCriterion" ADD CONSTRAINT "TaxonLevelCriterion_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "TaxonLevelProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'TaxonLevelCriterion_profileId_fkey') THEN
+        ALTER TABLE "TaxonLevelCriterion" ADD CONSTRAINT "TaxonLevelCriterion_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "TaxonLevelProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "ObservationEntry" ADD CONSTRAINT "ObservationEntry_taxonId_fkey" FOREIGN KEY ("taxonId") REFERENCES "Taxon"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ObservationEntry_taxonId_fkey') THEN
+        ALTER TABLE "ObservationEntry" ADD CONSTRAINT "ObservationEntry_taxonId_fkey" FOREIGN KEY ("taxonId") REFERENCES "Taxon"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "EntryImage" ADD CONSTRAINT "EntryImage_entryId_fkey" FOREIGN KEY ("entryId") REFERENCES "ObservationEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'EntryImage_entryId_fkey') THEN
+        ALTER TABLE "EntryImage" ADD CONSTRAINT "EntryImage_entryId_fkey" FOREIGN KEY ("entryId") REFERENCES "ObservationEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END
+$$;
