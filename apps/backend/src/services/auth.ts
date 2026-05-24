@@ -8,32 +8,48 @@ import { UserRole } from '@prisma/client'
 
 const REGISTRATION_WINDOW_MS = 24 * 60 * 60 * 1000
 const REGISTRATION_MAX_ATTEMPTS = 5
+const LOGIN_WINDOW_MS = 15 * 60 * 1000
+const LOGIN_MAX_ATTEMPTS = 5
 
 function normalizeIp(ip: string) {
   return ip.replace(/^::ffff:/, '').trim()
 }
 
-async function enforceRegistrationRateLimit(ipInput?: string | null) {
+async function enforceRateLimit(
+  namespace: string,
+  ipInput: string | null | undefined,
+  windowMs: number,
+  maxAttempts: number,
+  message: string,
+) {
   if (!ipInput) {
     return
   }
 
   const redis = getRedis()
   const ip = normalizeIp(ipInput)
-  const key = `registration:${ip}`
-  const ttl = REGISTRATION_WINDOW_MS / 1000 // Convert to seconds
+  const key = `${namespace}:${ip}`
+  const ttl = Math.ceil(windowMs / 1000)
 
   const attempts = await redis.incr(key)
   if (attempts === 1) {
     await redis.expire(key, ttl)
   }
 
-  if (attempts > REGISTRATION_MAX_ATTEMPTS) {
-    throw new AppError(429, 'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.')
+  if (attempts > maxAttempts) {
+    throw new AppError(429, message)
   }
 }
 
-export async function loginAdmin(username: string, password: string) {
+export async function loginAdmin(username: string, password: string, ip?: string | null) {
+  await enforceRateLimit(
+    'login',
+    ip,
+    LOGIN_WINDOW_MS,
+    LOGIN_MAX_ATTEMPTS,
+    'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
+  )
+
   const user = await prisma.user.findUnique({ where: { username } })
   if (!user) {
     throw new AppError(401, 'Identifiants invalides.')
@@ -55,7 +71,13 @@ export async function loginAdmin(username: string, password: string) {
 }
 
 export async function registerUser(username: string, password: string, ip?: string | null) {
-  enforceRegistrationRateLimit(ip)
+  await enforceRateLimit(
+    'registration',
+    ip,
+    REGISTRATION_WINDOW_MS,
+    REGISTRATION_MAX_ATTEMPTS,
+    'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
+  )
 
   const existingUser = await prisma.user.findUnique({ where: { username } })
   if (existingUser) {

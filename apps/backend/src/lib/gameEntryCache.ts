@@ -1,6 +1,7 @@
 import type { TaxonLevel } from '@prisma/client'
 import { prisma } from '../prisma.js'
 import { decryptSensitiveText } from './encryption.js'
+import { logger } from './logger.js'
 
 export type CachedGameEntry = {
   id: string
@@ -26,6 +27,14 @@ let cache: CacheSnapshot | null = null
 
 export function invalidateGameEntryCache() {
   cache = null
+}
+
+export function invalidateGameEntryCacheSafely(reason?: string) {
+  try {
+    invalidateGameEntryCache()
+  } catch (error) {
+    logger.error({ err: error, reason }, 'Failed to invalidate game entry cache')
+  }
 }
 
 export async function getGameEntriesCache() {

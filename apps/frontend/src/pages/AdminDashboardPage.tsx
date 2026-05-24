@@ -122,6 +122,12 @@ export function AdminDashboardPage() {
           {section === 'entries' && (
             <EntriesCrudPanel
               entries={data.entries}
+              entriesPage={data.entriesPage}
+              entriesLimit={data.entriesLimit}
+              entriesTotal={data.entriesTotal}
+              entriesPages={data.entriesPages}
+              setEntriesPage={data.setEntriesPage}
+              setEntriesLimit={data.setEntriesLimit}
               subfamilies={data.subfamilies}
               entryForm={data.entryForm}
               setEntryForm={data.setEntryForm}

@@ -14,7 +14,7 @@ import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath }
 import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 
 ensureUploadsDir()
 
@@ -26,6 +26,7 @@ function publicEntry<T extends { photoCredit: string }>(entry: T): T {
 }
 
 const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
+const VALID_IMAGE_MIMETYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
 const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
@@ -43,55 +44,87 @@ const entrySchema = z.object({
 
 export const entriesRouter = Router()
 
+function parsePagination(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = typeof value === 'string' ? Number.parseInt(value, 10) : NaN
+  if (Number.isNaN(parsed)) {
+    return fallback
+  }
+
+  return Math.min(max, Math.max(min, parsed))
+}
+
 function sanitizeFileStem(name: string) {
   const stem = name.replace(/\.[^.]+$/, '')
   const normalized = stem
     .normalize('NFKD')
-    .replace(/[^\w.-]+/g, '-')
+    .toLowerCase()
+    .replace(/[^a-z0-9.-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
+    .slice(0, 40)
 
   return normalized || 'image'
 }
 
-async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
-  if (!file.mimetype.startsWith('image/')) {
-    throw new AppError(400, 'Seules les images sont acceptées.')
-  }
+async function cleanupSavedFiles(savedPaths: string[]) {
+  await Promise.allSettled(savedPaths.map((savedPath) => fs.promises.unlink(savedPath)))
+}
 
-  const image = sharp(file.buffer, { animated: false }).rotate()
-  const metadata = await image.metadata()
-  if (!metadata.width || !metadata.height) {
-    throw new AppError(400, 'Image invalide.')
+async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
+  if (!VALID_IMAGE_MIMETYPES.has(file.mimetype)) {
+    throw new AppError(400, 'Format d’image non accepté. Formats acceptés : JPEG, PNG, WebP, GIF.')
   }
 
   const safeStem = sanitizeFileStem(file.originalname)
-  const fileId = `${Date.now()}-${index + 1}-${safeStem}-${crypto.randomUUID().slice(0, 8)}`
+  const fileId = `${Date.now()}-${index + 1}-${safeStem}-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`
   const baseFileName = `${fileId}.webp`
   const savedPaths: string[] = []
 
-  for (const width of RESPONSIVE_IMAGE_WIDTHS) {
-    const outputFileName = width === 1600 ? baseFileName : `${fileId}-${width}.webp`
-    const outputPath = resolveUploadFilePath(outputFileName)
+  try {
+    const image = sharp(file.buffer, { animated: false }).rotate()
+    const metadata = await image.metadata()
 
-    await image
-      .clone()
-      .resize({
-        width,
-        height: width,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: width === 1600 ? 82 : 78, effort: 6 })
-      .toFile(outputPath)
+    if (!metadata.width || !metadata.height) {
+      throw new AppError(400, 'Image invalide.')
+    }
 
-    savedPaths.push(outputPath)
-  }
+    if (metadata.width < 100 || metadata.height < 100) {
+      throw new AppError(400, 'Image trop petite (minimum 100x100 px).')
+    }
 
-  return {
-    baseFileName,
-    savedPaths,
+    if (metadata.width > 8000 || metadata.height > 8000) {
+      throw new AppError(400, 'Image trop grande (maximum 8000x8000 px).')
+    }
+
+    for (const width of RESPONSIVE_IMAGE_WIDTHS) {
+      const outputFileName = width === 1600 ? baseFileName : `${fileId}-${width}.webp`
+      const outputPath = resolveUploadFilePath(outputFileName)
+
+      await image
+        .clone()
+        .resize({
+          width,
+          height: width,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: width === 1600 ? 82 : 78, effort: 6 })
+        .toFile(outputPath)
+
+      savedPaths.push(outputPath)
+    }
+
+    return {
+      baseFileName,
+      savedPaths,
+    }
+  } catch (error) {
+    await cleanupSavedFiles(savedPaths)
+    if (error instanceof AppError) {
+      throw error
+    }
+
+    throw new AppError(400, 'Image corrompue ou invalide.')
   }
 }
 
@@ -117,12 +150,30 @@ const uploadEntryImages: RequestHandler = (req, res, next) => {
   })
 }
 
-entriesRouter.get('/', asyncHandler(async (_req, res) => {
-  const entries = await prisma.observationEntry.findMany({
-    include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
-    orderBy: { observedAt: 'desc' },
+entriesRouter.get('/', asyncHandler(async (req, res) => {
+  const page = parsePagination(req.query.page, 1, 1, 10_000)
+  const limit = parsePagination(req.query.limit, 50, 1, 100)
+  const skip = (page - 1) * limit
+
+  const [entries, total] = await Promise.all([
+    prisma.observationEntry.findMany({
+      include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
+      orderBy: { observedAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.observationEntry.count(),
+  ])
+
+  return res.json({
+    items: entries.map((entry) => publicEntry(entry)),
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    },
   })
-  return res.json(entries.map((entry) => publicEntry(entry)))
 }))
 
 entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
@@ -174,7 +225,7 @@ entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
     entityId: created.id,
   })
 
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('entry created')
 
   return res.status(201).json(publicEntry(created))
 }))
@@ -216,7 +267,7 @@ entriesRouter.put('/:id', asyncHandler(async (req, res) => {
     entityId: updated.id,
   })
 
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('entry updated')
 
   return res.json(publicEntry(updated))
 }))
@@ -256,7 +307,7 @@ entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
     entityId: entryId,
   })
 
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('entry images reordered')
 
   return res.json(updatedImages)
 }))
@@ -291,7 +342,7 @@ entriesRouter.delete('/:id', asyncHandler(async (req, res) => {
     entityId: req.params.id as string,
   })
 
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('entry deleted')
 
   return res.status(204).send()
 }))

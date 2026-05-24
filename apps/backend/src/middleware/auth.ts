@@ -21,12 +21,34 @@ function readCookieValue(cookieHeader: string | undefined, cookieName: string) {
   }
 
   for (const cookie of cookieHeader.split(';')) {
-    const [rawName, ...rawValueParts] = cookie.trim().split('=')
-    if (decodeURIComponent(rawName) !== cookieName) {
+    const trimmedCookie = cookie.trim()
+    if (!trimmedCookie) {
       continue
     }
 
-    return decodeURIComponent(rawValueParts.join('='))
+    const separatorIndex = trimmedCookie.indexOf('=')
+    if (separatorIndex === -1) {
+      continue
+    }
+
+    const rawName = trimmedCookie.slice(0, separatorIndex).trim()
+    const rawValue = trimmedCookie.slice(separatorIndex + 1).trim()
+
+    let decodedName: string
+    let decodedValue: string
+
+    try {
+      decodedName = decodeURIComponent(rawName)
+      decodedValue = decodeURIComponent(rawValue)
+    } catch {
+      continue
+    }
+
+    if (decodedName !== cookieName && rawName !== cookieName) {
+      continue
+    }
+
+    return decodedValue
   }
 
   return null
