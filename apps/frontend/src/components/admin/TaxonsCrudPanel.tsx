@@ -23,6 +23,7 @@ type ModalState = {
   draft: TaxonDetailsDraft | null
   swarming: SwarmingPeriodDraft
   distribution: FrenchDepartmentCode[]
+  confusions: ConfusionDraft[]
   isSelectingSwarmingRange: boolean
   selectionAnchorMonth: number | null
 }
@@ -33,6 +34,11 @@ type LevelDetailDraft = {
   sizeQueen: string
   sizeMale: string
   criteria: string[]
+}
+
+type ConfusionDraft = {
+  confusedTaxonLabel: string
+  detail: string
 }
 
 type TaxonDetailsDraft = {
@@ -64,6 +70,7 @@ type Props = {
     levelDetails: TaxonDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
     distribution: FrenchDepartmentCode[],
+    confusions: { confusedTaxonId: string; detail: string }[],
   ) => Promise<void>
 }
 
@@ -72,6 +79,7 @@ const INITIAL_MODAL_STATE: ModalState = {
   draft: null,
   swarming: { swarmingStartMonth: null, swarmingEndMonth: null },
   distribution: [],
+  confusions: [],
   isSelectingSwarmingRange: false,
   selectionAnchorMonth: null,
 }
@@ -118,6 +126,10 @@ function buildTaxonDetailsDraft(taxon: Taxon): TaxonDetailsDraft {
   }
 }
 
+function buildTaxonLabel(taxon: Pick<Taxon, 'subfamily' | 'genus' | 'species'>) {
+  return [taxon.subfamily, taxon.genus, taxon.species].filter(Boolean).join(' · ')
+}
+
 export function TaxonsCrudPanel({
   taxons,
   taxonForm,
@@ -132,6 +144,14 @@ export function TaxonsCrudPanel({
   const [level, setLevel] = useState('genus')
   const [query, setQuery] = useState('')
   const [modal, setModal] = useState<ModalState>(INITIAL_MODAL_STATE)
+
+  const taxonOptions = useMemo(
+    () =>
+      [...taxons]
+        .map((taxon) => ({ taxon, label: buildTaxonLabel(taxon) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'fr')),
+    [taxons],
+  )
 
   const handleTaxonChange = useCallback((field: TaxonFormKey, value: string) => {
     setTaxonForm({ ...taxonForm, [field]: value })
@@ -203,6 +223,10 @@ export function TaxonsCrudPanel({
         swarmingEndMonth: taxon.swarmingEndMonth,
       },
       distribution,
+      confusions: (taxon.confusions ?? []).map((confusion) => ({
+        confusedTaxonLabel: buildTaxonLabel(confusion.confusedTaxon),
+        detail: confusion.detail,
+      })),
       isSelectingSwarmingRange: false,
       selectionAnchorMonth: null,
     })
@@ -371,6 +395,48 @@ export function TaxonsCrudPanel({
     }))
   }
 
+  const addConfusion = () => {
+    setModal((prev) => ({
+      ...prev,
+      confusions: [...prev.confusions, { confusedTaxonLabel: '', detail: '' }],
+    }))
+  }
+
+  const updateConfusion = (index: number, field: keyof ConfusionDraft, value: string) => {
+    setModal((prev) => ({
+      ...prev,
+      confusions: prev.confusions.map((confusion, currentIndex) =>
+        currentIndex === index ? { ...confusion, [field]: value } : confusion,
+      ),
+    }))
+  }
+
+  const removeConfusion = (index: number) => {
+    setModal((prev) => ({
+      ...prev,
+      confusions: prev.confusions.filter((_, currentIndex) => currentIndex !== index),
+    }))
+  }
+
+  const resolveConfusions = () => {
+    if (!modal.taxon) {
+      return [] as { confusedTaxonId: string; detail: string }[]
+    }
+
+    const currentTaxonId = modal.taxon.id
+    const resolved = modal.confusions
+      .map((confusion) => {
+        const matchedTaxon = taxonOptions.find((option) => option.label === confusion.confusedTaxonLabel.trim())?.taxon
+        return {
+          confusedTaxonId: matchedTaxon?.id ?? '',
+          detail: confusion.detail.trim(),
+        }
+      })
+      .filter((confusion) => confusion.confusedTaxonId && confusion.confusedTaxonId !== currentTaxonId && confusion.detail)
+
+    return Array.from(new Map(resolved.map((confusion) => [confusion.confusedTaxonId, confusion])).values())
+  }
+
   const saveDetailsModal = async () => {
     if (!modal.taxon || !modal.draft) return
     if (!validateSwarmingPeriod()) {
@@ -384,8 +450,23 @@ export function TaxonsCrudPanel({
       alert('Les critères vides doivent être supprimés')
       return
     }
+
+    const unresolvedConfusions = modal.confusions.filter((confusion) => {
+      const label = confusion.confusedTaxonLabel.trim()
+      if (!label || !confusion.detail.trim()) {
+        return false
+      }
+
+      return !taxonOptions.some((option) => option.label === label && option.taxon.id !== modal.taxon?.id)
+    })
+
+    if (unresolvedConfusions.length > 0) {
+      alert('Veuillez sélectionner un taxon existant pour chaque confusion et remplir le détail.')
+      return
+    }
+
     try {
-      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.swarming, modal.distribution)
+      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.swarming, modal.distribution, resolveConfusions())
       closeDetailsModal()
     } catch (error) {
       console.error('Error saving taxon details:', error)
@@ -537,6 +618,64 @@ export function TaxonsCrudPanel({
                 />
               ))
             })()}
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-800">Confusions possibles</h4>
+                  <p className="text-xs text-slate-600">Indique les taxons proches et explique comment les distinguer.</p>
+                </div>
+                <button className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200" type="button" onClick={addConfusion}>
+                  + Ajouter une confusion
+                </button>
+              </div>
+
+              <datalist id="taxon-confusion-options">
+                {taxonOptions
+                  .filter((option) => option.taxon.id !== modal.taxon?.id)
+                  .map((option) => (
+                    <option key={option.taxon.id} value={option.label} />
+                  ))}
+              </datalist>
+
+              {modal.confusions.length > 0 ? (
+                <div className="space-y-3">
+                  {modal.confusions.map((confusion, index) => (
+                    <div key={`confusion-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <label className="block text-xs font-medium uppercase tracking-wide text-slate-500">
+                            Taxon à confondre
+                            <input
+                              className="mt-1 w-full rounded border border-slate-300 bg-white p-2 text-sm"
+                              list="taxon-confusion-options"
+                              placeholder="Rechercher un taxon"
+                              value={confusion.confusedTaxonLabel}
+                              onChange={(event) => updateConfusion(index, 'confusedTaxonLabel', event.target.value)}
+                            />
+                          </label>
+                          <p className="mt-1 text-[11px] text-slate-500">L’autocomplétion propose les taxons existants.</p>
+                        </div>
+                        <button className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700" type="button" onClick={() => removeConfusion(index)}>
+                          Supprimer
+                        </button>
+                      </div>
+                      <label className="mt-3 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Pourquoi la confusion et comment éviter l’erreur ?
+                        <textarea
+                          className="mt-1 min-h-24 w-full rounded border border-slate-300 bg-white p-2 text-sm"
+                          placeholder="Ex. couleur similaire, pilosité, taille… et le détail qui permet de les distinguer"
+                          value={confusion.detail}
+                          onChange={(event) => updateConfusion(index, 'detail', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-600">Aucune confusion renseignée pour le moment.</p>
+              )}
+            </div>
 
             {modal.taxon.levelDetails.species && (
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">

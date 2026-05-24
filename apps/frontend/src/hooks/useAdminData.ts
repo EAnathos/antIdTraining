@@ -12,6 +12,11 @@ type LevelDetailsDraft = {
   species: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
 }
 
+type TaxonConfusionDraft = {
+  confusedTaxonId: string
+  detail: string
+}
+
 type SwarmingPeriodDraft = {
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
@@ -164,6 +169,15 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       speciesGroup: serializeLevelDetail(levelDetails.speciesGroup, false),
       species: serializeLevelDetail(levelDetails.species, true),
     }
+  }
+
+  function buildConfusionsPayload(confusions: TaxonConfusionDraft[]) {
+    return confusions
+      .map((confusion) => ({
+        confusedTaxonId: confusion.confusedTaxonId.trim(),
+        detail: confusion.detail.trim(),
+      }))
+      .filter((confusion) => confusion.confusedTaxonId && confusion.detail)
   }
 
   const loadAdminData = useCallback(async () => {
@@ -354,6 +368,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     levelDetails: LevelDetailsDraft,
     swarmingPeriod: SwarmingPeriodDraft,
     distribution: FrenchDepartmentCode[],
+    confusions: TaxonConfusionDraft[],
   ) {
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
@@ -372,6 +387,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
         distribution: distribution.length > 0 ? { departments: distribution } : null,
           levelDetails: buildLevelDetailsPayload(levelDetails),
+          confusions: buildConfusionsPayload(confusions),
       })
       clearPublicTaxonsCache()
     }, 'Critères et descriptions mis à jour.', 'Impossible de mettre à jour les critères.')

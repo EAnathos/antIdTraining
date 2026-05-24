@@ -35,6 +35,37 @@ export const openApiDocument = {
           message: 'Requête invalide.',
         },
       },
+      TaxonConfusionInput: {
+        type: 'object',
+        required: ['confusedTaxonId', 'detail'],
+        properties: {
+          confusedTaxonId: { type: 'string' },
+          detail: { type: 'string' },
+        },
+      },
+      TaxonConfusion: {
+        allOf: [
+          { $ref: '#/components/schemas/TaxonConfusionInput' },
+          {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              confusedTaxon: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  subfamily: { type: 'string' },
+                  tribe: { type: 'string', nullable: true },
+                  genus: { type: 'string' },
+                  subgenus: { type: 'string', nullable: true },
+                  speciesGroup: { type: 'string', nullable: true },
+                  species: { type: 'string' },
+                },
+              },
+            },
+          },
+        ],
+      },
       TaxonInput: {
         type: 'object',
         required: ['subfamily', 'genus', 'species'],
@@ -45,6 +76,10 @@ export const openApiDocument = {
           subgenus: { type: 'string', nullable: true },
           speciesGroup: { type: 'string', nullable: true },
           species: { type: 'string' },
+          confusions: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonConfusionInput' },
+          },
         },
         example: {
           subfamily: 'Myrmicinae',
@@ -53,6 +88,12 @@ export const openApiDocument = {
           subgenus: null,
           speciesGroup: null,
           species: 'pallidula',
+          confusions: [
+            {
+              confusedTaxonId: 'ckz...',
+              detail: 'Espèce très proche morphologiquement, mais le clypeus est différent.',
+            },
+          ],
         },
       },
       Taxon: {
@@ -65,6 +106,10 @@ export const openApiDocument = {
               tribe: { type: 'string', nullable: true },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
+              confusions: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/TaxonConfusion' },
+              },
             },
           },
         ],

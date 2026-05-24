@@ -4,6 +4,20 @@ export type TaxonCriterion = {
   position: number
 }
 
+export type TaxonConfusion = {
+  id: string
+  detail: string
+  confusedTaxon: {
+    id: string
+    subfamily: string
+    tribe: string | null
+    genus: string
+    subgenus: string | null
+    speciesGroup: string | null
+    species: string
+  }
+}
+
 export type TaxonLevelDetail = {
   description: string | null
   sizeWorker: string | null
@@ -23,6 +37,7 @@ export type Taxon = {
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
   distribution: { departments?: string[] } | null
+  confusions: TaxonConfusion[]
   levelDetails: {
     subfamily: TaxonLevelDetail
     genus: TaxonLevelDetail

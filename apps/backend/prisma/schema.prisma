@@ -103,11 +103,29 @@ model Taxon {
 
   entries ObservationEntry[]
   references Reference[]
+  confusions TaxonConfusion[] @relation("TaxonConfusionSource")
+  confusedBy TaxonConfusion[] @relation("TaxonConfusionTarget")
 
   @@index([subfamily])
   @@index([genus])
   @@index([species])
   @@unique([subfamily, tribe, genus, species])
+}
+
+model TaxonConfusion {
+  id              String   @id @default(cuid())
+  taxonId         String
+  confusedTaxonId String
+  detail          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  taxon         Taxon @relation("TaxonConfusionSource", fields: [taxonId], references: [id], onDelete: Cascade)
+  confusedTaxon Taxon @relation("TaxonConfusionTarget", fields: [confusedTaxonId], references: [id], onDelete: Cascade)
+
+  @@unique([taxonId, confusedTaxonId])
+  @@index([taxonId])
+  @@index([confusedTaxonId])
 }
 
 model TaxonLevelProfile {

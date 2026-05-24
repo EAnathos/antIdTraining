@@ -15,6 +15,11 @@ const levelDetailSchema = z.object({
   criteria: z.array(z.string()).optional(),
 })
 
+const taxonConfusionSchema = z.object({
+  confusedTaxonId: z.string().min(1),
+  detail: z.string().min(1),
+})
+
 export const taxonSchema = z
   .object({
     subfamily: z.string().min(1),
@@ -31,6 +36,7 @@ export const taxonSchema = z
       })
       .optional()
       .nullable(),
+    confusions: z.array(taxonConfusionSchema).optional(),
     levelDetails: z
       .object({
         subfamily: levelDetailSchema.optional(),
@@ -56,6 +62,11 @@ export const taxonSchema = z
 
 type TaxonInput = z.infer<typeof taxonSchema>
 
+type NormalizedTaxonConfusion = {
+  confusedTaxonId: string
+  detail: string
+}
+
 function capitalizeWords(value: string) {
   return value
     .trim()
@@ -65,6 +76,12 @@ function capitalizeWords(value: string) {
 
 function normalizeTaxonData(data: TaxonInput) {
   const distribution = data.distribution?.departments ?? []
+  const confusions = (data.confusions ?? [])
+    .map((confusion) => ({
+      confusedTaxonId: confusion.confusedTaxonId.trim(),
+      detail: confusion.detail.trim(),
+    }))
+    .filter((confusion) => confusion.confusedTaxonId && confusion.detail)
 
   return {
     subfamily: capitalizeWords(data.subfamily),
@@ -77,6 +94,7 @@ function normalizeTaxonData(data: TaxonInput) {
     swarmingEndMonth: data.swarmingEndMonth ?? null,
     distribution: distribution.length > 0 ? { departments: distribution.filter((r) => r && typeof r === 'string') } : null,
     levelDetails: data.levelDetails,
+    confusions,
   }
 }
 
@@ -112,6 +130,7 @@ async function persistTaxonWithProfiles<T extends { id: string }>(
 ) {
   const savedTaxon = await writeTaxon()
   await syncLevelProfiles(normalized)
+  await syncTaxonConfusions(savedTaxon.id, normalized.confusions)
   invalidateTaxonCatalogCache()
   invalidateTaxonLevelProfileCache()
   invalidateGameEntryCacheSafely('taxon updated')
@@ -146,6 +165,20 @@ type TaxonLevelDetail = {
   sizeQueen: string | null
   sizeMale: string | null
   criteria: { label: string }[]
+}
+
+type TaxonConfusionRecord = {
+  id: string
+  detail: string
+  confusedTaxon: {
+    id: string
+    subfamily: string
+    tribe: string | null
+    genus: string
+    subgenus: string | null
+    speciesGroup: string | null
+    species: string
+  }
 }
 
 function emptyLevelDetail(): TaxonLevelDetail {
@@ -206,6 +239,41 @@ async function upsertLevelProfile(level: 'SUBFAMILY' | 'GENUS' | 'SPECIES' | 'SU
         create: normalizedDetail.criteria.map((label, index) => ({ label, position: index })),
       },
     },
+  })
+}
+
+async function syncTaxonConfusions(taxonId: string, confusions: NormalizedTaxonConfusion[]) {
+  await prisma.taxonConfusion.deleteMany({
+    where: {
+      OR: [{ taxonId }, { confusedTaxonId: taxonId }],
+    },
+  })
+
+  const uniqueConfusions = Array.from(
+    new Map(
+      confusions
+        .filter((confusion) => confusion.confusedTaxonId !== taxonId)
+        .map((confusion) => [confusion.confusedTaxonId, confusion]),
+    ).values(),
+  )
+
+  if (uniqueConfusions.length === 0) {
+    return
+  }
+
+  await prisma.taxonConfusion.createMany({
+    data: uniqueConfusions.flatMap((confusion) => [
+      {
+        taxonId,
+        confusedTaxonId: confusion.confusedTaxonId,
+        detail: confusion.detail,
+      },
+      {
+        taxonId: confusion.confusedTaxonId,
+        confusedTaxonId: taxonId,
+        detail: confusion.detail,
+      },
+    ]),
   })
 }
 
@@ -414,6 +482,63 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
     },
   })) as any[]
 
+  const taxonIds = taxons.map((taxon) => taxon.id)
+  const taxonIdSet = new Set(taxonIds)
+  const taxonConfusions = await prisma.taxonConfusion.findMany({
+    where: {
+      OR: [{ taxonId: { in: taxonIds } }, { confusedTaxonId: { in: taxonIds } }],
+    },
+    include: { taxon: true, confusedTaxon: true },
+    orderBy: [{ taxonId: 'asc' }, { createdAt: 'asc' }],
+  })
+
+  type TaxonConfusionDisplay = {
+    id: string
+    detail: string
+    confusedTaxon: {
+      id: string
+      subfamily: string
+      tribe: string | null
+      genus: string
+      subgenus: string | null
+      speciesGroup: string | null
+      species: string
+    }
+  }
+
+  const confusionsByTaxonId = new Map<string, TaxonConfusionDisplay[]>()
+  const addConfusion = (taxonId: string, otherTaxon: typeof taxonConfusions[number]['taxon'], sourceId: string, detail: string) => {
+    const current = confusionsByTaxonId.get(taxonId) ?? []
+    if (current.some((item) => item.confusedTaxon.id === otherTaxon.id && item.detail === detail)) {
+      return
+    }
+
+    current.push({
+      id: sourceId,
+      detail,
+      confusedTaxon: {
+        id: otherTaxon.id,
+        subfamily: otherTaxon.subfamily,
+        tribe: otherTaxon.tribe,
+        genus: otherTaxon.genus,
+        subgenus: otherTaxon.subgenus,
+        speciesGroup: otherTaxon.speciesGroup,
+        species: otherTaxon.species,
+      },
+    })
+    confusionsByTaxonId.set(taxonId, current)
+  }
+
+  for (const confusion of taxonConfusions) {
+    if (taxonIdSet.has(confusion.taxonId)) {
+      addConfusion(confusion.taxonId, confusion.confusedTaxon, confusion.id, confusion.detail)
+    }
+
+    if (taxonIdSet.has(confusion.confusedTaxonId)) {
+      addConfusion(confusion.confusedTaxonId, confusion.taxon, confusion.id, confusion.detail)
+    }
+  }
+
   const profileByKey = new Map<string, TaxonLevelProfileRecord>(
     profiles.map((profile) => {
       if (profile.level === 'SPECIES' || profile.level === 'SUBGENUS' || profile.level === 'SPECIES_GROUP') {
@@ -427,6 +552,19 @@ export async function listTaxons(params: { level?: unknown; q?: unknown; offset?
 
   const items = taxons.map((taxon) => ({
     ...taxon,
+    confusions: (confusionsByTaxonId.get(taxon.id) ?? []).map((confusion) => ({
+      id: confusion.id,
+      detail: confusion.detail,
+      confusedTaxon: {
+        id: confusion.confusedTaxon.id,
+        subfamily: confusion.confusedTaxon.subfamily,
+        tribe: confusion.confusedTaxon.tribe,
+        genus: confusion.confusedTaxon.genus,
+        subgenus: confusion.confusedTaxon.subgenus,
+        speciesGroup: confusion.confusedTaxon.speciesGroup,
+        species: confusion.confusedTaxon.species,
+      },
+    })),
     levelDetails: {
       subfamily: mapLevelDetail(getProfile(`SUBFAMILY:${taxon.subfamily}`), derivedSizes.subfamilySizes.get(taxon.subfamily)),
       genus: mapLevelDetail(getProfile(`GENUS:${taxon.genus}`), derivedSizes.genusSizes.get(taxon.genus)),

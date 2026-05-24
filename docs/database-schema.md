@@ -42,6 +42,15 @@ erDiagram
         json distribution
     }
 
+    TaxonConfusion {
+        string id PK
+        string taxonId FK
+        string confusedTaxonId FK
+        string detail
+        datetime createdAt
+        datetime updatedAt
+    }
+
     TaxonLevelProfile {
         string id PK
         string level
@@ -154,6 +163,8 @@ erDiagram
 
     Taxon ||--o{ ObservationEntry : classifies
     Taxon }o..o{ Reference : linked_to
+    Taxon ||--o{ TaxonConfusion : source
+    Taxon ||--o{ TaxonConfusion : target
 
     TaxonLevelProfile ||--o{ TaxonLevelCriterion : contains
 
@@ -167,6 +178,7 @@ erDiagram
 
 - `User` : comptes admin et utilisateur.
 - `Taxon` : référentiel scientifique principal.
+- `TaxonConfusion` : confusions possibles entre taxons, avec explication, enregistrées de façon miroir pour apparaître sur les deux taxons.
 - `ObservationEntry` : entrées de jeu et observations.
 - `GameSession` : historique des parties.
 - `EntryProposal` : propositions de contribution utilisateur.
