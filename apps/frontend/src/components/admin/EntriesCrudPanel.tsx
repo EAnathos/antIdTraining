@@ -183,6 +183,12 @@ const emptyEntryForm: EntryForm = {
 
 type Props = {
   entries: Entry[]
+  entriesPage: number
+  entriesLimit: number
+  entriesTotal: number
+  entriesPages: number
+  setEntriesPage: (value: number) => void
+  setEntriesLimit: (value: number) => void
   subfamilies: string[]
   entryForm: EntryForm
   setEntryForm: (value: EntryForm) => void
@@ -197,6 +203,12 @@ type Props = {
 
 export function EntriesCrudPanel({
   entries,
+  entriesPage,
+  entriesLimit,
+  entriesTotal,
+  entriesPages,
+  setEntriesPage,
+  setEntriesLimit,
   subfamilies,
   entryForm,
   setEntryForm,
@@ -661,9 +673,51 @@ export function EntriesCrudPanel({
           </div>
         </div>
 
-        <p className="mt-3 mb-2 text-sm text-slate-600">
-          <strong>{sortedEntries.length}</strong> entrée{sortedEntries.length !== 1 ? 's' : ''}
-        </p>
+        <div className="mt-3 mb-2 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+          <p>
+            <strong>{sortedEntries.length}</strong> entrée{sortedEntries.length !== 1 ? 's' : ''} affichée{sortedEntries.length !== 1 ? 's' : ''}
+            {' '}
+            sur <strong>{entriesTotal}</strong>
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2">
+              <span>Par page</span>
+              <select
+                className="rounded border border-slate-300 bg-white px-2 py-1"
+                value={entriesLimit}
+                onChange={(e) => {
+                  setEntriesPage(1)
+                  setEntriesLimit(Number.parseInt(e.target.value, 10))
+                }}
+              >
+                {[25, 50, 100].map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="rounded border border-slate-300 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={entriesPage <= 1}
+                onClick={() => setEntriesPage(Math.max(1, entriesPage - 1))}
+              >
+                Préc.
+              </button>
+              <span className="px-1 text-xs">{entriesPage} / {Math.max(1, entriesPages)}</span>
+              <button
+                type="button"
+                className="rounded border border-slate-300 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={entriesPage >= entriesPages}
+                onClick={() => setEntriesPage(Math.min(entriesPages, entriesPage + 1))}
+              >
+                Suiv.
+              </button>
+            </div>
+          </div>
+        </div>
 
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           {sortedEntries.map((entry) => (

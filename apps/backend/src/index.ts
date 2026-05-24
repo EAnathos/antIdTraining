@@ -90,12 +90,17 @@ app.use((req, res, next) => {
 
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
-    logger.info({
+    const logLevel = res.statusCode >= 400 ? 'warn' : 'info'
+
+    logger[logLevel]({
       method: req.method,
       path: req.originalUrl,
       status: res.statusCode,
       durationMs: Number(durationMs.toFixed(1)),
-    }, 'HTTP request')
+      userId: req.user?.userId,
+      contentLength: res.get('content-length'),
+      userAgent: req.headers['user-agent'],
+    }, 'HTTP request completed')
   })
 
   next()

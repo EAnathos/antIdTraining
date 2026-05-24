@@ -5,7 +5,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminProposalsRouter = Router()
@@ -107,7 +107,7 @@ adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
       entityId: req.params.id as string,
     })
 
-    invalidateGameEntryCache()
+    invalidateGameEntryCacheSafely('proposal accepted')
 
     return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
   } else {
@@ -161,7 +161,7 @@ adminProposalsRouter.delete('/:id', asyncHandler(async (req, res) => {
     entityId: req.params.id as string,
   })
 
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('proposal rejected or deleted')
 
   return res.status(204).send()
 }))

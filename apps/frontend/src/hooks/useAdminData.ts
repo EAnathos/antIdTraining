@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
-import type { AdminHistoryItem, AdminUserPointsItem, Entry, EntryProposal, GameLevelStats, GameStatsPeriod, ReferenceItem, Suggestion, Taxon, TaxonsPageResponse } from '../types/models'
+import type { AdminHistoryItem, AdminUserPointsItem, Entry, EntryPageResponse, EntryProposal, GameLevelStats, GameStatsPeriod, ReferenceItem, Suggestion, Taxon, TaxonsPageResponse } from '../types/models'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
@@ -66,6 +66,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
+  const [entriesPage, setEntriesPage] = useState(1)
+  const [entriesLimit, setEntriesLimit] = useState(50)
+  const [entriesTotal, setEntriesTotal] = useState(0)
+  const [entriesPages, setEntriesPages] = useState(1)
   const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
   const [entryStats, setEntryStats] = useState<unknown>(null)
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
@@ -186,7 +190,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
-      adminApi.get<Entry[]>('/entries'),
+      adminApi.get<EntryPageResponse>('/entries', { params: { page: entriesPage, limit: entriesLimit } }),
       adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>('/stats/game', {
         params: { period: statsPeriod },
       }),
@@ -199,13 +203,17 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setTaxons(taxonRes)
     setSubfamilies(subfamilyRes.data)
     setReferences(refRes.data)
-    setEntries(entryRes.data)
+    setEntries(entryRes.data.items)
+    setEntriesPage(entryRes.data.pagination.page)
+    setEntriesLimit(entryRes.data.pagination.limit)
+    setEntriesTotal(entryRes.data.pagination.total)
+    setEntriesPages(entryRes.data.pagination.pages)
     setGameStats(statsRes.data.levels)
     setEntryStats(entryStatsRes.data)
     setUsers(usersRes.data)
     setSuggestions(suggestionsRes.data)
     setProposals(proposalsRes.data)
-  }, [adminApi, statsPeriod])
+  }, [adminApi, entriesLimit, entriesPage, statsPeriod])
 
   async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
     setMessage('')
@@ -625,10 +633,16 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return
     }
 
-    let payload: unknown
+    let payload: Record<string, unknown>
     try {
       const content = await file.text()
-      payload = JSON.parse(content) as unknown
+      const parsed = JSON.parse(content) as unknown
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        setMessage('Le fichier JSON doit contenir un objet.')
+        return
+      }
+
+      payload = parsed as Record<string, unknown>
     } catch {
       setMessage('Fichier JSON invalide.')
       return
@@ -728,6 +742,12 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
     // Entries
     entries,
+    entriesPage,
+    entriesLimit,
+    entriesTotal,
+    entriesPages,
+    setEntriesPage,
+    setEntriesLimit,
     entryStats,
     gameStats,
     statsPeriod,

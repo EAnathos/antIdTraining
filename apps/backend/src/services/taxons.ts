@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { getTaxonCatalog, invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
 import { invalidateTaxonLevelProfileCache } from '../lib/taxonLevelProfileCache.js'
-import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 import { buildTaxonSizeMaps } from '../lib/taxonSizes.js'
 import { AppError } from '../lib/errors.js'
 
@@ -114,7 +114,7 @@ async function persistTaxonWithProfiles<T extends { id: string }>(
   await syncLevelProfiles(normalized)
   invalidateTaxonCatalogCache()
   invalidateTaxonLevelProfileCache()
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('taxon updated')
   return savedTaxon
 }
 
@@ -473,6 +473,6 @@ export async function deleteTaxon(id: string) {
   const deleted = await prisma.taxon.delete({ where: { id } })
   invalidateTaxonCatalogCache()
   invalidateTaxonLevelProfileCache()
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('taxon deleted')
   return deleted
 }

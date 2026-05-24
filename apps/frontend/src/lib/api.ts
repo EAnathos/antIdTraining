@@ -6,10 +6,14 @@ interface RequestConfig {
   headers?: Record<string, string>
 }
 
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+
+type JsonBody = Record<string, unknown> | unknown[] | string | number | boolean | null
+
 interface RequestMethods {
   get<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
-  post<T = unknown>(url: string, body?: unknown, config?: RequestConfig): Promise<{ data: T }>
-  put<T = unknown>(url: string, body?: unknown, config?: RequestConfig): Promise<{ data: T }>
+  post<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
+  put<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
   delete<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
 }
 
@@ -24,7 +28,7 @@ function createApiClient(
   defaultHeaders: Record<string, string> = {},
   onUnauthorized?: () => void,
 ): RequestMethods & { create: (config: ApiClientConfig) => RequestMethods } {
-  const makeRequest = async (method: string, url: string, body?: unknown, config?: RequestConfig) => {
+  const makeRequest = async (method: HttpMethod, url: string, body?: JsonBody | FormData, config?: RequestConfig) => {
     const fullUrl = new URL(`${baseURL}${url}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
 
     if (config?.params) {
