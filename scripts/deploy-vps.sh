@@ -8,13 +8,6 @@ BACKEND_PROCESS="antIdTraining-backend"
 
 # Check critical dependencies
 printf '\n==> %s\n' "Vérification des dépendances"
-if ! command -v pg_isready &> /dev/null; then
-	echo "ERROR: pg_isready not found. Install PostgreSQL client tools first:"
-	echo "  Ubuntu: sudo apt-get install postgresql-client"
-	echo "  CentOS: sudo yum install postgresql"
-	exit 1
-fi
-
 if ! command -v redis-cli &> /dev/null; then
 	echo "ERROR: redis-cli not found. Install Redis first:"
 	echo "  Ubuntu: sudo apt-get install redis-server"
@@ -53,13 +46,6 @@ if [ -z "${DATABASE_URL:-}" ]; then
 	echo "ERROR: DATABASE_URL not set. Aborting migrations."
 	exit 1
 fi
-
-if ! pg_isready -d "$DATABASE_URL" > /dev/null 2>&1; then
-	echo "ERROR: PostgreSQL is not running or not reachable."
-	echo "Check your database service and DATABASE_URL, then retry."
-	exit 1
-fi
-echo "✓ PostgreSQL is running"
 
 # Ensure REDIS_URL is configured (defaults to localhost:6379 if not set)
 if [ -z "${REDIS_URL:-}" ]; then
