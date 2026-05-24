@@ -50,6 +50,7 @@ npm run docker:up
 - Swagger UI: http://localhost:4000/api/docs
 - OpenAPI JSON: http://localhost:4000/api/openapi.json
 - PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
 ## Démarrage en local
 
@@ -64,8 +65,6 @@ npm install
 ```bash
 cp apps/backend/.env.example apps/backend/.env
 ```
-
-Si tu lances la stack sans Docker, installe Redis sur la machine et vérifie que `REDIS_URL` pointe vers ton instance locale si elle n'est pas sur `localhost:6379`.
 
 3. Lancer la stack de développement:
 

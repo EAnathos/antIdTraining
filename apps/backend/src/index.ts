@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
+import { logger } from './lib/logger.js'
 import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
 import { databaseRouter } from './routes/database.js'
@@ -89,15 +90,12 @@ app.use((req, res, next) => {
 
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
-    const logEntry = {
-      ts: new Date().toISOString(),
+    logger.info({
       method: req.method,
       path: req.originalUrl,
       status: res.statusCode,
       durationMs: Number(durationMs.toFixed(1)),
-    }
-
-    console.log(JSON.stringify(logEntry))
+    }, 'HTTP request')
   })
 
   next()
@@ -163,15 +161,15 @@ app.use(notFoundHandler)
 app.use(errorHandler)
 
 const server = app.listen(config.port, () => {
-  console.log(`API démarrée sur http://localhost:${config.port}`)
+  logger.info({ port: config.port }, 'API démarrée')
 })
 
 // Graceful shutdown
 async function gracefulShutdown(signal: string) {
-  console.log(`\n${signal} reçu. Arrêt gracieux...`)
+  logger.info({ signal }, 'Arrêt gracieux')
   server.close(async () => {
     await closeRedis()
-    console.log('Serveur et connexions fermés')
+    logger.info('Serveur et connexions fermés')
     process.exit(0)
   })
 }

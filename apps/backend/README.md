@@ -39,8 +39,11 @@ Variables recommandées selon le contexte:
 
 - `REDIS_URL` : optionnel en local si Redis tourne sur `localhost:6379`, recommandé en production
 - `CORS_ORIGINS` : obligatoire en production
+- `DATA_ENCRYPTION_KEY` : recommandé en production pour chiffrer les crédits photo et emails de suggestions
+- `LOG_LEVEL` : niveau de logs du backend (`info` par défaut)
 
 Le backend utilise Redis pour le rate limiting. Si `REDIS_URL` n'est pas défini, il essaie par défaut `redis://localhost:6379`.
+Les données sensibles stockées par le backend sont chiffrées côté application lorsqu'une clé de chiffrement est fournie.
 
 ## Scripts utiles
 

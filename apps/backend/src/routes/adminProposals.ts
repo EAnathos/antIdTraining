@@ -6,8 +6,16 @@ import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminProposalsRouter = Router()
+
+function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
+  return {
+    ...proposal,
+    photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+  }
+}
 
 const approveProposalSchema = z.object({
   decision: z.enum(['ACCEPT', 'REJECT']),
@@ -33,7 +41,7 @@ adminProposalsRouter.get('/', asyncHandler(async (req, res) => {
     orderBy: { createdAt: 'desc' },
   })
 
-  return res.json(proposals)
+  return res.json(proposals.map((proposal) => publicProposal(proposal)))
 }))
 
 // Accept or reject proposal
@@ -66,7 +74,7 @@ adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
       department: proposal.department,
       observedAt: proposal.observedAt,
       biotope: proposal.biotope,
-      photoCredit: proposal.photoCredit,
+      photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
     }
 
     const created = await prisma.observationEntry.create({
@@ -101,7 +109,7 @@ adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
 
     invalidateGameEntryCache()
 
-    return res.json({ status: 'ACCEPTED', entry: created })
+    return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
   } else {
     // Reject proposal
     const rejectionMessage = parsed.data.rejectionMessage || 'Rejeté par l\'administrateur.'

@@ -10,6 +10,7 @@ import { upload } from '../middleware/upload.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 
@@ -34,6 +35,21 @@ const proposalSchema = z.object({
 })
 
 export const entryProposalsRouter = Router()
+
+function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
+  return {
+    ...proposal,
+    photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+  }
+}
+
+function publicSuggestion<T extends { name: string | null; email: string | null }>(suggestion: T): T {
+  return {
+    ...suggestion,
+    name: suggestion.name ? (decryptSensitiveText(suggestion.name) ?? suggestion.name) : suggestion.name,
+    email: suggestion.email ? (decryptSensitiveText(suggestion.email) ?? suggestion.email) : suggestion.email,
+  }
+}
 
 function sanitizeFileStem(name: string) {
   const stem = name.replace(/\.[^.]+$/, '')
@@ -145,7 +161,10 @@ entryProposalsRouter.get('/my-contributions', asyncHandler(async (req, res) => {
     }),
   ])
 
-  return res.json({ proposals, suggestions })
+  return res.json({
+    proposals: proposals.map((proposal) => publicProposal(proposal)),
+    suggestions: suggestions.map((suggestion) => publicSuggestion(suggestion)),
+  })
 }))
 
 // Get proposal count for user (check limit)
@@ -218,7 +237,7 @@ entryProposalsRouter.post('/', uploadProposalImages, asyncHandler(async (req, re
       department: parsed.data.department,
       observedAt: parsed.data.observedAt,
       biotope: parsed.data.biotope,
-      photoCredit: parsed.data.photoCredit,
+      photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
       subgenus: parsed.data.subgenus ?? undefined,
       speciesGroup: parsed.data.speciesGroup ?? undefined,
       images: {
@@ -236,5 +255,5 @@ entryProposalsRouter.post('/', uploadProposalImages, asyncHandler(async (req, re
     entityId: created.id,
   })
 
-  return res.status(201).json(created)
+  return res.status(201).json(publicProposal(created))
 }))

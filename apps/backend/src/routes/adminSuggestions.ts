@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminSuggestionsRouter = Router()
 
@@ -11,6 +12,14 @@ const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
   rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
 })
+
+function publicSuggestion<T extends { name: string | null; email: string | null; user?: unknown }>(suggestion: T): T {
+  return {
+    ...suggestion,
+    name: suggestion.name ? (decryptSensitiveText(suggestion.name) ?? suggestion.name) : suggestion.name,
+    email: suggestion.email ? (decryptSensitiveText(suggestion.email) ?? suggestion.email) : suggestion.email,
+  }
+}
 
 adminSuggestionsRouter.get('/', asyncHandler(async (req, res) => {
   const rawStatus = req.query.status
@@ -23,7 +32,7 @@ adminSuggestionsRouter.get('/', asyncHandler(async (req, res) => {
     include: { user: true },
     orderBy: { createdAt: 'desc' },
   })
-  return res.json(items)
+  return res.json(items.map((item) => publicSuggestion(item)))
 }))
 
 adminSuggestionsRouter.put('/:id', asyncHandler(async (req, res) => {
@@ -55,7 +64,7 @@ adminSuggestionsRouter.put('/:id', asyncHandler(async (req, res) => {
     entityType: 'suggestion',
     entityId: updated.id,
   })
-  return res.json(updated)
+  return res.json(publicSuggestion(updated))
 }))
 
 adminSuggestionsRouter.delete('/:id', asyncHandler(async (req, res) => {

@@ -1,5 +1,6 @@
 import type { TaxonLevel } from '@prisma/client'
 import { prisma } from '../prisma.js'
+import { decryptSensitiveText } from './encryption.js'
 
 export type CachedGameEntry = {
   id: string
@@ -52,8 +53,11 @@ export async function getGameEntriesCache() {
 
   cache = {
     expiresAt: Date.now() + CACHE_TTL_MS,
-    entries,
+    entries: entries.map((entry) => ({
+      ...entry,
+      photoCredit: (decryptSensitiveText(entry.photoCredit) ?? entry.photoCredit) as string,
+    })),
   }
 
-  return entries
+  return cache.entries
 }

@@ -7,6 +7,7 @@ import { getTaxonLevelProfile, resolveTaxonWorkerSize } from '../lib/taxonLevelP
 import { getGameEntriesCache } from '../lib/gameEntryCache.js'
 
 export type GameLevel = 'easy' | 'medium' | 'hard'
+type GameEntry = Awaited<ReturnType<typeof getGameEntriesCache>>[number]
 
 export const validateGameAnswerSchema = z.object({
   level: z.enum(['easy', 'medium', 'hard']),
@@ -71,118 +72,44 @@ async function resolveEntrySize(entry: { species?: string | null; genus?: string
   return resolveTaxonWorkerSize(entry)
 }
 
-export async function getGameQuestion(rawLevel: unknown, userId?: string | null) {
-  const level = normalizeGameLevel(rawLevel)
+type GameQuestionDetails = {
+  size: string | null
+  department: string
+  observedAt: string
+  biotope: string
+  photoCredit: string
+}
 
-  const entries = await getGameEntriesCache()
+type GameQuestionBase = {
+  level: GameLevel
+  entryId: string
+  sessionId: string
+  images: string[]
+  prompt: string
+  details: GameQuestionDetails
+}
 
-  if (!entries.length) {
-    throw new AppError(404, 'Aucune entrée disponible.')
+async function createGameSession(entryId: string, level: GameLevel, userId?: string | null) {
+  return prisma.gameSession.create({
+    data: {
+      level: toDbGameDifficulty(level),
+      entryId,
+      ...(userId ? { userId } : {}),
+    },
+  })
+}
+
+function buildQuestionDetails(entry: { species?: string | null; genus?: string | null; subfamily: string; department: string; observedAt: Date; biotope: string; photoCredit: string }) {
+  return {
+    size: null as string | null,
+    department: entry.department,
+    observedAt: entry.observedAt.toISOString(),
+    biotope: entry.biotope,
+    photoCredit: entry.photoCredit,
   }
+}
 
-  if (level === 'easy') {
-    const entry = randomPick(entries)
-    const images = entry.images.map((item) => item.imageUrl)
-
-    const taxonCatalog = await getTaxonCatalog()
-    const availableSubfamilies = taxonCatalog.subfamilies
-    const fallbackSubfamilies = uniqueShuffled(entries.map((item) => item.subfamily))
-    const choices = buildChoices(entry.subfamily, availableSubfamilies.length ? availableSubfamilies : fallbackSubfamilies, 5)
-
-    const session = await prisma.gameSession.create({
-      data: {
-        level: toDbGameDifficulty(level),
-        entryId: entry.id,
-        ...(userId ? { userId } : {}),
-      },
-    })
-
-    return {
-      level,
-      entryId: entry.id,
-      sessionId: session.id,
-      images,
-      prompt: 'Identifier la sous-famille',
-      details: {
-        size: await resolveEntrySize(entry),
-        department: entry.department,
-        observedAt: entry.observedAt.toISOString(),
-        biotope: entry.biotope,
-        photoCredit: entry.photoCredit,
-      },
-      choices,
-      answer: { subfamily: entry.subfamily },
-    }
-  }
-
-  const taxonCatalog = await getTaxonCatalog()
-  const allTaxons = taxonCatalog.items
-
-  if (level === 'medium') {
-    const mediumEntries = entries.filter((entry) => !!entry.genus)
-    if (!mediumEntries.length) {
-      throw new AppError(404, 'Aucune entrée disponible pour le niveau moyen.')
-    }
-
-    const entry = randomPick(mediumEntries)
-    const images = entry.images.map((item) => item.imageUrl)
-
-    const subfamilyChoices = buildChoices(entry.subfamily, uniqueShuffled(allTaxons.map((t) => t.subfamily)).slice(0, 5), 5)
-
-    const genusCandidates = uniqueShuffled(
-      allTaxons
-        .filter((t) => t.subfamily === entry.subfamily)
-        .map((t) => t.genus),
-    )
-
-    const genusWrong = uniqueShuffled(
-      allTaxons
-        .filter((t) => t.subfamily !== entry.subfamily)
-        .map((t) => t.genus),
-    ).slice(0, 3)
-
-    const genusChoices = buildChoices(entry.genus!, [...genusCandidates.slice(0, 2), ...genusWrong], 6)
-
-    const session = await prisma.gameSession.create({
-      data: {
-        level: toDbGameDifficulty(level),
-        entryId: entry.id,
-        ...(userId ? { userId } : {}),
-      },
-    })
-
-    return {
-      level,
-      entryId: entry.id,
-      sessionId: session.id,
-      images,
-      prompt: 'Identifier la sous-famille puis le genre',
-      details: {
-        size: await resolveEntrySize(entry),
-        department: entry.department,
-        observedAt: entry.observedAt.toISOString(),
-        biotope: entry.biotope,
-        photoCredit: entry.photoCredit,
-      },
-      choices: {
-        subfamily: subfamilyChoices,
-        genus: genusChoices,
-      },
-      answer: {
-        subfamily: entry.subfamily,
-        genus: entry.genus,
-      },
-    }
-  }
-
-  const hardEntries = entries.filter((entry) => entry.taxonLevel === 'SPECIES' && !!entry.genus && !!entry.species)
-  if (!hardEntries.length) {
-    throw new AppError(404, 'Aucune entrée disponible pour le niveau difficile.')
-  }
-
-  const entry = randomPick(hardEntries)
-  const images = entry.images.map((item) => item.imageUrl)
-
+function buildTaxonChoices(entry: { subfamily: string; genus?: string | null; species?: string | null }, allTaxons: Array<{ subfamily: string; genus: string; species: string }>) {
   const subfamilyChoices = buildChoices(entry.subfamily, uniqueShuffled(allTaxons.map((t) => t.subfamily)).slice(0, 5), 5)
 
   const genusCandidates = uniqueShuffled(
@@ -207,38 +134,109 @@ export async function getGameQuestion(rawLevel: unknown, userId?: string | null)
   ).slice(0, 4)
   const speciesChoices = buildChoices(entry.species!, [...speciesCandidates.slice(0, 2), ...speciesWrong], 6)
 
-  const session = await prisma.gameSession.create({
-    data: {
-      level: toDbGameDifficulty(level),
-      entryId: entry.id,
-      ...(userId ? { userId } : {}),
-    },
-  })
+  return { subfamilyChoices, genusChoices, speciesChoices }
+}
 
-  return {
-    level: 'hard',
-    entryId: entry.id,
-    sessionId: session.id,
-    images,
+const GAME_LEVEL_CONFIGS = {
+  easy: {
+    prompt: 'Identifier la sous-famille',
+    selectEntry: (entries: GameEntry[]) => entries,
+    buildResponse: async (entry: GameEntry, entries: GameEntry[], allTaxons: Array<{ subfamily: string }>, userId?: string | null): Promise<GameQuestionBase & { choices: string[]; answer: { subfamily: string } }> => {
+      const availableSubfamilies = uniqueShuffled(allTaxons.map((t) => t.subfamily))
+      const fallbackSubfamilies = uniqueShuffled(entries.map((item) => item.subfamily))
+      const choices = buildChoices(entry.subfamily, availableSubfamilies.length ? availableSubfamilies : fallbackSubfamilies, 5)
+      const session = await createGameSession(entry.id, 'easy', userId)
+
+      return {
+        level: 'easy',
+        entryId: entry.id,
+        sessionId: session.id,
+        images: entry.images.map((item) => item.imageUrl),
+        prompt: 'Identifier la sous-famille',
+        details: { ...buildQuestionDetails(entry), size: await resolveEntrySize(entry) },
+        choices,
+        answer: { subfamily: entry.subfamily },
+      }
+    },
+  },
+  medium: {
+    prompt: 'Identifier la sous-famille puis le genre',
+    selectEntry: (entries: GameEntry[]) => entries.filter((entry) => !!entry.genus),
+    buildResponse: async (entry: GameEntry, _entries: GameEntry[], allTaxons: Array<{ subfamily: string; genus: string; species: string }>, userId?: string | null): Promise<GameQuestionBase & { choices: { subfamily: string[]; genus: string[] }; answer: { subfamily: string; genus: string | null } }> => {
+      const choices = buildTaxonChoices(entry, allTaxons)
+      const session = await createGameSession(entry.id, 'medium', userId)
+
+      return {
+        level: 'medium',
+        entryId: entry.id,
+        sessionId: session.id,
+        images: entry.images.map((item) => item.imageUrl),
+        prompt: 'Identifier la sous-famille puis le genre',
+        details: { ...buildQuestionDetails(entry), size: await resolveEntrySize(entry) },
+        choices: {
+          subfamily: choices.subfamilyChoices,
+          genus: choices.genusChoices,
+        },
+        answer: {
+          subfamily: entry.subfamily,
+          genus: entry.genus,
+        },
+      }
+    },
+  },
+  hard: {
     prompt: "Identifier la sous-famille, le genre et l'espèce",
-    details: {
-      size: await resolveEntrySize(entry),
-      department: entry.department,
-      observedAt: entry.observedAt.toISOString(),
-      biotope: entry.biotope,
-      photoCredit: entry.photoCredit,
+    selectEntry: (entries: GameEntry[]) => entries.filter((entry) => entry.taxonLevel === 'SPECIES' && !!entry.genus && !!entry.species),
+    buildResponse: async (entry: GameEntry, _entries: GameEntry[], allTaxons: Array<{ subfamily: string; genus: string; species: string }>, userId?: string | null): Promise<GameQuestionBase & { choices: { subfamily: string[]; genus: string[]; species: string[] }; answer: { subfamily: string; genus: string | null; species: string | null } }> => {
+      const choices = buildTaxonChoices(entry, allTaxons)
+      const session = await createGameSession(entry.id, 'hard', userId)
+
+      return {
+        level: 'hard',
+        entryId: entry.id,
+        sessionId: session.id,
+        images: entry.images.map((item) => item.imageUrl),
+        prompt: "Identifier la sous-famille, le genre et l'espèce",
+        details: { ...buildQuestionDetails(entry), size: await resolveEntrySize(entry) },
+        choices: {
+          subfamily: choices.subfamilyChoices,
+          genus: choices.genusChoices,
+          species: choices.speciesChoices,
+        },
+        answer: {
+          subfamily: entry.subfamily,
+          genus: entry.genus,
+          species: entry.species,
+        },
+      }
     },
-    choices: {
-      subfamily: subfamilyChoices,
-      genus: genusChoices,
-      species: speciesChoices,
-    },
-    answer: {
-      subfamily: entry.subfamily,
-      genus: entry.genus,
-      species: entry.species,
-    },
+  },
+} satisfies Record<GameLevel, {
+  prompt: string
+  selectEntry: (entries: any[]) => any[]
+  buildResponse: (...args: any[]) => Promise<any>
+}>
+
+export async function getGameQuestion(rawLevel: unknown, userId?: string | null) {
+  const level = normalizeGameLevel(rawLevel)
+
+  const entries = await getGameEntriesCache()
+
+  if (!entries.length) {
+    throw new AppError(404, 'Aucune entrée disponible.')
   }
+
+  const taxonCatalog = await getTaxonCatalog()
+  const allTaxons = taxonCatalog.items
+
+  const config = GAME_LEVEL_CONFIGS[level]
+  const availableEntries = config.selectEntry(entries)
+  if (!availableEntries.length) {
+    throw new AppError(404, `Aucune entrée disponible pour le niveau ${level}.`)
+  }
+
+  const entry = randomPick(availableEntries)
+  return config.buildResponse(entry, entries, allTaxons, userId)
 }
 
 export async function validateGameAnswer(input: z.infer<typeof validateGameAnswerSchema>) {

@@ -11,11 +11,19 @@ import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
 
 ensureUploadsDir()
+
+function publicEntry<T extends { photoCredit: string }>(entry: T): T {
+  return {
+    ...entry,
+    photoCredit: decryptSensitiveText(entry.photoCredit) ?? entry.photoCredit,
+  }
+}
 
 const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 
@@ -114,7 +122,7 @@ entriesRouter.get('/', asyncHandler(async (_req, res) => {
     include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
     orderBy: { observedAt: 'desc' },
   })
-  return res.json(entries)
+  return res.json(entries.map((entry) => publicEntry(entry)))
 }))
 
 entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
@@ -143,7 +151,7 @@ entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
     department: parsed.data.department,
     observedAt: parsed.data.observedAt,
     biotope: parsed.data.biotope,
-    photoCredit: parsed.data.photoCredit,
+    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
     subgenus: parsed.data.subgenus ?? undefined,
     speciesGroup: parsed.data.speciesGroup ?? undefined,
   }
@@ -168,7 +176,7 @@ entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
 
   invalidateGameEntryCache()
 
-  return res.status(201).json(created)
+  return res.status(201).json(publicEntry(created))
 }))
 
 entriesRouter.put('/:id', asyncHandler(async (req, res) => {
@@ -189,7 +197,7 @@ entriesRouter.put('/:id', asyncHandler(async (req, res) => {
     department: parsed.data.department,
     observedAt: parsed.data.observedAt,
     biotope: parsed.data.biotope,
-    photoCredit: parsed.data.photoCredit,
+    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
     subgenus: parsed.data.subgenus ?? undefined,
     speciesGroup: parsed.data.speciesGroup ?? undefined,
   }
@@ -210,7 +218,7 @@ entriesRouter.put('/:id', asyncHandler(async (req, res) => {
 
   invalidateGameEntryCache()
 
-  return res.json(updated)
+  return res.json(publicEntry(updated))
 }))
 
 entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
