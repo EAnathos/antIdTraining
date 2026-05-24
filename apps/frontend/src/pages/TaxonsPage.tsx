@@ -33,28 +33,54 @@ type TreeNode = {
 function buildTreeFromTaxons(taxons: Taxon[]): TreeNode {
   const root: TreeNode = { id: 'root', name: 'root', depth: 0, children: [] }
 
-  const bySubfamily = new Map<string, Map<string, Taxon[]>>()
+  // Build a nested hierarchy: subfamily -> tribe -> genus -> subgenus -> speciesGroup -> species
   for (const t of taxons) {
     const sub = t.subfamily || '—'
+    const tribe = t.tribe || '—'
     const genus = t.genus || '—'
-    if (!bySubfamily.has(sub)) bySubfamily.set(sub, new Map())
-    const gmap = bySubfamily.get(sub)!
-    if (!gmap.has(genus)) gmap.set(genus, [])
-    gmap.get(genus)!.push(t)
-  }
+    const subgenus = t.subgenus || '—'
+    const speciesGroup = t.speciesGroup || '—'
 
-  for (const [sub, gmap] of bySubfamily.entries()) {
-    const subNode: TreeNode = { id: `sub:${sub}`, name: sub, depth: 1, children: [] }
-    for (const [genus, list] of gmap.entries()) {
-      const genusNode: TreeNode = { id: `gen:${sub}:${genus}`, name: genus, depth: 2, children: [] }
-      for (const t of list) {
-        const speciesLabel = t.species || ''
-        const speciesNode: TreeNode = { id: `sp:${t.id}`, name: speciesLabel, depth: 3, taxon: t }
-        genusNode.children!.push(speciesNode)
-      }
-      subNode.children!.push(genusNode)
+    // find or create subfamily node
+    let subNode = root.children!.find((n) => n.name === sub)
+    if (!subNode) {
+      subNode = { id: `sub:${sub}`, name: sub, depth: 1, children: [] }
+      root.children!.push(subNode)
     }
-    root.children!.push(subNode)
+
+    // tribe
+    let tribeNode = subNode.children!.find((n) => n.name === tribe)
+    if (!tribeNode) {
+      tribeNode = { id: `tribe:${sub}:${tribe}`, name: tribe, depth: 2, children: [] }
+      subNode.children!.push(tribeNode)
+    }
+
+    // genus
+    let genusNode = tribeNode.children!.find((n) => n.name === genus)
+    if (!genusNode) {
+      genusNode = { id: `gen:${sub}:${tribe}:${genus}`, name: genus, depth: 3, children: [] }
+      tribeNode.children!.push(genusNode)
+    }
+
+    // subgenus
+    let subgenusNode = genusNode.children!.find((n) => n.name === subgenus)
+    if (!subgenusNode) {
+      subgenusNode = { id: `subgen:${sub}:${tribe}:${genus}:${subgenus}`, name: subgenus, depth: 4, children: [] }
+      genusNode.children!.push(subgenusNode)
+    }
+
+    // species group
+    let sgNode = subgenusNode.children!.find((n) => n.name === speciesGroup)
+    if (!sgNode) {
+      sgNode = { id: `sg:${sub}:${tribe}:${genus}:${subgenus}:${speciesGroup}`, name: speciesGroup, depth: 5, children: [] }
+      subgenusNode.children!.push(sgNode)
+    }
+
+    // species leaf
+    const speciesLabel = t.species || ''
+    const speciesNode: TreeNode = { id: `sp:${t.id}`, name: speciesLabel, depth: 6, taxon: t }
+    sgNode.children = sgNode.children || []
+    sgNode.children.push(speciesNode)
   }
 
   return root
@@ -73,8 +99,9 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
   collectLeaves(root)
 
   const rowHeight = 36
-  const depthX = (d: number) => 40 + (d - 1) * 220
-  const width = Math.max(800, (3 + 1) * 220)
+  const maxDepth = 6
+  const depthX = (d: number) => 40 + (d - 1) * 160
+  const width = Math.max(800, (maxDepth + 1) * 160)
   const height = Math.max(200, (leaves.length + 1) * rowHeight)
 
   // assign y positions to leaves and compute internal nodes position as average
@@ -579,7 +606,24 @@ export function TaxonsPage() {
                   if (node.depth === 1) {
                     openSelectedDetail(rep, 'subfamily', node.name, rep.levelDetails.subfamily)
                   } else if (node.depth === 2) {
+                    // Tribe: map to subfamily detail (no tribe-level detail available)
+                    openSelectedDetail(rep, 'subfamily', node.name, rep.levelDetails.subfamily)
+                  } else if (node.depth === 3) {
                     openSelectedDetail(rep, 'genus', node.name, rep.levelDetails.genus)
+                  } else if (node.depth === 4) {
+                    openSelectedDetail(
+                      rep,
+                      'subgenus',
+                      node.name,
+                      rep.levelDetails.subgenus ?? { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                    )
+                  } else if (node.depth === 5) {
+                    openSelectedDetail(
+                      rep,
+                      'speciesGroup',
+                      node.name,
+                      rep.levelDetails.speciesGroup ?? { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                    )
                   } else {
                     openSelectedDetail(rep, 'species', rep.species, rep.levelDetails.species)
                   }
