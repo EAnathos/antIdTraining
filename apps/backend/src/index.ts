@@ -56,7 +56,13 @@ const app = express()
 app.set('trust proxy', 1)
 
 // Security headers
-app.use(helmet())
+// The frontend and uploads are served from sibling subdomains in production,
+// so allow same-site resource embedding for images.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  }),
+)
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const uploadsPath = path.resolve(currentDir, '../uploads')
