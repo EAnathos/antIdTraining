@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { getTaxonCatalog } from '../lib/taxonCatalog.js'
 import { AppError } from '../lib/errors.js'
+import { cuidSchema } from '../lib/zodUtils.js'
+import { getTaxonLevelProfile, resolveTaxonWorkerSize } from '../lib/taxonLevelProfileCache.js'
+import { getGameEntriesCache } from '../lib/gameEntryCache.js'
 
 export type GameLevel = 'easy' | 'medium' | 'hard'
 
@@ -21,8 +24,8 @@ export const validateGameAnswerSchema = z.object({
       species: z.string().max(255, 'Trop long').trim().optional(),
     })
     .default({}),
-  entryId: z.string().min(1, 'ID requis').optional(),
-  sessionId: z.string().min(1, 'ID session requis').optional(),
+  entryId: cuidSchema.optional(),
+  sessionId: cuidSchema.optional(),
 })
 
 function normalizeGameLevel(value: unknown): GameLevel {
@@ -65,58 +68,13 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
 }
 
 async function resolveEntrySize(entry: { species?: string | null; genus?: string | null; subfamily: string; }) {
-  // Try most specific profile first: SPECIES, then GENUS, then SUBFAMILY
-  // Return worker size since it's the most common caste
-  if (entry.species && entry.genus) {
-    const p = await prisma.taxonLevelProfile.findUnique({
-      where: { level_value_genusValue: { level: 'SPECIES', value: entry.species, genusValue: entry.genus } },
-      include: { criteria: { orderBy: { position: 'asc' } } },
-    })
-    if (p?.sizeWorker) return p.sizeWorker
-
-    const shared = await prisma.taxonLevelProfile.findFirst({ where: { level: 'SPECIES', value: entry.species, genusValue: null } })
-    if (shared?.sizeWorker) return shared.sizeWorker
-  }
-
-  if (entry.genus) {
-    const p = await prisma.taxonLevelProfile.findFirst({
-      where: { level: 'GENUS', value: entry.genus, genusValue: null },
-      include: { criteria: { orderBy: { position: 'asc' } } },
-    })
-    if (p?.sizeWorker) return p.sizeWorker
-  }
-
-  if (entry.subfamily) {
-    const p = await prisma.taxonLevelProfile.findFirst({
-      where: { level: 'SUBFAMILY', value: entry.subfamily, genusValue: null },
-      include: { criteria: { orderBy: { position: 'asc' } } },
-    })
-    if (p?.sizeWorker) return p.sizeWorker
-  }
-
-  return null
+  return resolveTaxonWorkerSize(entry)
 }
 
 export async function getGameQuestion(rawLevel: unknown, userId?: string | null) {
   const level = normalizeGameLevel(rawLevel)
 
-  const entries = await prisma.observationEntry.findMany({
-    select: {
-      id: true,
-      taxonLevel: true,
-      subfamily: true,
-      genus: true,
-      species: true,
-      size: true,
-      department: true,
-      observedAt: true,
-      biotope: true,
-      photoCredit: true,
-      images: {
-        select: { imageUrl: true },
-      },
-    },
-  })
+  const entries = await getGameEntriesCache()
 
   if (!entries.length) {
     throw new AppError(404, 'Aucune entrée disponible.')
@@ -337,45 +295,23 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
   }
 
   const subfamilyProfile = resolvedAnswer.subfamily
-    ? await prisma.taxonLevelProfile.findFirst({
-        where: {
-          level: 'SUBFAMILY',
-          value: resolvedAnswer.subfamily,
-          genusValue: null,
-        },
-        include: {
-          criteria: {
-            orderBy: { position: 'asc' },
-          },
-        },
-      })
+    ? await getTaxonLevelProfile('SUBFAMILY', resolvedAnswer.subfamily, null)
     : null
 
   const genusProfile = resolvedAnswer.genus
-    ? await prisma.taxonLevelProfile.findFirst({
-        where: {
-          level: 'GENUS',
-          value: resolvedAnswer.genus,
-          genusValue: null,
-        },
-        include: {
-          criteria: {
-            orderBy: { position: 'asc' },
-          },
-        },
-      })
+    ? await getTaxonLevelProfile('GENUS', resolvedAnswer.genus, null)
     : null
 
   const identification = {
     subfamily: {
       value: resolvedAnswer.subfamily ?? null,
       description: subfamilyProfile?.description ?? null,
-      criteria: (subfamilyProfile?.criteria ?? []).map((criterion) => criterion.label),
+      criteria: subfamilyProfile?.criteria ?? [],
     },
     genus: {
       value: resolvedAnswer.genus ?? null,
       description: genusProfile?.description ?? null,
-      criteria: (genusProfile?.criteria ?? []).map((criterion) => criterion.label),
+      criteria: genusProfile?.criteria ?? [],
     },
   }
 

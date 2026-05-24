@@ -35,6 +35,13 @@ Créer [.env.example](.env.example) à partir de l'exemple et définir au minimu
 - `DATABASE_URL`
 - `JWT_SECRET`
 
+Variables recommandées selon le contexte:
+
+- `REDIS_URL` : optionnel en local si Redis tourne sur `localhost:6379`, recommandé en production
+- `CORS_ORIGINS` : obligatoire en production
+
+Le backend utilise Redis pour le rate limiting. Si `REDIS_URL` n'est pas défini, il essaie par défaut `redis://localhost:6379`.
+
 ## Scripts utiles
 
 - `npm run dev` : serveur API en mode watch

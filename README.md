@@ -65,6 +65,8 @@ npm install
 cp apps/backend/.env.example apps/backend/.env
 ```
 
+Si tu lances la stack sans Docker, installe Redis sur la machine et vérifie que `REDIS_URL` pointe vers ton instance locale si elle n'est pas sur `localhost:6379`.
+
 3. Lancer la stack de développement:
 
 ```bash

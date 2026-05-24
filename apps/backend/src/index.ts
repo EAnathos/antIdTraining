@@ -22,7 +22,24 @@ import { adminHistoryRouter } from './routes/adminHistory.js'
 import { adminUsersRouter } from './routes/adminUsers.js'
 
 function parseCorsOrigins(value: string | undefined) {
-  const defaults = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080']
+  // Production defaults - should be set via CORS_ORIGINS env var
+  if (process.env.NODE_ENV === 'production') {
+    if (!value) {
+      throw new Error('CORS_ORIGINS environment variable must be set in production')
+    }
+    return value
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  }
+
+  // Development defaults
+  const devDefaults = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:8080'
+  ]
 
   const rawOrigins = value
     ? value
@@ -31,7 +48,7 @@ function parseCorsOrigins(value: string | undefined) {
         .filter(Boolean)
     : []
 
-  return rawOrigins.length > 0 ? rawOrigins : defaults
+  return rawOrigins.length > 0 ? rawOrigins : devDefaults
 }
 
 const app = express()

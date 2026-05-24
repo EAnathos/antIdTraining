@@ -7,6 +7,8 @@ import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
+import { invalidateTaxonLevelProfileCache } from '../lib/taxonLevelProfileCache.js'
+import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
 import { AppError } from '../lib/errors.js'
 import {
   RESPONSIVE_IMAGE_WIDTHS,
@@ -457,6 +459,8 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
   })
 
   invalidateTaxonCatalogCache()
+  invalidateTaxonLevelProfileCache()
+  invalidateGameEntryCache()
 
   return {
     message: 'Base importée avec succès.',

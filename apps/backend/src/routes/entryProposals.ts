@@ -48,14 +48,32 @@ function sanitizeFileStem(name: string) {
 }
 
 async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
-  if (!file.mimetype.startsWith('image/')) {
-    throw new AppError(400, 'Seules les images sont acceptées.')
+  // Validate MIME type
+  const validMimes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!validMimes.includes(file.mimetype)) {
+    throw new AppError(400, 'Format d\'image non supporté. Utilisez JPEG, PNG ou WebP.')
   }
 
+  // Validate file size (8MB max from multer, but double-check)
+  if (file.buffer.length > 8 * 1024 * 1024) {
+    throw new AppError(413, 'Image trop volumineux (max 8MB).')
+  }
+
+  // Validate image metadata
   const image = sharp(file.buffer, { animated: false }).rotate()
   const metadata = await image.metadata()
+  
   if (!metadata.width || !metadata.height) {
-    throw new AppError(400, 'Image invalide.')
+    throw new AppError(400, 'Image invalide ou corrompue.')
+  }
+
+  // Validate dimensions (min 200x200, max 12000x12000)
+  if (metadata.width < 200 || metadata.height < 200) {
+    throw new AppError(400, 'Image trop petite (minimum 200x200 pixels).')
+  }
+  
+  if (metadata.width > 12000 || metadata.height > 12000) {
+    throw new AppError(400, 'Image trop grande (maximum 12000x12000 pixels).')
   }
 
   const safeStem = sanitizeFileStem(file.originalname)

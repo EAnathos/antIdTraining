@@ -13,6 +13,7 @@ import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
 
 ensureUploadsDir()
 
@@ -165,6 +166,8 @@ entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
     entityId: created.id,
   })
 
+  invalidateGameEntryCache()
+
   return res.status(201).json(created)
 }))
 
@@ -205,6 +208,8 @@ entriesRouter.put('/:id', asyncHandler(async (req, res) => {
     entityId: updated.id,
   })
 
+  invalidateGameEntryCache()
+
   return res.json(updated)
 }))
 
@@ -243,6 +248,8 @@ entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
     entityId: entryId,
   })
 
+  invalidateGameEntryCache()
+
   return res.json(updatedImages)
 }))
 
@@ -275,6 +282,8 @@ entriesRouter.delete('/:id', asyncHandler(async (req, res) => {
     entityType: 'entry',
     entityId: req.params.id as string,
   })
+
+  invalidateGameEntryCache()
 
   return res.status(204).send()
 }))
