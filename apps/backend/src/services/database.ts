@@ -58,6 +58,19 @@ export const databaseSnapshotSchema = z.object({
           }
         }),
     ),
+    taxonConfusions: z
+      .array(
+        z.object({
+          id: z.string(),
+          taxonId: z.string(),
+          confusedTaxonId: z.string(),
+          detail: z.string(),
+          createdAt: z.coerce.date(),
+          updatedAt: z.coerce.date(),
+        }),
+      )
+      .optional()
+      .default([]),
     taxonLevelProfiles: z.array(
       z.object({
         id: z.string(),
@@ -263,6 +276,7 @@ export async function cleanupUploadFiles() {
 export async function getDatabaseSnapshot() {
   const [
     taxons,
+    taxonConfusions,
     taxonLevelProfiles,
     taxonLevelCriteria,
     references,
@@ -274,6 +288,7 @@ export async function getDatabaseSnapshot() {
     suggestions,
   ] = await Promise.all([
     prisma.taxon.findMany({ orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }, { species: 'asc' }] }),
+    prisma.taxonConfusion.findMany({ orderBy: [{ taxonId: 'asc' }, { confusedTaxonId: 'asc' }] }),
     prisma.taxonLevelProfile.findMany({ orderBy: [{ level: 'asc' }, { value: 'asc' }] }),
     prisma.taxonLevelCriterion.findMany({ orderBy: [{ profileId: 'asc' }, { position: 'asc' }] }),
     prisma.reference.findMany({
@@ -300,6 +315,7 @@ export async function getDatabaseSnapshot() {
     exportedAt: new Date().toISOString(),
     data: {
       taxons,
+      taxonConfusions,
       taxonLevelProfiles: taxonLevelProfiles.map((profile) => ({
         id: profile.id,
         level: profile.level,
@@ -360,6 +376,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     await tx.suggestion.deleteMany()
     await tx.entryImage.deleteMany()
     await tx.observationEntry.deleteMany()
+    await tx.taxonConfusion.deleteMany()
     await tx.taxonLevelCriterion.deleteMany()
     await tx.taxonLevelProfile.deleteMany()
     await tx.reference.deleteMany()
@@ -372,6 +389,35 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
           distribution: taxon.distribution ?? Prisma.DbNull,
         })),
       })
+    }
+
+    if (snapshot.data.taxonConfusions.length > 0) {
+      const taxonIds = new Set(snapshot.data.taxons.map((taxon) => taxon.id))
+      const taxonConfusions = Array.from(
+        new Map(
+          snapshot.data.taxonConfusions
+            .filter((confusion) => taxonIds.has(confusion.taxonId) && taxonIds.has(confusion.confusedTaxonId))
+            .flatMap((confusion) => [
+              [
+                `${confusion.taxonId}:${confusion.confusedTaxonId}:${confusion.detail}`,
+                confusion,
+              ] as const,
+              [
+                `${confusion.confusedTaxonId}:${confusion.taxonId}:${confusion.detail}`,
+                {
+                  ...confusion,
+                  id: `${confusion.id}:mirror`,
+                  taxonId: confusion.confusedTaxonId,
+                  confusedTaxonId: confusion.taxonId,
+                },
+              ] as const,
+            ]),
+        ).values(),
+      )
+
+      if (taxonConfusions.length > 0) {
+        await tx.taxonConfusion.createMany({ data: taxonConfusions })
+      }
     }
 
     if (snapshot.data.taxonLevelProfiles.length > 0) {
@@ -470,6 +516,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     message: 'Base importée avec succès.',
     imported: {
       taxons: snapshot.data.taxons.length,
+      taxonConfusions: snapshot.data.taxonConfusions.length,
       taxonLevelProfiles: snapshot.data.taxonLevelProfiles.length,
       taxonLevelCriteria: snapshot.data.taxonLevelCriteria.length,
       references: snapshot.data.references.length,
