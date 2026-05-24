@@ -1,2 +1,2 @@
--- AlterTable
+ALTER TABLE "EntryImage" ADD COLUMN IF NOT EXISTS "position" INTEGER;
 ALTER TABLE "EntryImage" ADD COLUMN "position" INTEGER;

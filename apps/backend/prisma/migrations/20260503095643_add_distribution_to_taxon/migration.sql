@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Taxon" ADD COLUMN     "distribution" JSONB;
+ALTER TABLE "Taxon" ADD COLUMN IF NOT EXISTS     "distribution" JSONB;
