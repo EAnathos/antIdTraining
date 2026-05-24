@@ -3,32 +3,34 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
+import { getRedis } from '../lib/redis.js'
 import { UserRole } from '@prisma/client'
 
 const REGISTRATION_WINDOW_MS = 24 * 60 * 60 * 1000
 const REGISTRATION_MAX_ATTEMPTS = 5
 
-const registrationAttemptsByIp = new Map<string, number[]>()
-
 function normalizeIp(ip: string) {
   return ip.replace(/^::ffff:/, '').trim()
 }
 
-function enforceRegistrationRateLimit(ipInput?: string | null) {
+async function enforceRegistrationRateLimit(ipInput?: string | null) {
   if (!ipInput) {
     return
   }
 
+  const redis = getRedis()
   const ip = normalizeIp(ipInput)
-  const now = Date.now()
-  const attempts = (registrationAttemptsByIp.get(ip) ?? []).filter((timestamp) => now - timestamp < REGISTRATION_WINDOW_MS)
+  const key = `registration:${ip}`
+  const ttl = REGISTRATION_WINDOW_MS / 1000 // Convert to seconds
 
-  if (attempts.length >= REGISTRATION_MAX_ATTEMPTS) {
-    throw new AppError(429, 'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.')
+  const attempts = await redis.incr(key)
+  if (attempts === 1) {
+    await redis.expire(key, ttl)
   }
 
-  attempts.push(now)
-  registrationAttemptsByIp.set(ip, attempts)
+  if (attempts > REGISTRATION_MAX_ATTEMPTS) {
+    throw new AppError(429, 'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.')
+  }
 }
 
 export async function loginAdmin(username: string, password: string) {

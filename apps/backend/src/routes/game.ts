@@ -1,16 +1,17 @@
 import { Router } from 'express'
 import { AppError } from '../lib/errors.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { getGameQuestion, validateGameAnswer, validateGameAnswerSchema } from '../services/game.js'
 import { optionalAuth } from '../middleware/auth.js'
 
 export const gameRouter = Router()
 
-gameRouter.get('/question', optionalAuth, async (req, res) => {
+gameRouter.get('/question', optionalAuth, asyncHandler(async (req, res) => {
   const question = await getGameQuestion(req.query.level, req.user?.userId ?? null)
   return res.json(question)
-})
+}))
 
-gameRouter.post('/validate', async (req, res) => {
+gameRouter.post('/validate', asyncHandler(async (req, res) => {
   const parsed = validateGameAnswerSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
@@ -18,4 +19,4 @@ gameRouter.post('/validate', async (req, res) => {
 
   const result = await validateGameAnswer(parsed.data)
   return res.json(result)
-})
+}))

@@ -11,10 +11,17 @@
     "preview": "vite preview"
   },
   "author": "Anathos",
-  "keywords": ["react", "vite", "tailwindcss", "frontend", "ui"],
+  "keywords": [
+    "react",
+    "vite",
+    "tailwindcss",
+    "frontend",
+    "ui"
+  ],
   "license": "UNLICENSED",
   "dependencies": {
     "@svg-country-maps/france.departments": "^1.0.3",
+    "@tanstack/react-query": "^5.100.14",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1",

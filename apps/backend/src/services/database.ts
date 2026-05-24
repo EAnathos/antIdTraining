@@ -7,6 +7,9 @@ import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
+import { invalidateTaxonLevelProfileCache } from '../lib/taxonLevelProfileCache.js'
+import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { encryptSensitiveText } from '../lib/encryption.js'
 import { AppError } from '../lib/errors.js'
 import {
   RESPONSIVE_IMAGE_WIDTHS,
@@ -414,6 +417,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       // Ensure legacy snapshots without `caste` field get a default value
       const entriesToCreate = snapshot.data.observationEntries.map((e: any) => ({
         ...e,
+        photoCredit: encryptSensitiveText(e.photoCredit) ?? e.photoCredit,
         caste: (e as any).caste ?? 'WORKER',
       }))
 
@@ -450,6 +454,8 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       await tx.suggestion.createMany({
         data: snapshot.data.suggestions.map((suggestion) => ({
           ...suggestion,
+          name: suggestion.name ? (encryptSensitiveText(suggestion.name) ?? suggestion.name) : null,
+          email: suggestion.email ? (encryptSensitiveText(suggestion.email) ?? suggestion.email) : null,
           status: suggestion.status as any,
         })),
       })
@@ -457,6 +463,8 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
   })
 
   invalidateTaxonCatalogCache()
+  invalidateTaxonLevelProfileCache()
+  invalidateGameEntryCache()
 
   return {
     message: 'Base importée avec succès.',

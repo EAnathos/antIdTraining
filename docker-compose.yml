@@ -19,6 +19,20 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7-alpine
+    container_name: antidtraining-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   backend:
     build:
       context: ./apps/backend
@@ -28,11 +42,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./apps/backend/.env
       - ./.env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-antidtraining}?schema=public
+      REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"
     volumes:
@@ -54,4 +71,5 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   backend_uploads:

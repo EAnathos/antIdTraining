@@ -1,19 +1,29 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminProposalsRouter = Router()
 
+function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
+  return {
+    ...proposal,
+    photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+  }
+}
+
 const approveProposalSchema = z.object({
   decision: z.enum(['ACCEPT', 'REJECT']),
-  rejectionMessage: z.string().optional(),
+  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
 })
 
 // Get all pending proposals
-adminProposalsRouter.get('/', async (req, res) => {
+adminProposalsRouter.get('/', asyncHandler(async (req, res) => {
   const status = req.query.status as string | undefined
   const userId = req.query.userId as string | undefined
 
@@ -31,18 +41,18 @@ adminProposalsRouter.get('/', async (req, res) => {
     orderBy: { createdAt: 'desc' },
   })
 
-  return res.json(proposals)
-})
+  return res.json(proposals.map((proposal) => publicProposal(proposal)))
+}))
 
 // Accept or reject proposal
-adminProposalsRouter.put('/:id', async (req, res) => {
+adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
   const parsed = approveProposalSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
   }
 
   const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { images: true, user: true },
   })
 
@@ -64,7 +74,7 @@ adminProposalsRouter.put('/:id', async (req, res) => {
       department: proposal.department,
       observedAt: proposal.observedAt,
       biotope: proposal.biotope,
-      photoCredit: proposal.photoCredit,
+      photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
     }
 
     const created = await prisma.observationEntry.create({
@@ -82,7 +92,7 @@ adminProposalsRouter.put('/:id', async (req, res) => {
 
     // Update proposal status
     await prisma.entryProposal.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: {
         status: 'ACCEPTED',
         processedAt: new Date(),
@@ -94,16 +104,18 @@ adminProposalsRouter.put('/:id', async (req, res) => {
       detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) de ${proposal.user.username}`,
       tone: 'SUCCESS',
       entityType: 'entryProposal',
-      entityId: req.params.id,
+      entityId: req.params.id as string,
     })
 
-    return res.json({ status: 'ACCEPTED', entry: created })
+    invalidateGameEntryCache()
+
+    return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
   } else {
     // Reject proposal
     const rejectionMessage = parsed.data.rejectionMessage || 'Rejeté par l\'administrateur.'
 
     await prisma.entryProposal.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: {
         status: 'REJECTED',
         rejectionMessage,
@@ -116,16 +128,16 @@ adminProposalsRouter.put('/:id', async (req, res) => {
       detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department}) de ${proposal.user.username}`,
       tone: 'INFO',
       entityType: 'entryProposal',
-      entityId: req.params.id,
+      entityId: req.params.id as string,
     })
 
     return res.json({ status: 'REJECTED', rejectionMessage })
   }
-})
+}))
 
-adminProposalsRouter.delete('/:id', async (req, res) => {
+adminProposalsRouter.delete('/:id', asyncHandler(async (req, res) => {
   const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { user: true },
   })
 
@@ -138,7 +150,7 @@ adminProposalsRouter.delete('/:id', async (req, res) => {
   }
 
   await prisma.entryProposal.delete({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
   })
 
   await recordAdminAudit(req, {
@@ -146,8 +158,10 @@ adminProposalsRouter.delete('/:id', async (req, res) => {
     detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department})`,
     tone: 'INFO',
     entityType: 'entryProposal',
-    entityId: req.params.id,
+    entityId: req.params.id as string,
   })
 
+  invalidateGameEntryCache()
+
   return res.status(204).send()
-})
+}))

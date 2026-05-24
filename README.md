@@ -50,6 +50,7 @@ npm run docker:up
 - Swagger UI: http://localhost:4000/api/docs
 - OpenAPI JSON: http://localhost:4000/api/openapi.json
 - PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
 ## Démarrage en local
 

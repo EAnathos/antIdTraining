@@ -1,10 +1,13 @@
 import cors from 'cors'
 import express from 'express'
 import compression from 'compression'
+import helmet from 'helmet'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
+import { logger } from './lib/logger.js'
+import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
 import { databaseRouter } from './routes/database.js'
 import { entriesRouter } from './routes/entries.js'
@@ -20,7 +23,24 @@ import { adminHistoryRouter } from './routes/adminHistory.js'
 import { adminUsersRouter } from './routes/adminUsers.js'
 
 function parseCorsOrigins(value: string | undefined) {
-  const defaults = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080']
+  // Production defaults - should be set via CORS_ORIGINS env var
+  if (process.env.NODE_ENV === 'production') {
+    if (!value) {
+      throw new Error('CORS_ORIGINS environment variable must be set in production')
+    }
+    return value
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  }
+
+  // Development defaults
+  const devDefaults = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:8080'
+  ]
 
   const rawOrigins = value
     ? value
@@ -29,11 +49,15 @@ function parseCorsOrigins(value: string | undefined) {
         .filter(Boolean)
     : []
 
-  return rawOrigins.length > 0 ? rawOrigins : defaults
+  return rawOrigins.length > 0 ? rawOrigins : devDefaults
 }
 
 const app = express()
 app.set('trust proxy', 1)
+
+// Security headers
+app.use(helmet())
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const uploadsPath = path.resolve(currentDir, '../uploads')
 const corsOrigins = parseCorsOrigins(process.env.CORS_ORIGINS)
@@ -66,15 +90,12 @@ app.use((req, res, next) => {
 
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
-    const logEntry = {
-      ts: new Date().toISOString(),
+    logger.info({
       method: req.method,
       path: req.originalUrl,
       status: res.statusCode,
       durationMs: Number(durationMs.toFixed(1)),
-    }
-
-    console.log(JSON.stringify(logEntry))
+    }, 'HTTP request')
   })
 
   next()
@@ -104,7 +125,7 @@ app.use(
             scheme: 'bearer',
             bearerFormat: 'JWT',
           },
-          value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          value: '', // Laisser vide - l'utilisateur doit entrer son token
         },
       },
     },
@@ -139,6 +160,19 @@ app.use('/api/admin/entry-proposals', requireAuth, requireAdmin, adminProposalsR
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-app.listen(config.port, () => {
-  console.log(`API démarrée sur http://localhost:${config.port}`)
+const server = app.listen(config.port, () => {
+  logger.info({ port: config.port }, 'API démarrée')
 })
+
+// Graceful shutdown
+async function gracefulShutdown(signal: string) {
+  logger.info({ signal }, 'Arrêt gracieux')
+  server.close(async () => {
+    await closeRedis()
+    logger.info('Serveur et connexions fermés')
+    process.exit(0)
+  })
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))

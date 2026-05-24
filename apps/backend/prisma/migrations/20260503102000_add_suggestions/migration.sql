@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "SuggestionStatus" AS ENUM ('PENDING', 'PROCESSED', 'REJECTED');
+CREATE TYPE IF NOT EXISTS "SuggestionStatus" AS ENUM ('PENDING', 'PROCESSED', 'REJECTED');
 
 -- CreateTable
-CREATE TABLE "Suggestion" (
+CREATE TABLE IF NOT EXISTS "Suggestion" (
     "id" TEXT NOT NULL,
     "name" TEXT,
     "email" TEXT,

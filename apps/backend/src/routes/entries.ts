@@ -6,28 +6,38 @@ import multer from 'multer'
 import type { Prisma } from '@prisma/client'
 import sharp from 'sharp'
 import { z } from 'zod'
+import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
 import { AppError } from '../lib/errors.js'
 import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
 
 ensureUploadsDir()
+
+function publicEntry<T extends { photoCredit: string }>(entry: T): T {
+  return {
+    ...entry,
+    photoCredit: decryptSensitiveText(entry.photoCredit) ?? entry.photoCredit,
+  }
+}
 
 const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 
 const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
-  taxonValue: z.string().min(1),
-  taxonGenus: z.string().optional().nullable(),
-  subgenus: z.string().optional().nullable(),
-  speciesGroup: z.string().optional().nullable(),
-  department: z.string().min(1),
-  observedAt: z.coerce.date(),
-  biotope: z.string().min(1),
-  photoCredit: z.string().min(1),
-  size: z.string().optional().nullable(),
+  taxonValue: z.string().min(1, 'Valeur requise').max(255, 'Valeur trop longue').trim(),
+  taxonGenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  subgenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
+  department: z.string().min(2, 'Département invalide').max(2, 'Département invalide').regex(/^[0-9]{2}$/, 'Département invalide').trim(),
+  observedAt: z.coerce.date().max(new Date(), 'La date ne peut pas être dans le futur'),
+  biotope: z.string().min(3, 'Biotope trop court').max(1000, 'Biotope trop long').trim(),
+  photoCredit: z.string().min(3, 'Crédit photo trop court').max(255, 'Crédit photo trop long').trim(),
+  size: z.string().max(100, 'Taille trop longue').trim().optional().nullable(),
   caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
 })
 
@@ -107,78 +117,69 @@ const uploadEntryImages: RequestHandler = (req, res, next) => {
   })
 }
 
-entriesRouter.get('/', async (_req, res) => {
+entriesRouter.get('/', asyncHandler(async (_req, res) => {
   const entries = await prisma.observationEntry.findMany({
     include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
     orderBy: { observedAt: 'desc' },
   })
-  return res.json(entries)
-})
+  return res.json(entries.map((entry) => publicEntry(entry)))
+}))
 
-entriesRouter.post('/', uploadEntryImages, async (req, res) => {
-  const savedFilePaths: string[] = []
-
-  try {
-    const parsed = entrySchema.safeParse(req.body)
-    if (!parsed.success) {
-      throw new AppError(400, 'Requête invalide.')
-    }
-
-    const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
-    if (!taxonSelection) {
-      throw new AppError(400, 'Taxon introuvable pour ce niveau.')
-    }
-
-    const files = (req.files as Express.Multer.File[] | undefined) ?? []
-    const optimizedFileNames = await Promise.all(
-      files.map(async (file, index) => {
-        const result = await optimizeAndSaveImage(file, index)
-        savedFilePaths.push(...result.savedPaths)
-        return result.baseFileName
-      }),
-    )
-
-    const createData: Prisma.ObservationEntryUncheckedCreateInput = {
-      ...taxonSelection,
-      caste: parsed.data.caste,
-      size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
-      department: parsed.data.department,
-      observedAt: parsed.data.observedAt,
-      biotope: parsed.data.biotope,
-      photoCredit: parsed.data.photoCredit,
-      subgenus: parsed.data.subgenus ?? undefined,
-      speciesGroup: parsed.data.speciesGroup ?? undefined,
-    }
-
-    const created = await prisma.observationEntry.create({
-      data: {
-        ...createData,
-        images: {
-          create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
-        },
-      },
-      include: { images: true },
-    })
-
-    await recordAdminAudit(req, {
-      action: 'Entrée créée',
-      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department})`,
-      tone: 'SUCCESS',
-      entityType: 'entry',
-      entityId: created.id,
-    })
-
-    return res.status(201).json(created)
-  } catch (error) {
-    for (const filePath of savedFilePaths) {
-      fs.rmSync(filePath, { force: true })
-    }
-
-    throw error
+entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
+  const parsed = entrySchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError(400, 'Requête invalide.')
   }
-})
 
-entriesRouter.put('/:id', async (req, res) => {
+  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
+  if (!taxonSelection) {
+    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+  }
+
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  const optimizedFileNames = await Promise.all(
+    files.map(async (file, index) => {
+      const result = await optimizeAndSaveImage(file, index)
+      return result.baseFileName
+    }),
+  )
+
+  const createData: Prisma.ObservationEntryUncheckedCreateInput = {
+    ...taxonSelection,
+    caste: parsed.data.caste,
+    size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
+    department: parsed.data.department,
+    observedAt: parsed.data.observedAt,
+    biotope: parsed.data.biotope,
+    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
+    subgenus: parsed.data.subgenus ?? undefined,
+    speciesGroup: parsed.data.speciesGroup ?? undefined,
+  }
+
+  const created = await prisma.observationEntry.create({
+    data: {
+      ...createData,
+      images: {
+        create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
+      },
+    },
+    include: { images: true },
+  })
+
+  await recordAdminAudit(req, {
+    action: 'Entrée créée',
+    detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department})`,
+    tone: 'SUCCESS',
+    entityType: 'entry',
+    entityId: created.id,
+  })
+
+  invalidateGameEntryCache()
+
+  return res.status(201).json(publicEntry(created))
+}))
+
+entriesRouter.put('/:id', asyncHandler(async (req, res) => {
   const parsed = entrySchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
@@ -196,13 +197,13 @@ entriesRouter.put('/:id', async (req, res) => {
     department: parsed.data.department,
     observedAt: parsed.data.observedAt,
     biotope: parsed.data.biotope,
-    photoCredit: parsed.data.photoCredit,
+    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
     subgenus: parsed.data.subgenus ?? undefined,
     speciesGroup: parsed.data.speciesGroup ?? undefined,
   }
 
   const updated = await prisma.observationEntry.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     data: updateData,
     include: { images: true },
   })
@@ -215,18 +216,20 @@ entriesRouter.put('/:id', async (req, res) => {
     entityId: updated.id,
   })
 
-  return res.json(updated)
-})
+  invalidateGameEntryCache()
 
-entriesRouter.put('/:id/images/order', async (req, res) => {
-  const bodySchema = z.object({ imageIds: z.array(z.string()) })
+  return res.json(publicEntry(updated))
+}))
+
+entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
+  const bodySchema = z.object({ imageIds: z.array(z.string().min(1)).min(1, 'Au moins une image requise').max(10, 'Max 10 images') })
   const parsed = bodySchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError(400, 'Requête invalide.')
   }
 
   const { imageIds } = parsed.data
-  const entryId = req.params.id
+  const entryId = req.params.id as string
 
   const existing = await prisma.entryImage.findMany({ where: { entryId } })
   const existingIds = new Set(existing.map((i) => i.id))
@@ -253,12 +256,14 @@ entriesRouter.put('/:id/images/order', async (req, res) => {
     entityId: entryId,
   })
 
-  return res.json(updatedImages)
-})
+  invalidateGameEntryCache()
 
-entriesRouter.delete('/:id', async (req, res) => {
+  return res.json(updatedImages)
+}))
+
+entriesRouter.delete('/:id', asyncHandler(async (req, res) => {
   const entry = await prisma.observationEntry.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     select: {
       images: {
         select: {
@@ -272,7 +277,7 @@ entriesRouter.delete('/:id', async (req, res) => {
     throw new AppError(404, 'Entrée introuvable.')
   }
 
-  await prisma.observationEntry.delete({ where: { id: req.params.id } })
+  await prisma.observationEntry.delete({ where: { id: req.params.id as string } })
 
   for (const image of entry.images) {
     deleteUploadFilesForImageUrl(image.imageUrl)
@@ -280,11 +285,13 @@ entriesRouter.delete('/:id', async (req, res) => {
 
   await recordAdminAudit(req, {
     action: 'Entrée supprimée',
-    detail: `Entrée ${req.params.id}`,
+    detail: `Entrée ${req.params.id as string}`,
     tone: 'ERROR',
     entityType: 'entry',
-    entityId: req.params.id,
+    entityId: req.params.id as string,
   })
 
+  invalidateGameEntryCache()
+
   return res.status(204).send()
-})
+}))

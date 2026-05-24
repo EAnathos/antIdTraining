@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "AdminHistoryTone" AS ENUM ('SUCCESS', 'ERROR', 'INFO');
+CREATE TYPE IF NOT EXISTS "AdminHistoryTone" AS ENUM ('SUCCESS', 'ERROR', 'INFO');
 
 -- CreateTable
-CREATE TABLE "AdminHistoryEvent" (
+CREATE TABLE IF NOT EXISTS "AdminHistoryEvent" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "action" TEXT NOT NULL,
@@ -17,13 +17,19 @@ CREATE TABLE "AdminHistoryEvent" (
 );
 
 -- CreateIndex
-CREATE INDEX "AdminHistoryEvent_createdAt_idx" ON "AdminHistoryEvent"("createdAt");
+CREATE INDEX IF NOT EXISTS "AdminHistoryEvent_createdAt_idx" ON "AdminHistoryEvent"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "AdminHistoryEvent_actorUserId_idx" ON "AdminHistoryEvent"("actorUserId");
+CREATE INDEX IF NOT EXISTS "AdminHistoryEvent_actorUserId_idx" ON "AdminHistoryEvent"("actorUserId");
 
 -- CreateIndex
-CREATE INDEX "AdminHistoryEvent_entityType_entityId_idx" ON "AdminHistoryEvent"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "AdminHistoryEvent_entityType_entityId_idx" ON "AdminHistoryEvent"("entityType", "entityId");
 
 -- AddForeignKey
-ALTER TABLE "AdminHistoryEvent" ADD CONSTRAINT "AdminHistoryEvent_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'AdminHistoryEvent_actorUserId_fkey') THEN
+        ALTER TABLE "AdminHistoryEvent" ADD CONSTRAINT "AdminHistoryEvent_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END
+$$;
