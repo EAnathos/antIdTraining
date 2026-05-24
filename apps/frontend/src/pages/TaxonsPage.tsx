@@ -48,8 +48,8 @@ function getReferenceHref(reference: ReferenceItem) {
   return reference.url
 }
 
-function getTaxonsCacheKey(level: 'subfamily' | 'genus' | 'species', query: string) {
-  return `${TAXONS_CACHE_PREFIX}${level}:${encodeURIComponent(query.trim().toLowerCase())}`
+function getTaxonsCacheKey(query: string) {
+  return `${TAXONS_CACHE_PREFIX}${encodeURIComponent(query.trim().toLowerCase())}`
 }
 
 function readTaxonsCache(cacheKey: string): TaxonsCacheEntry | null {
@@ -92,7 +92,6 @@ function writeTaxonsCache(cacheKey: string, entry: TaxonsCacheEntry) {
 export function TaxonsPage() {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
-  const [level, setLevel] = useState<'subfamily' | 'genus' | 'species'>('genus')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null)
@@ -102,6 +101,9 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [selectedDepartments, setSelectedDepartments] = useState<FrenchDepartmentCode[]>([])
+  const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<number[]>([])
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -113,7 +115,7 @@ export function TaxonsPage() {
   const loadAllTaxons = useCallback(async () => {
     const currentRequestId = requestIdRef.current + 1
     requestIdRef.current = currentRequestId
-    const cacheKey = getTaxonsCacheKey(level, debouncedQuery)
+    const cacheKey = getTaxonsCacheKey(debouncedQuery)
 
     setIsLoadingTaxons(true)
     setIsLoadingMoreTaxons(false)
@@ -133,7 +135,7 @@ export function TaxonsPage() {
     }
 
     try {
-      const firstPage = await api.get<TaxonsPageResponse>('/taxons', { params: { level, q: debouncedQuery, offset: 0 } })
+      const firstPage = await api.get<TaxonsPageResponse>('/taxons', { params: { q: debouncedQuery, offset: 0 } })
       if (requestIdRef.current !== currentRequestId) {
         return
       }
@@ -149,7 +151,7 @@ export function TaxonsPage() {
       while (hasMore) {
         setIsLoadingMoreTaxons(true)
 
-        const nextPage = await api.get<TaxonsPageResponse>('/taxons', { params: { level, q: debouncedQuery, offset } })
+        const nextPage = await api.get<TaxonsPageResponse>('/taxons', { params: { q: debouncedQuery, offset } })
         if (requestIdRef.current !== currentRequestId) {
           return
         }
@@ -186,7 +188,7 @@ export function TaxonsPage() {
         setIsLoadingMoreTaxons(false)
       }
     }
-  }, [level, debouncedQuery])
+  }, [debouncedQuery])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -247,12 +249,36 @@ export function TaxonsPage() {
     return references.filter((reference) => reference.taxons.some((taxon) => taxon.id === selectedDetail.taxon.id))
   }, [references, selectedDetail])
 
+  const filteredTaxons = useMemo(() => {
+    let filtered = taxons
+
+    if (selectedDepartments.length > 0) {
+      filtered = filtered.filter((taxon) => {
+        const distribution = (taxon.distribution?.departments ?? []) as unknown[]
+        const codes = distribution.filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+        return codes.some((code) => selectedDepartments.includes(code))
+      })
+    }
+
+    if (selectedSwarmingMonths.length > 0) {
+      filtered = filtered.filter((taxon) => {
+        if (taxon.swarmingStartMonth === null || taxon.swarmingEndMonth === null) return false
+        const start = taxon.swarmingStartMonth
+        const end = taxon.swarmingEndMonth
+        return selectedSwarmingMonths.some((month) =>
+          start <= end ? month >= start && month <= end : month >= start || month <= end,
+        )
+      })
+    }
+
+    return filtered
+  }, [taxons, selectedDepartments, selectedSwarmingMonths])
   const visibleStartIndex = Math.max(Math.floor(tableScrollTop / rowHeight) - overscan, 0)
   const visibleEndIndex = Math.min(
-    taxons.length,
+    filteredTaxons.length,
     Math.ceil((tableScrollTop + tableViewportHeight) / rowHeight) + overscan,
   )
-  const visibleTaxons = taxons.slice(visibleStartIndex, visibleEndIndex)
+  const visibleTaxons = filteredTaxons.slice(visibleStartIndex, visibleEndIndex)
   const topSpacerHeight = visibleStartIndex * rowHeight
   const bottomSpacerHeight = Math.max((taxons.length - visibleEndIndex) * rowHeight, 0)
 
@@ -260,21 +286,76 @@ export function TaxonsPage() {
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Taxons enregistrés</h2>
       <div className="mt-3 flex flex-wrap gap-2">
-        <select className="h-10 w-44 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700" value={level} onChange={(e) => setLevel(e.target.value as 'subfamily' | 'genus' | 'species')}>
-          <option value="subfamily">Sous-famille</option>
-          <option value="genus">Genre</option>
-          <option value="species">Espèce</option>
-        </select>
         <input
           className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Recherche"
+          placeholder="Recherche (sous-famille, genre, espèce...)"
         />
       </div>
 
+      <button
+        type="button"
+        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+        className="mt-3 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      >
+        {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
+      </button>
+
+      {showAdvancedOptions && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Période d'essaimage</label>
+              <div className="flex flex-wrap gap-2">
+                {monthLabels.map((month, index) => (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => {
+                      const monthNum = index + 1
+                      setSelectedSwarmingMonths((prev) =>
+                        prev.includes(monthNum) ? prev.filter((m) => m !== monthNum) : [...prev, monthNum]
+                      )
+                    }}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      selectedSwarmingMonths.includes(index + 1)
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {month.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Localisation</label>
+              <FranceMap selectedDepartments={selectedDepartments} onToggleDepartment={(code) => {
+                setSelectedDepartments((prev) =>
+                  prev.includes(code) ? prev.filter((d) => d !== code) : [...prev, code]
+                )
+              }} />
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSwarmingMonths([])
+                  setSelectedDepartments([])
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Réinitialiser les filtres
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <p className="mt-3 text-sm text-slate-600">
-        {taxons.length} entrée{taxons.length > 1 ? 's' : ''} trouvée{taxons.length > 1 ? 's' : ''}
+        {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
       </p>
 
       {loadError && <p className="mt-2 text-sm text-red-600">{loadError}</p>}

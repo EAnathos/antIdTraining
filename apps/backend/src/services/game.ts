@@ -72,6 +72,27 @@ async function resolveEntrySize(entry: { species?: string | null; genus?: string
   return resolveTaxonWorkerSize(entry)
 }
 
+function applyGameFilters(entries: GameEntry[], filters?: { departments?: string[]; swarmingMonths?: number[] }): GameEntry[] {
+  let filtered = entries
+
+  if (filters?.departments && filters.departments.length > 0) {
+    filtered = filtered.filter((e) => filters.departments!.includes(e.department))
+  }
+
+  if (filters?.swarmingMonths && filters.swarmingMonths.length > 0) {
+    filtered = filtered.filter((e) => {
+      if (e.swarmingStartMonth === null || e.swarmingEndMonth === null) return true
+      const start = e.swarmingStartMonth
+      const end = e.swarmingEndMonth
+      return filters.swarmingMonths!.some((month) =>
+        start <= end ? month >= start && month <= end : month >= start || month <= end,
+      )
+    })
+  }
+
+  return filtered
+}
+
 type GameQuestionDetails = {
   size: string | null
   department: string
@@ -217,7 +238,7 @@ const GAME_LEVEL_CONFIGS = {
   buildResponse: (...args: any[]) => Promise<any>
 }>
 
-export async function getGameQuestion(rawLevel: unknown, userId?: string | null) {
+export async function getGameQuestion(rawLevel: unknown, userId?: string | null, filters?: { departments?: string[]; swarmingMonths?: number[] }) {
   const level = normalizeGameLevel(rawLevel)
 
   const entries = await getGameEntriesCache()
@@ -230,12 +251,14 @@ export async function getGameQuestion(rawLevel: unknown, userId?: string | null)
   const allTaxons = taxonCatalog.items
 
   const config = GAME_LEVEL_CONFIGS[level]
-  const availableEntries = config.selectEntry(entries)
-  if (!availableEntries.length) {
-    throw new AppError(404, `Aucune entrée disponible pour le niveau ${level}.`)
+  const levelFilteredEntries = config.selectEntry(entries)
+  const filteredEntries = applyGameFilters(levelFilteredEntries, filters)
+  
+  if (!filteredEntries.length) {
+    throw new AppError(404, `Aucune entrée disponible pour le niveau ${level} avec les filtres sélectionnés.`)
   }
 
-  const entry = randomPick(availableEntries)
+  const entry = randomPick(filteredEntries)
   return config.buildResponse(entry, entries, allTaxons, userId)
 }
 

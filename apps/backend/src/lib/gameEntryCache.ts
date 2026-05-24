@@ -15,6 +15,8 @@ export type CachedGameEntry = {
   biotope: string
   photoCredit: string
   images: Array<{ imageUrl: string }>
+  swarmingStartMonth: number | null
+  swarmingEndMonth: number | null
 }
 
 type CacheSnapshot = {
@@ -57,6 +59,12 @@ export async function getGameEntriesCache() {
       images: {
         select: { imageUrl: true },
       },
+      taxon: {
+        select: {
+          swarmingStartMonth: true,
+          swarmingEndMonth: true,
+        },
+      },
     },
   })
 
@@ -65,6 +73,8 @@ export async function getGameEntriesCache() {
     entries: entries.map((entry) => ({
       ...entry,
       photoCredit: (decryptSensitiveText(entry.photoCredit) ?? entry.photoCredit) as string,
+      swarmingStartMonth: entry.taxon?.swarmingStartMonth ?? null,
+      swarmingEndMonth: entry.taxon?.swarmingEndMonth ?? null,
     })),
   }
 

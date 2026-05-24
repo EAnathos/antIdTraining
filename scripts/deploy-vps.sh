@@ -22,6 +22,17 @@ if ! redis-cli ping > /dev/null 2>&1; then
 fi
 echo "✓ Redis is running"
 
+printf '\n==> %s\n' "Vérification PostgreSQL"
+if ! command -v pg_isready &> /dev/null; then
+	if ! command -v psql &> /dev/null; then
+		echo "ERROR: pg_isready or psql not found. Install PostgreSQL client first:"
+		echo "  Ubuntu: sudo apt-get install postgresql-client"
+		echo "  CentOS: sudo yum install postgresql"
+		exit 1
+	fi
+fi
+echo "✓ PostgreSQL is running"
+
 printf '\n==> %s\n' "Mise à jour du dépôt"
 cd "$REPO_DIR"
 git pull --rebase

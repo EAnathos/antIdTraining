@@ -141,7 +141,6 @@ export function TaxonsCrudPanel({
   deleteTaxon,
   saveTaxonLevelDetails,
 }: Props) {
-  const [level, setLevel] = useState('genus')
   const [query, setQuery] = useState('')
   const [modal, setModal] = useState<ModalState>(INITIAL_MODAL_STATE)
 
@@ -172,19 +171,14 @@ export function TaxonsCrudPanel({
 
   const filteredTaxons = useMemo(() => {
     const value = query.trim().toLowerCase()
-    const currentLevel = level
 
     if (!value) return taxons
 
     return taxons.filter((taxon) => {
-      if (currentLevel === 'subfamily') return taxon.subfamily.toLowerCase().includes(value)
-      if (currentLevel === 'genus') return taxon.genus.toLowerCase().includes(value)
-      if (currentLevel === 'species') return taxon.species.toLowerCase().includes(value)
-
       const haystack = [taxon.subfamily, taxon.genus, taxon.species].join(' ').toLowerCase()
       return haystack.includes(value)
     })
-  }, [level, query, taxons])
+  }, [query, taxons])
 
   const submitTaxon = (event: FormEvent) => {
     event.preventDefault()
@@ -514,16 +508,11 @@ export function TaxonsCrudPanel({
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          <select className="h-10 w-44 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700" value={level} onChange={(e) => setLevel(e.target.value)}>
-            <option value="subfamily">Sous-famille</option>
-            <option value="genus">Genre</option>
-            <option value="species">Espèce</option>
-          </select>
           <input
             className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Recherche"
+            placeholder="Recherche (sous-famille, genre, espèce...)"
           />
         </div>
 

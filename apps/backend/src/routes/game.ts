@@ -20,7 +20,17 @@ gameRouter.get('/question', optionalAuth, asyncHandler(async (req, res) => {
     'Trop de requêtes de jeu depuis cette adresse IP. Réessayez plus tard.',
   )
 
-  const question = await getGameQuestion(req.query.level, req.user?.userId ?? null)
+  const departments = typeof req.query.departments === 'string' ? req.query.departments.split(',').filter(d => d.trim()) : []
+  const swarmingMonths = typeof req.query.swarmingMonths === 'string' 
+    ? req.query.swarmingMonths.split(',').map(m => parseInt(m, 10)).filter(m => !isNaN(m) && m >= 1 && m <= 12)
+    : []
+
+  const filters = {
+    departments: departments.length > 0 ? departments : undefined,
+    swarmingMonths: swarmingMonths.length > 0 ? swarmingMonths : undefined,
+  }
+
+  const question = await getGameQuestion(req.query.level, req.user?.userId ?? null, filters)
   return res.json(question)
 }))
 
