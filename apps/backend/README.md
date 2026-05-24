@@ -65,3 +65,9 @@ Le backend s'appuie sur Prisma pour:
 ## API
 
 La documentation est exposée via Swagger/OpenAPI depuis l'application lancée.
+
+Documentation complémentaire dans le dossier racine [docs](../../docs/README.md) :
+
+- [Architecture globale](../../docs/architecture.md)
+- [Vue d'ensemble de l'API](../../docs/api.md)
+- [Schéma de base de données](../../docs/database-schema.md)

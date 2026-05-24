@@ -33,7 +33,7 @@ export const authRouter = Router()
 authRouter.post('/login', asyncHandler(async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError(400, 'Identifiants invalides.')
+    throw parsed.error
   }
 
   const auth = await loginAdmin(parsed.data.username, parsed.data.password, req.ip)
@@ -46,7 +46,7 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
 authRouter.post('/register', asyncHandler(async (req, res) => {
   const parsed = registerSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
+    throw parsed.error
   }
 
   const auth = await registerUser(parsed.data.username, parsed.data.password, req.ip)
