@@ -9,6 +9,8 @@ Ant ID Training est organisé en monorepo avec deux applications principales :
 
 Le dépôt est conçu pour séparer clairement l'interface utilisateur, la logique métier et la persistance des données.
 
+Pour le détail des bibliothèques utilisées et de leur utilité, voir le [schéma de dépendances](dependencies.md).
+
 ## Flux principal
 
 ```mermaid
