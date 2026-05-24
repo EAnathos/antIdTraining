@@ -78,6 +78,16 @@ export type Entry = {
   images: { id: string; imageUrl: string; position?: number | null }[]
 }
 
+export type EntryPageResponse = {
+  items: Entry[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
 export type GameQuestion = {
   level: 'easy' | 'medium' | 'hard'
   entryId: string

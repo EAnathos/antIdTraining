@@ -36,7 +36,7 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
     throw new AppError(400, 'Identifiants invalides.')
   }
 
-  const auth = await loginAdmin(parsed.data.username, parsed.data.password)
+  const auth = await loginAdmin(parsed.data.username, parsed.data.password, req.ip)
 
   res.cookie('adminToken', auth.token, getAdminCookieOptions())
 

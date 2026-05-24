@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { invalidateTaxonCatalogCache } from '../lib/taxonCatalog.js'
 import { invalidateTaxonLevelProfileCache } from '../lib/taxonLevelProfileCache.js'
-import { invalidateGameEntryCache } from '../lib/gameEntryCache.js'
+import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 import { encryptSensitiveText } from '../lib/encryption.js'
 import { AppError } from '../lib/errors.js'
 import {
@@ -464,7 +464,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
 
   invalidateTaxonCatalogCache()
   invalidateTaxonLevelProfileCache()
-  invalidateGameEntryCache()
+  invalidateGameEntryCacheSafely('database import')
 
   return {
     message: 'Base importée avec succès.',
