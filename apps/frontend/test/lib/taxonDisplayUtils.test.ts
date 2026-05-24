@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatScientificTaxonNameText } from './taxonDisplayUtils'
+import { formatScientificTaxonNameText } from '../../src/lib/taxonDisplayUtils'
 
 describe('scientific taxon name formatting', () => {
   it('formats a full taxon name with subgenus and species group', () => {

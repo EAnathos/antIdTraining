@@ -25,8 +25,9 @@ export function getUploadBaseFileName(imageUrl: string) {
 
 export function getResponsiveUploadFileNames(imageUrl: string) {
   const baseFileName = getUploadBaseFileName(imageUrl)
-  const extension = path.extname(baseFileName) || '.webp'
-  const stem = baseFileName.slice(0, -extension.length)
+  const originalExtension = path.extname(baseFileName)
+  const extension = originalExtension || '.webp'
+  const stem = originalExtension ? baseFileName.slice(0, -originalExtension.length) : baseFileName
 
   return {
     baseFileName,

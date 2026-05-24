@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { buildServiceHealthReport, getRequestMetrics, recordHttpRequest, resetRequestMetrics } from './monitoring.js'
+import { buildServiceHealthReport, getRequestMetrics, recordHttpRequest, resetRequestMetrics } from '../../src/lib/monitoring.js'
 
 beforeEach(() => {
   resetRequestMetrics()

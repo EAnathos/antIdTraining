@@ -14,7 +14,7 @@ describe('encryption helpers', () => {
     vi.stubEnv('NODE_ENV', 'test')
     vi.stubEnv('DATA_ENCRYPTION_KEY', 'integration-test-key')
 
-    const { decryptSensitiveText, encryptSensitiveText } = await import('./encryption.js')
+    const { decryptSensitiveText, encryptSensitiveText } = await import('../../src/lib/encryption.js')
 
     const encrypted = encryptSensitiveText('hello ants')
 
@@ -27,7 +27,7 @@ describe('encryption helpers', () => {
     vi.stubEnv('DATA_ENCRYPTION_KEY', '')
     vi.stubEnv('ENCRYPTION_KEY', '')
 
-    const { decryptSensitiveText, encryptSensitiveText } = await import('./encryption.js')
+    const { decryptSensitiveText, encryptSensitiveText } = await import('../../src/lib/encryption.js')
 
     expect(encryptSensitiveText('plain text')).toBe('plain text')
     expect(decryptSensitiveText('plain text')).toBe('plain text')
