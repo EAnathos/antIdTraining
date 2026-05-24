@@ -520,7 +520,7 @@ export function TaxonsCrudPanel({
           {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
         </p>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+        <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200">
           <table className="w-full min-w-full table-fixed text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700">
