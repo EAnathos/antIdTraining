@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import crypto from 'node:crypto'
 import multer from 'multer'
 import { ZodError } from 'zod'
 import { AppError, isErrorWithCode } from '../lib/errors.js'
@@ -58,7 +59,12 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
   }
 
   if (error instanceof ZodError) {
-    return res.status(400).json({ message: 'Requête invalide.' })
+    const flattened = error.flatten()
+    return res.status(400).json({
+      message: 'Requête invalide.',
+      errors: flattened.fieldErrors,
+      formErrors: flattened.formErrors,
+    })
   }
 
   if (isErrorWithCode(error) && error.code === 'P2025') {
@@ -76,7 +82,11 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     })
   }
 
-  logger.error({ err: error }, 'Unhandled error in request')
+  const errorId = crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+  logger.error({ err: error, errorId, method: _req.method, path: _req.originalUrl }, 'Unhandled error in request')
 
-  return res.status(500).json({ message: 'Erreur interne du serveur.' })
+  return res.status(500).json({
+    message: 'Erreur interne du serveur.',
+    errorId,
+  })
 }

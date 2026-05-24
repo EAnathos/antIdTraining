@@ -7,6 +7,51 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
+type ThemePreference = 'system' | 'light' | 'dark'
+
+const THEME_STORAGE_KEY = 'antidtraining-theme'
+
+function getStoredThemePreference(): ThemePreference {
+  if (typeof window === 'undefined') {
+    return 'system'
+  }
+
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
+  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+}
+
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') {
+    return 'light'
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function SunIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a6.5 6.5 0 1 0 9 9A9 9 0 1 1 12 3Z" />
+    </svg>
+  )
+}
+
 function navClass({ isActive }: { isActive: boolean }) {
   return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     isActive ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
@@ -14,8 +59,8 @@ function navClass({ isActive }: { isActive: boolean }) {
 }
 
 function adminNavClass({ isActive }: { isActive: boolean }) {
-  return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+  return `admin-nav-button rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+    isActive ? 'admin-nav-button-active bg-amber-500 text-white' : 'admin-nav-button-inactive bg-amber-100 text-amber-900 hover:bg-amber-200'
   }`
 }
 
@@ -25,10 +70,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => getStoredThemePreference())
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => getSystemTheme())
   const [authState, setAuthState] = useState(() => ({
     token: typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null,
     role: typeof window !== 'undefined' ? (window.localStorage.getItem('antidtraining-auth-role') as 'ADMIN' | 'USER' | null) : null,
   }))
+
+  const resolvedTheme = themePreference === 'system' ? systemTheme : themePreference
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(THEME_STORAGE_KEY, themePreference)
+
+    const root = document.documentElement
+    root.setAttribute('data-theme', resolvedTheme)
+    root.style.colorScheme = resolvedTheme
+  }, [resolvedTheme, themePreference])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => setSystemTheme(mediaQuery.matches ? 'dark' : 'light')
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [])
 
   useEffect(() => {
     const syncAuthState = () => {
@@ -241,6 +316,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Contribuer
             </NavLink>
           </nav>
+
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+            onClick={() => setThemePreference(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            aria-label={resolvedTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            title={resolvedTheme === 'dark' ? 'Mode sombre' : 'Mode clair'}
+          >
+            {resolvedTheme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
         </div>
       </footer>
     </div>

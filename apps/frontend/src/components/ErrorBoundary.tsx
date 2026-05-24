@@ -32,15 +32,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Oups ! Une erreur s&apos;est produite</h1>
-            <p className="text-gray-700 mb-4">
+        <div className="error-boundary flex min-h-screen items-center justify-center bg-gray-100">
+          <div className="error-boundary-card max-w-md rounded-lg bg-white p-8 shadow-lg">
+            <h1 className="mb-4 text-2xl font-bold text-red-600">Oups ! Une erreur s&apos;est produite</h1>
+            <p className="mb-4 text-gray-700">
               L&apos;application a rencontré une erreur inattendue. Veuillez réessayer ou contacter le support.
             </p>
-            <details className="mb-4 text-sm text-gray-500 bg-gray-100 p-3 rounded">
+            <details className="mb-4 rounded bg-gray-100 p-3 text-sm text-gray-500">
               <summary className="cursor-pointer font-semibold">Détails de l&apos;erreur</summary>
-              <pre className="mt-2 whitespace-pre-wrap text-xs overflow-auto max-h-40">
+              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-xs">
                 {this.state.error?.toString()}
               </pre>
             </details>

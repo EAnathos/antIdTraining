@@ -10,6 +10,19 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 
 type JsonBody = Record<string, unknown> | unknown[] | string | number | boolean | null
 
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[] | undefined>
+  formErrors?: string[]
+}
+
+type ApiError = Error & {
+  status?: number
+  payload?: ApiErrorPayload | unknown
+  errors?: Record<string, string[] | undefined>
+  formErrors?: string[]
+}
+
 interface RequestMethods {
   get<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
   post<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
@@ -29,7 +42,10 @@ function createApiClient(
   onUnauthorized?: () => void,
 ): RequestMethods & { create: (config: ApiClientConfig) => RequestMethods } {
   const makeRequest = async (method: HttpMethod, url: string, body?: JsonBody | FormData, config?: RequestConfig) => {
-    const fullUrl = new URL(`${baseURL}${url}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    const normalizedBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL
+    const normalizedUrl = url.startsWith('/') ? url : `/${url}`
+    const fullUrl = new URL(`${normalizedBaseURL}${normalizedUrl}`, origin)
 
     if (config?.params) {
       Object.entries(config.params).forEach(([key, value]) => {
@@ -64,8 +80,10 @@ function createApiClient(
       }
 
       let message = `HTTP ${response.status}`
+      let payload: ApiErrorPayload | null = null
       try {
-        const payload = (await response.json()) as { message?: string }
+        const parsedPayload = (await response.json()) as ApiErrorPayload
+        payload = parsedPayload
         if (payload?.message) {
           message = payload.message
         }
@@ -73,8 +91,17 @@ function createApiClient(
         // Ignore non-JSON error bodies.
       }
 
-      const error = new Error(message)
-      ;(error as Error & { status?: number }).status = response.status
+      const error = new Error(message) as ApiError
+      error.status = response.status
+      error.payload = payload
+      if (payload) {
+        if (payload.errors) {
+          error.errors = payload.errors
+        }
+        if (payload.formErrors) {
+          error.formErrors = payload.formErrors
+        }
+      }
       throw error
     }
 

@@ -24,7 +24,10 @@ architecture-beta
 
 - [apps/frontend](apps/frontend) : interface utilisateur, pages publiques et administration
 - [apps/backend](apps/backend) : API, Prisma et outils admin
-- [Documentation frontend component map](docs/frontend-component-map.md) : carte des composants et intégration backend
+- [Documentation](docs/README.md) : point d'entrée de la documentation
+- [Architecture globale](docs/architecture.md) : vision d'ensemble du monorepo et des flux
+- [Vue d'ensemble de l'API](docs/api.md) : panorama des routes et intégrations
+- [Schéma de base de données](docs/database-schema.md) : modèle Prisma simplifié
 
 ## Démarrage rapide avec Docker
 

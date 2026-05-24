@@ -65,9 +65,9 @@ function sanitizeFileStem(name: string) {
 
 async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
   // Validate MIME type
-  const validMimes = ['image/jpeg', 'image/png', 'image/webp']
+  const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
   if (!validMimes.includes(file.mimetype)) {
-    throw new AppError(400, 'Format d\'image non supporté. Utilisez JPEG, PNG ou WebP.')
+    throw new AppError(400, 'Format d\'image non supporté. Utilisez JPEG, PNG, WebP ou GIF.')
   }
 
   // Validate file size (8MB max from multer, but double-check)
