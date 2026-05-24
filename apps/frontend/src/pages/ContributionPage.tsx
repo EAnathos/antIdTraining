@@ -418,12 +418,12 @@ export function ContributionPage() {
 
   return (
     <section className="space-y-6 rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
-        <div className="flex gap-2 text-sm">
-          <button className={`rounded-lg px-3 py-2 ${view === 'contributions' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('contributions')}>Mes contributions</button>
-          <button className={`rounded-lg px-3 py-2 ${view === 'entry' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('entry')}>Proposer une entrée</button>
-          <button className={`rounded-lg px-3 py-2 ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`} onClick={() => setView('suggestion')}>Suggestion</button>
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:justify-end">
+          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'contributions' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('contributions')}>Mes contributions</button>
+          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'entry' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('entry')}>Proposer une entrée</button>
+          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('suggestion')}>Suggestion</button>
         </div>
       </div>
 
@@ -623,10 +623,10 @@ export function ContributionPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
           onClick={() => setProposalPreview(null)}
         >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
+          <div className="relative flex max-w-[95vw] flex-col items-center gap-3" onClick={(event) => event.stopPropagation()}>
             <button
               type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
               onClick={() => setProposalPreview(null)}
             >
               Fermer
@@ -634,7 +634,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
@@ -652,7 +652,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
@@ -673,7 +673,7 @@ export function ContributionPage() {
                 sizes: '(max-width: 768px) 90vw, 50vw',
               })}
               alt={proposalPreview.alt}
-              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              className="max-h-[85vh] max-w-[92vw] rounded-lg border border-slate-200 bg-white object-contain"
               decoding="async"
             />
 
