@@ -1,14 +1,11 @@
 import crypto from 'node:crypto'
+import { config } from '../config.js'
 
 const ENCRYPTION_PREFIX = 'enc:v1:'
-const isProduction = process.env.NODE_ENV === 'production'
 
 function getKeyMaterial() {
-  const key = process.env.DATA_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY
+  const key = config.dataEncryptionKey
   if (!key) {
-    if (isProduction) {
-      throw new Error('DATA_ENCRYPTION_KEY must be set in production')
-    }
     return null
   }
 

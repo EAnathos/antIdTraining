@@ -4,16 +4,29 @@
   "description": "Plateforme d'entraînement à l'identification des fourmis avec frontend React/Vite et backend Express/Prisma.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test -w apps/backend && npm run test -w apps/frontend",
+    "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
+    "format:check": "prettier --check \"package.json\" \"apps/*/package.json\"",
+    "format": "prettier --write \"package.json\" \"apps/*/package.json\"",
     "dev": "concurrently \"npm:dev -w apps/backend\" \"npm:dev -w apps/frontend\"",
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "test:coverage": "npm run test:coverage -w apps/backend && npm run test:coverage -w apps/frontend",
     "db:generate": "npm run prisma:generate -w apps/backend",
     "db:migrate": "npm run prisma:migrate -w apps/backend",
+    "backup:db": "bash scripts/backup-db.sh",
+    "restore:db": "bash scripts/restore-db.sh",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
-  "keywords": ["ant", "identification", "training", "react", "express", "prisma"],
+  "keywords": [
+    "ant",
+    "identification",
+    "training",
+    "react",
+    "express",
+    "prisma"
+  ],
   "author": "Anathos",
   "license": "UNLICENSED",
   "type": "commonjs",
@@ -23,6 +36,18 @@
     "apps/backend"
   ],
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "@eslint/js": "^10.0.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jsdom": "^28.0.3",
+    "@vitest/coverage-v8": "^4.1.7",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.3",
+    "typescript-eslint": "^8.59.4",
+    "vitest": "^4.1.7"
   }
 }
