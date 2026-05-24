@@ -11,12 +11,13 @@ type Props = {
 export function AdminIconButton({ title, tone = 'default', onClick, icon, disabled = false }: Props) {
   const classes =
     tone === 'danger'
-      ? 'rounded bg-red-100 px-2 py-1 text-red-700'
-      : 'rounded bg-slate-100 px-2 py-1 text-slate-700'
+      ? 'admin-icon-button rounded border border-red-300 bg-red-100 px-2 py-1 text-red-700 shadow-sm transition hover:bg-red-200'
+      : 'admin-icon-button rounded border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700 shadow-sm transition hover:bg-slate-200'
 
   return (
     <button
       className={`${classes} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+      data-tone={tone}
       type="button"
       title={title}
       onClick={onClick}

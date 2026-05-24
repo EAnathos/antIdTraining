@@ -101,7 +101,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
       <p className="text-sm text-slate-500">Clique sur un en-tête pour trier le tableau.</p>
 
       <div className="overflow-hidden rounded-lg border border-slate-200">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="user-points-table w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-700">
               <th className="w-[30%] bg-white p-2">
