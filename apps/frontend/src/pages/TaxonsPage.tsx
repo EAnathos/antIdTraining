@@ -356,6 +356,7 @@ export function TaxonsPage() {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<FrenchDepartmentCode[]>([])
   const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<number[]>([])
+  const [selectedInvasiveFilter, setSelectedInvasiveFilter] = useState<'all' | 'invasive' | 'non-invasive'>('all')
   const [treeMode, setTreeMode] = useState(false)
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
@@ -524,9 +525,15 @@ export function TaxonsPage() {
       })
     }
 
+    if (selectedInvasiveFilter === 'invasive') {
+      filtered = filtered.filter((taxon) => taxon.invasive === true)
+    } else if (selectedInvasiveFilter === 'non-invasive') {
+      filtered = filtered.filter((taxon) => taxon.invasive === false)
+    }
+
     return filtered
-  }, [taxons, selectedDepartments, selectedSwarmingMonths])
-  const activeFiltersCount = selectedDepartments.length + selectedSwarmingMonths.length
+  }, [taxons, selectedDepartments, selectedSwarmingMonths, selectedInvasiveFilter])
+  const activeFiltersCount = selectedDepartments.length + selectedSwarmingMonths.length + (selectedInvasiveFilter === 'all' ? 0 : 1)
   const visibleStartIndex = Math.max(Math.floor(tableScrollTop / rowHeight) - overscan, 0)
   const visibleEndIndex = Math.min(
     filteredTaxons.length,
@@ -609,11 +616,30 @@ export function TaxonsPage() {
             </div>
 
             <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Invasivité</label>
+              <div className="flex gap-3">
+                <label className="inline-flex items-center gap-2">
+                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'all'} onChange={() => setSelectedInvasiveFilter('all')} />
+                  <span>Toutes</span>
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'invasive'} onChange={() => setSelectedInvasiveFilter('invasive')} />
+                  <span>Invasives</span>
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'non-invasive'} onChange={() => setSelectedInvasiveFilter('non-invasive')} />
+                  <span>Non invasives</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
               <button
                 type="button"
                 onClick={() => {
                   setSelectedSwarmingMonths([])
                   setSelectedDepartments([])
+                  setSelectedInvasiveFilter('all')
                 }}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >

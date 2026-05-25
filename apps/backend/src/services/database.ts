@@ -37,6 +37,7 @@ export const databaseSnapshotSchema = z.object({
           subgenus: z.string().nullable(),
           speciesGroup: z.string().nullable(),
           species: z.string(),
+          invasive: z.boolean().optional().default(false),
           swarmingStartMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
           swarmingEndMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
           distribution: z.object({
@@ -386,6 +387,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       await tx.taxon.createMany({
         data: snapshot.data.taxons.map((taxon) => ({
           ...taxon,
+          invasive: taxon.invasive ?? false,
           distribution: taxon.distribution ?? Prisma.DbNull,
         })),
       })

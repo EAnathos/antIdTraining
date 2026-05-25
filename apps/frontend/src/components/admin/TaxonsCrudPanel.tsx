@@ -21,6 +21,7 @@ type TaxonFormKey = Exclude<keyof TaxonForm, 'distribution'>
 type ModalState = {
   taxon: Taxon | null
   draft: TaxonDetailsDraft | null
+  invasive: boolean
   swarming: SwarmingPeriodDraft
   distribution: FrenchDepartmentCode[]
   confusions: ConfusionDraft[]
@@ -68,6 +69,7 @@ type Props = {
   saveTaxonLevelDetails: (
     taxonId: string,
     levelDetails: TaxonDetailsDraft,
+    invasive: boolean,
     swarmingPeriod: SwarmingPeriodDraft,
     distribution: FrenchDepartmentCode[],
     confusions: { confusedTaxonId: string; detail: string }[],
@@ -77,6 +79,7 @@ type Props = {
 const INITIAL_MODAL_STATE: ModalState = {
   taxon: null,
   draft: null,
+  invasive: false,
   swarming: { swarmingStartMonth: null, swarmingEndMonth: null },
   distribution: [],
   confusions: [],
@@ -216,6 +219,7 @@ export function TaxonsCrudPanel({
         swarmingStartMonth: taxon.swarmingStartMonth,
         swarmingEndMonth: taxon.swarmingEndMonth,
       },
+      invasive: taxon.invasive,
       distribution,
       confusions: (taxon.confusions ?? []).map((confusion) => ({
         confusedTaxonLabel: buildTaxonLabel(confusion.confusedTaxon),
@@ -228,6 +232,13 @@ export function TaxonsCrudPanel({
 
   const closeDetailsModal = () => {
     setModal(INITIAL_MODAL_STATE)
+  }
+
+  const updateModalInvasive = (value: boolean) => {
+    setModal((prev) => ({
+      ...prev,
+      invasive: value,
+    }))
   }
 
   const updateSwarmingRange = (anchorMonth: number, currentMonth: number) => {
@@ -460,7 +471,7 @@ export function TaxonsCrudPanel({
     }
 
     try {
-      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.swarming, modal.distribution, resolveConfusions())
+      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.invasive, modal.swarming, modal.distribution, resolveConfusions())
       closeDetailsModal()
     } catch (error) {
       console.error('Error saving taxon details:', error)
@@ -607,6 +618,17 @@ export function TaxonsCrudPanel({
                 />
               ))
             })()}
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={modal.invasive}
+                  onChange={(event) => updateModalInvasive(event.target.checked)}
+                />
+                Espèce invasive
+              </label>
+            </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">

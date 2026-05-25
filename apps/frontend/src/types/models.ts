@@ -37,6 +37,7 @@ export type Taxon = {
   swarmingStartMonth: number | null
   swarmingEndMonth: number | null
   distribution: { departments?: string[] } | null
+  invasive: boolean
   confusions: TaxonConfusion[]
   levelDetails: {
     subfamily: TaxonLevelDetail

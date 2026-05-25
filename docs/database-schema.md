@@ -37,6 +37,7 @@ erDiagram
         string subgenus
         string speciesGroup
         string species
+        boolean invasive
         int swarmingStartMonth
         int swarmingEndMonth
         json distribution

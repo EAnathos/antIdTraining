@@ -342,6 +342,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function updateTaxon(event: FormEvent) {
     event.preventDefault()
     if (!selectedTaxonId) return
+    const found = taxons.find((taxon) => taxon.id === selectedTaxonId)
     await runAdminAction(async () => {
       await adminApi.put(`/taxons/${selectedTaxonId}`, {
         subfamily: taxonForm.subfamily.trim(),
@@ -350,6 +351,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         subgenus: taxonForm.subgenus.trim() || null,
         speciesGroup: taxonForm.speciesGroup.trim() || null,
         species: taxonForm.species.trim(),
+        invasive: found?.invasive ?? false,
         distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
       })
       clearPublicTaxonsCache()
@@ -366,6 +368,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   async function saveTaxonLevelDetails(
     taxonId: string,
     levelDetails: LevelDetailsDraft,
+    invasive: boolean,
     swarmingPeriod: SwarmingPeriodDraft,
     distribution: FrenchDepartmentCode[],
     confusions: TaxonConfusionDraft[],
@@ -383,6 +386,7 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus,
           speciesGroup,
           species,
+        invasive,
         swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
         swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
         distribution: distribution.length > 0 ? { departments: distribution } : null,

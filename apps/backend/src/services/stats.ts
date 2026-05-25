@@ -185,7 +185,7 @@ export async function getEntryStats(periodInput: unknown) {
 export async function getLeaderboard(limitInput?: unknown) {
   const limit = Math.max(1, Math.min(Number(limitInput ?? 10) || 10, 50))
   const sessions = (await buildUserPointRows())
-    .filter((item) => item.points > 200)
+    .filter((item) => item.points >= 200)
     .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.points - a.points)
     .slice(0, limit)
 

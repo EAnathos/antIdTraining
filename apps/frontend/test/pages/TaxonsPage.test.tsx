@@ -21,6 +21,7 @@ const taxon = {
   subgenus: 'Serviformica',
   speciesGroup: 'rufibarbis group',
   species: 'rufibarbis',
+  invasive: false,
   swarmingStartMonth: 5,
   swarmingEndMonth: 6,
   distribution: { departments: ['75'] },
@@ -255,6 +256,7 @@ describe('TaxonsPage', () => {
                 tribe: 'Myrmicini',
                 genus: 'Messor',
                 species: 'minor',
+                invasive: true,
                 swarmingStartMonth: 1,
                 swarmingEndMonth: 2,
                 distribution: { departments: ['13'] },
@@ -296,6 +298,64 @@ describe('TaxonsPage', () => {
     expect(screen.getByText('2 entrées trouvées')).toBeInTheDocument()
   })
 
+  it('filters taxons by invasive status in advanced options', async () => {
+    apiMocks.get.mockImplementationOnce(async (path: string) => {
+      if (path === '/taxons') {
+        return {
+          data: {
+            items: [
+              {
+                ...taxon,
+                id: 'taxon_non_invasive',
+                species: 'rufibarbis',
+                invasive: false,
+              },
+              {
+                ...taxon,
+                id: 'taxon_invasive',
+                genus: 'Linepithema',
+                species: 'humile',
+                invasive: true,
+              },
+            ],
+            offset: 0,
+            limit: 20,
+            nextOffset: 20,
+            hasMore: false,
+            total: 2,
+          },
+        }
+      }
+
+      if (path === '/references') {
+        return { data: [] }
+      }
+
+      throw new Error(`Unexpected call: ${path}`)
+    })
+
+    render(<TaxonsPage />)
+
+    expect(await screen.findByText('2 entrées trouvées')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options supplémentaires' }))
+
+    const allRadio = screen.getByRole('radio', { name: 'Toutes' })
+    const invasiveRadio = screen.getByRole('radio', { name: 'Invasives' })
+    const nonInvasiveRadio = screen.getByRole('radio', { name: 'Non invasives' })
+
+    fireEvent.click(invasiveRadio)
+    expect(invasiveRadio).toBeChecked()
+    expect(allRadio).not.toBeChecked()
+
+    fireEvent.click(nonInvasiveRadio)
+    expect(nonInvasiveRadio).toBeChecked()
+    expect(invasiveRadio).not.toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser les filtres' }))
+    expect(allRadio).toBeChecked()
+  })
+
   it('switches to tree mode and shows tree view', async () => {
     render(<TaxonsPage />)
 
@@ -306,6 +366,51 @@ describe('TaxonsPage', () => {
     expect(await screen.findByText('Sous-famille : Formicinae')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    fireEvent.click(screen.getByText('Lasiini'))
+    expect(await screen.findByText('Sous-famille : Lasiini')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    fireEvent.click(screen.getByText('Formica'))
+    expect(await screen.findByText((_, element) => element?.textContent === 'Genre : Formica')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    fireEvent.click(screen.getByText('Serviformica'))
+    expect(await screen.findByText((_, element) => element?.textContent === 'Sous-genre : Serviformica')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
     fireEvent.click(screen.getByText('rufibarbis group'))
+    expect(await screen.findByText((_, element) => element?.textContent === "Groupe d'espèces : rufibarbis group")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    fireEvent.click(screen.getByText('rufibarbis'))
+    expect(await screen.findByText((_, element) => element?.textContent === 'Espèce : rufibarbis')).toBeInTheDocument()
+  })
+
+  it('shows empty state when no taxons are returned', async () => {
+    apiMocks.get.mockImplementationOnce(async (path: string) => {
+      if (path === '/taxons') {
+        return {
+          data: {
+            items: [],
+            offset: 0,
+            limit: 20,
+            nextOffset: 0,
+            hasMore: false,
+            total: 0,
+          },
+        }
+      }
+
+      if (path === '/references') {
+        return { data: [] }
+      }
+
+      throw new Error(`Unexpected call: ${path}`)
+    })
+
+    render(<TaxonsPage />)
+
+    expect(await screen.findByText('Aucun taxon trouvé.')).toBeInTheDocument()
   })
 })
