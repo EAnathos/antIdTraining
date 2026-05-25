@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
-import { getResponsiveImageProps } from '../lib/image'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
 import { FranceMap } from '../components/FranceMap'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
@@ -354,7 +353,6 @@ export function TaxonsPage() {
   const [isLoadingMoreTaxons, setIsLoadingMoreTaxons] = useState(false)
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<FrenchDepartmentCode[]>([])
   const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<number[]>([])
@@ -953,32 +951,6 @@ export function TaxonsPage() {
         </div>
       )}
 
-      {fullscreenImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
-              onClick={() => setFullscreenImage(null)}
-              aria-label="Fermer"
-            >
-              ✕
-            </button>
-
-            <img
-              {...getResponsiveImageProps(fullscreenImage, {
-                sizes: '(max-width: 768px) 95vw, 80vw',
-              })}
-              alt="Image agrandie"
-              className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
-              decoding="async"
-            />
-          </div>
-        </div>
-      )}
     </section>
   )
 }

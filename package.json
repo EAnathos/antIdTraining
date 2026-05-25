@@ -5,12 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test -w apps/backend && npm run test -w apps/frontend",
+    "test:coverage": "npm run test:coverage -w apps/backend && npm run test:coverage -w apps/frontend",
     "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
     "format:check": "prettier --check \"package.json\" \"apps/*/package.json\"",
     "format": "prettier --write \"package.json\" \"apps/*/package.json\"",
     "dev": "concurrently \"npm:dev -w apps/backend\" \"npm:dev -w apps/frontend\"",
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
-    "test:coverage": "npm run test:coverage -w apps/backend && npm run test:coverage -w apps/frontend",
     "db:generate": "npm run prisma:generate -w apps/backend",
     "db:migrate": "npm run prisma:migrate -w apps/backend",
     "backup:db": "bash scripts/backup-db.sh",

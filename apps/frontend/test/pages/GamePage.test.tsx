@@ -169,4 +169,69 @@ describe('GamePage', () => {
       expect(screen.getByText(/Score de la session/)).toHaveTextContent('0')
     })
   })
+
+  it('opens fullscreen images and navigates between them on mobile controls', async () => {
+    localStorage.setItem('antidtraining-auth-token', 'token_1')
+
+    apiMocks.get.mockImplementation(async (path: string) => {
+      if (path === '/taxons/subfamilies') {
+        return { data: ['Formicinae', 'Myrmicinae'] }
+      }
+
+      if (path === '/game/question') {
+        return {
+          data: {
+            level: 'easy',
+            entryId: 'entry_3',
+            sessionId: 'session_3',
+            images: ['/img/a.jpg', '/img/b.jpg'],
+            prompt: 'Identifier la sous-famille',
+            details: {
+              size: null,
+              department: '75',
+              observedAt: '2026-05-01T00:00:00.000Z',
+              biotope: 'Forêt',
+              photoCredit: 'Alice',
+            },
+            choices: ['Formicinae', 'Myrmicinae'],
+            answer: {
+              subfamily: 'Formicinae',
+            },
+          },
+        }
+      }
+
+      throw new Error(`Unexpected GET call: ${path}`)
+    })
+
+    apiMocks.post.mockResolvedValue({
+      data: {
+        correct: true,
+        identification: {
+          subfamily: { value: 'Formicinae', description: null, criteria: [] },
+          genus: { value: null, description: null, criteria: [] },
+          size: null,
+        },
+      },
+    })
+
+    render(<GamePage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Démarrer ce niveau' }))
+    await screen.findByText('Identifier la sous-famille')
+
+    expect(screen.getByText(/Le nombre de points gagnés ou perdus dépend du niveau de difficulté./)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByAltText('Spécimen 1'))
+    expect(await screen.findByAltText('Spécimen agrandis 1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Photo suivante' })[1])
+    expect(await screen.findByAltText('Spécimen agrandis 2')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Photo précédente' })[1])
+    expect(await screen.findByAltText('Spécimen agrandis 1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(screen.queryByAltText('Spécimen agrandis 1')).not.toBeInTheDocument()
+  })
 })
