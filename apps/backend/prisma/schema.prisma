@@ -95,6 +95,7 @@ model Taxon {
   subgenus     String?
   speciesGroup String?
   species      String
+  invasive     Boolean  @default(false)
   swarmingStartMonth Int?
   swarmingEndMonth   Int?
   distribution Json?

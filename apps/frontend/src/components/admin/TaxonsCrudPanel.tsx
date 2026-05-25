@@ -14,6 +14,7 @@ type TaxonForm = {
   speciesGroup: string
   species: string
   distribution: FrenchDepartmentCode[]
+  invasive?: boolean
 }
 
 type TaxonFormKey = Exclude<keyof TaxonForm, 'distribution'>
@@ -92,6 +93,7 @@ const EMPTY_TAXON_FORM: TaxonForm = {
   speciesGroup: '',
   species: '',
   distribution: [],
+  invasive: false,
 }
 
 function normalizeDistribution(departments: unknown[] | undefined): FrenchDepartmentCode[] {
@@ -156,6 +158,10 @@ export function TaxonsCrudPanel({
     setTaxonForm({ ...taxonForm, [field]: value })
   }, [taxonForm, setTaxonForm])
 
+  const handleTaxonCheckboxChange = useCallback((field: 'invasive', value: boolean) => {
+    setTaxonForm({ ...taxonForm, [field]: value })
+  }, [taxonForm, setTaxonForm])
+
   const validateTaxonForm = (): boolean => {
     if (!taxonForm.subfamily.trim() || !taxonForm.genus.trim() || !taxonForm.species.trim()) {
       return false
@@ -204,6 +210,7 @@ export function TaxonsCrudPanel({
       speciesGroup: taxon.speciesGroup ?? '',
       species: taxon.species,
       distribution: normalizeDistribution(taxon.distribution?.departments),
+      invasive: taxon.invasive ?? false,
     })
   }
 
@@ -492,6 +499,11 @@ export function TaxonsCrudPanel({
           <input className="rounded border p-2" placeholder="Groupe d'espèces" value={taxonForm.speciesGroup} onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)} />
           <input className="rounded border p-2" placeholder="Espèce" value={taxonForm.species} onChange={(e) => handleTaxonChange('species', e.target.value)} required />
 
+          <label className="flex items-center gap-2 p-2">
+            <input type="checkbox" checked={!!taxonForm.invasive} onChange={(e) => handleTaxonCheckboxChange('invasive', e.target.checked)} />
+            <span className="text-sm text-slate-700">Espèce invasive</span>
+          </label>
+
           <div className="md:col-span-6 flex flex-wrap gap-2">
             <button className="rounded bg-slate-900 px-3 py-2 text-white" type="submit">
               {selectedTaxonId ? 'Modifier taxon' : 'Créer taxon'}
@@ -530,6 +542,7 @@ export function TaxonsCrudPanel({
                 <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
+                <th className="sticky top-0 z-10 bg-white p-2">Invasive</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Détails</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Actions</th>
               </tr>
@@ -546,6 +559,9 @@ export function TaxonsCrudPanel({
                   <td className="max-w-[140px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}>{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
                   <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.speciesGroup ?? '-'}>{taxon.speciesGroup ?? '-'}</td>
                   <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.species}><em>{taxon.species}</em></td>
+                  <td className="p-2 text-center" title={taxon.invasive ? 'Oui' : 'Non'}>
+                    <input type="checkbox" checked={!!taxon.invasive} readOnly />
+                  </td>
                   <td className="p-2">
                     <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
                       Ouvrir

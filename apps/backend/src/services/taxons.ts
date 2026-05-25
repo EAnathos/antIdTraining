@@ -36,6 +36,7 @@ export const taxonSchema = z
       })
       .optional()
       .nullable(),
+    invasive: z.boolean().optional(),
     confusions: z.array(taxonConfusionSchema).optional(),
     levelDetails: z
       .object({
@@ -94,6 +95,7 @@ function normalizeTaxonData(data: TaxonInput) {
     swarmingEndMonth: data.swarmingEndMonth ?? null,
     distribution: distribution.length > 0 ? { departments: distribution.filter((r) => r && typeof r === 'string') } : null,
     levelDetails: data.levelDetails,
+    invasive: data.invasive ?? false,
     confusions,
   }
 }
@@ -109,6 +111,7 @@ function buildTaxonWriteDataFromNormalized(normalized: ReturnType<typeof normali
     swarmingStartMonth: normalized.swarmingStartMonth,
     swarmingEndMonth: normalized.swarmingEndMonth,
     distribution: normalized.distribution as any,
+    invasive: normalized.invasive,
   }
 }
 
