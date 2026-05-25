@@ -12,7 +12,17 @@ export const prismaMocks = {
   },
   observationEntry: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
   },
+  entryImage: {
+    findMany: vi.fn(),
+    update: vi.fn(),
+  },
+  $transaction: vi.fn(),
 }
 
 export const commonMocks = {
@@ -25,7 +35,6 @@ export const commonMocks = {
   getTaxonLevelProfile: vi.fn(),
   resolveTaxonWorkerSize: vi.fn(),
   getGameEntriesCache: vi.fn(),
-  // service-level mocks
   loginAdmin: vi.fn(),
   registerUser: vi.fn(),
   getUserPoints: vi.fn(),
@@ -35,7 +44,6 @@ export const commonMocks = {
 }
 
 export function resetSharedMocks() {
-  // reset all functions
   const all = [prismaMocks, commonMocks]
   for (const group of all) {
     for (const key of Object.keys(group)) {
