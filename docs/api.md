@@ -12,6 +12,7 @@
 ### Santé et documentation
 
 - `GET /api/health` : état de santé de l'API
+- `GET /api/health/ready` : readiness détaillée (PostgreSQL, Redis, métriques)
 - `GET /api/openapi.json` : document OpenAPI généré
 - `GET /api/docs` : Swagger UI
 
@@ -39,11 +40,6 @@
 - `GET /api/references`
 - `GET /api/stats/leaderboard`
 
-### Jeu
-
-- `GET /api/game/question`
-- `POST /api/game/validate`
-
 ### Contributions utilisateur
 
 - `POST /api/suggestions`
@@ -55,18 +51,61 @@
 
 Les routes admin sont protégées par `requireAuth` + `requireAdmin`.
 
-Préfixes principaux :
+### Entrées
 
-- `/api/admin/entries`
-- `/api/admin/taxons`
-- `/api/admin/references`
-- `/api/admin/stats`
-- `/api/admin/stats-tools`
-- `/api/admin/database`
-- `/api/admin/history`
-- `/api/admin/users`
-- `/api/admin/suggestions`
-- `/api/admin/entry-proposals`
+- `GET /api/admin/entries`
+- `POST /api/admin/entries`
+- `PUT /api/admin/entries/:id`
+- `PUT /api/admin/entries/:id/images/order`
+- `DELETE /api/admin/entries/:id`
+
+### Taxons
+
+- `POST /api/admin/taxons`
+- `PUT /api/admin/taxons/:id`
+- `DELETE /api/admin/taxons/:id`
+
+### Références
+
+- `POST /api/admin/references`
+- `PUT /api/admin/references/:id`
+- `DELETE /api/admin/references/:id`
+
+### Statistiques
+
+- `GET /api/admin/stats/game`
+- `GET /api/admin/stats/entries`
+- `GET /api/admin/stats/leaderboard`
+- `POST /api/admin/stats-tools/reset`
+
+### Base de données
+
+- `GET /api/admin/database/export`
+- `POST /api/admin/database/import`
+- `GET /api/admin/database/export/bundle`
+- `POST /api/admin/database/import/bundle`
+- `POST /api/admin/database/cleanup/uploads`
+
+### Historique
+
+- `GET /api/admin/history`
+
+### Utilisateurs
+
+- `GET /api/admin/users`
+- `PUT /api/admin/users/:id/points`
+
+### Suggestions
+
+- `GET /api/admin/suggestions`
+- `PUT /api/admin/suggestions/:id`
+- `DELETE /api/admin/suggestions/:id`
+
+### Propositions d’entrée
+
+- `GET /api/admin/entry-proposals`
+- `PUT /api/admin/entry-proposals/:id`
+- `DELETE /api/admin/entry-proposals/:id`
 
 ## Points d'attention
 

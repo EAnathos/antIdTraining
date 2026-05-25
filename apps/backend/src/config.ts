@@ -11,7 +11,17 @@ function requiredEnv(name: string) {
   return value
 }
 
+function requiredProductionEnv(name: string) {
+  const value = process.env[name]
+  if (process.env.NODE_ENV === 'production' && !value) {
+    throw new Error(`${name} doit être défini en production`)
+  }
+
+  return value ?? null
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: requiredEnv('JWT_SECRET'),
+  dataEncryptionKey: requiredProductionEnv('DATA_ENCRYPTION_KEY') ?? process.env.ENCRYPTION_KEY ?? null,
 }

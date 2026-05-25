@@ -103,8 +103,6 @@ export async function buildUserPointRows(userIds?: string[]) {
       current.correctCount += group._count._all
     }
 
-    const points = GAME_POINTS_BY_LEVEL[group.level]
-    current.points += (group.finalCorrect === true ? points.correct : points.wrong) * group._count._all
   })
 
   return Array.from(rows.values()).map((row) => ({

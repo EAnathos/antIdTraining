@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
-import { getResponsiveImageProps } from '../lib/image'
 import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
 import { FranceMap } from '../components/FranceMap'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
@@ -146,6 +145,15 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
   const [scale, setScale] = useState(1)
   const dragging = useRef(false)
   const last = useRef<{ x: number; y: number } | null>(null)
+  const pinchStart = useRef<{ distance: number; scale: number } | null>(null)
+
+  function clampScale(nextScale: number) {
+    return Math.max(0.4, Math.min(3, nextScale))
+  }
+
+  function zoomBy(factor: number) {
+    setScale((current) => clampScale(current * factor))
+  }
 
   function onPointerDown(e: React.PointerEvent) {
     dragging.current = true
@@ -168,12 +176,58 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
     e.preventDefault()
     const delta = -e.deltaY
     const factor = delta > 0 ? 1.08 : 0.92
-    setScale((s) => Math.max(0.2, Math.min(3, s * factor)))
+    setScale((s) => clampScale(s * factor))
+  }
+
+  function onTouchStart(e: React.TouchEvent) {
+    if (e.touches.length === 2) {
+      const a = e.touches.item(0)
+      const b = e.touches.item(1)
+      if (!a || !b) {
+        return
+      }
+      pinchStart.current = {
+        distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+        scale,
+      }
+    }
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (!pinchStart.current || e.touches.length !== 2) {
+      return
+    }
+
+    const a = e.touches.item(0)
+    const b = e.touches.item(1)
+    if (!a || !b) {
+      return
+    }
+    const currentDistance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+    if (pinchStart.current.distance <= 0) {
+      return
+    }
+
+    const nextScale = pinchStart.current.scale * (currentDistance / pinchStart.current.distance)
+    setScale(clampScale(nextScale))
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    if (e.touches.length < 2) {
+      pinchStart.current = null
+    }
   }
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <div className="mb-2 text-sm text-slate-600">Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez la molette pour zoomer et glisser pour vous déplacer.</div>
+      <div className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-600">
+        <div>Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez la molette pour zoomer et glisser pour vous déplacer.</div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => zoomBy(0.85)} aria-label="Dézoomer l’arbre">−</button>
+          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => zoomBy(1.15)} aria-label="Zoomer l’arbre">+</button>
+          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => setScale(1)} aria-label="Réinitialiser le zoom">↺</button>
+        </div>
+      </div>
       <div
         style={{ width: '100%', overflow: 'hidden', touchAction: 'none' }}
         onPointerDown={onPointerDown}
@@ -181,6 +235,9 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         <svg width={Math.min(width, 1400)} height={height}>
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
@@ -296,7 +353,6 @@ export function TaxonsPage() {
   const [isLoadingMoreTaxons, setIsLoadingMoreTaxons] = useState(false)
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<FrenchDepartmentCode[]>([])
   const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<number[]>([])
@@ -895,32 +951,6 @@ export function TaxonsPage() {
         </div>
       )}
 
-      {fullscreenImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
-              onClick={() => setFullscreenImage(null)}
-              aria-label="Fermer"
-            >
-              ✕
-            </button>
-
-            <img
-              {...getResponsiveImageProps(fullscreenImage, {
-                sizes: '(max-width: 768px) 95vw, 80vw',
-              })}
-              alt="Image agrandie"
-              className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
-              decoding="async"
-            />
-          </div>
-        </div>
-      )}
     </section>
   )
 }

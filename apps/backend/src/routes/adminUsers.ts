@@ -39,12 +39,6 @@ adminUsersRouter.get('/', asyncHandler(async (_req, res) => {
   return res.json(result)
 }))
 
-const GAME_POINTS_BY_LEVEL: Record<string, { correct: number; wrong: number }> = {
-  EASY: { correct: 5, wrong: -2 },
-  MEDIUM: { correct: 10, wrong: -5 },
-  HARD: { correct: 15, wrong: -5 },
-}
-
 adminUsersRouter.put('/:id/points', asyncHandler(async (req, res) => {
   const parsed = updatePointsSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -60,30 +54,9 @@ adminUsersRouter.put('/:id/points', asyncHandler(async (req, res) => {
     throw new AppError(404, 'Utilisateur introuvable.')
   }
 
-  // Calculate game points for this user
-  const grouped = await prisma.gameSession.groupBy({
-    by: ['level', 'finalCorrect'],
-    where: {
-      userId: user.id,
-      finalCorrect: { not: null },
-    },
-    _count: { _all: true },
-  })
-
-  let gamePointsTotal = 0
-  grouped.forEach((group) => {
-    const points = GAME_POINTS_BY_LEVEL[group.level]
-    if (points) {
-      gamePointsTotal += (group.finalCorrect === true ? points.correct : points.wrong) * group._count._all
-    }
-  })
-
-  // Manual points = desired total - game points
-  const manualPoints = parsed.data.points - gamePointsTotal
-
   const updated = await prisma.user.update({
     where: { id: user.id },
-    data: { points: manualPoints },
+    data: { points: parsed.data.points },
   })
 
   await recordAdminAudit(req, {

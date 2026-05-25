@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url'
 import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
 import { logger } from './lib/logger.js'
+import { recordHttpRequest } from './lib/monitoring.js'
 import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
+import { healthRouter } from './routes/health.js'
 import { databaseRouter } from './routes/database.js'
 import { entriesRouter } from './routes/entries.js'
 import { gameRouter } from './routes/game.js'
@@ -107,14 +109,14 @@ app.use((req, res, next) => {
       contentLength: res.get('content-length'),
       userAgent: req.headers['user-agent'],
     }, 'HTTP request completed')
+
+    recordHttpRequest(res.statusCode)
   })
 
   next()
 })
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
-})
+app.use('/api/health', healthRouter)
 
 app.get('/api/openapi.json', (_req, res) => {
   res.json(openApiDocument)
