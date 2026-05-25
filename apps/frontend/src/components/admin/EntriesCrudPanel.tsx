@@ -459,14 +459,14 @@ export function EntriesCrudPanel({
 
   return (
     <div className="mt-3 space-y-4">
-      <div ref={formContainerRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div ref={formContainerRef} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Ajout / modification</h3>
         <form className="space-y-4" onSubmit={submitEntry}>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
             <h4 className="mb-3 text-sm font-semibold text-slate-700">Sélection du taxon</h4>
             <div className="grid gap-2 md:grid-cols-2">
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.subfamily}
                 onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
                 required
@@ -477,7 +477,7 @@ export function EntriesCrudPanel({
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.genus}
                 onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
                 disabled={!entryForm.subfamily}
@@ -488,7 +488,7 @@ export function EntriesCrudPanel({
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.subgenus}
                 onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
@@ -499,7 +499,7 @@ export function EntriesCrudPanel({
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.speciesGroup}
                 onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
                 disabled={!entryForm.genus}
@@ -510,7 +510,7 @@ export function EntriesCrudPanel({
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.species}
                 onChange={handleSpeciesSelectChange}
                 disabled={!entryForm.genus}
@@ -521,7 +521,7 @@ export function EntriesCrudPanel({
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 value={entryForm.caste}
                 onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
                 required
@@ -534,11 +534,11 @@ export function EntriesCrudPanel({
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
             <h4 className="mb-3 text-sm font-semibold text-slate-700">Détails de l'observation</h4>
             <div className="grid gap-2 md:grid-cols-2">
               <input
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 list="department-suggestions"
                 placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
                 value={entryForm.department}
@@ -552,21 +552,21 @@ export function EntriesCrudPanel({
                 ))}
               </datalist>
               <input
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 type="date"
                 value={entryForm.observedAt}
                 onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
                 required
               />
               <input
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 placeholder="Biotope"
                 value={entryForm.biotope}
                 onChange={(e) => patchEntryForm({ biotope: e.target.value })}
                 required
               />
               <input
-                className="rounded border p-2"
+                className="w-full rounded border p-2"
                 placeholder="Crédit photo"
                 value={entryForm.photoCredit}
                 onChange={(e) => patchEntryForm({ photoCredit: e.target.value })}
@@ -574,7 +574,7 @@ export function EntriesCrudPanel({
               />
               <div className="space-y-1">
                 <input
-                  className="rounded border p-2"
+                  className="w-full rounded border p-2"
                   type="file"
                   accept="image/*"
                   multiple
@@ -585,9 +585,9 @@ export function EntriesCrudPanel({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button 
-              className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" 
+              className="inline-flex w-full items-center justify-center gap-2 rounded bg-slate-900 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" 
               type="submit"
               disabled={isSubmitting}
             >
@@ -600,7 +600,7 @@ export function EntriesCrudPanel({
               {selectedEntryId ? 'Modifier entrée' : 'Créer entrée'}
             </button>
             {selectedEntryId && (
-              <button className="rounded bg-slate-100 px-3 py-2 text-slate-700 disabled:opacity-60" type="button" onClick={resetEntryForm} disabled={isSubmitting}>
+                <button className="rounded bg-slate-100 px-3 py-2 text-slate-700 disabled:opacity-60 sm:w-auto" type="button" onClick={resetEntryForm} disabled={isSubmitting}>
                 Annuler la modification
               </button>
             )}
@@ -608,20 +608,20 @@ export function EntriesCrudPanel({
         </form>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
         <div className="space-y-3">
-          <div className="flex items-center gap-2 w-full">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
             <input
-            className="flex-1 rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
             placeholder="Rechercher une entrée"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             />
 
-            <label className="text-sm text-slate-700">
+              <label className="text-sm text-slate-700 sm:whitespace-nowrap">
               Trier
-              <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'taxon')}>
+                <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'taxon')}>
                 <option value="date">Date</option>
                 <option value="taxon">Taxon</option>
               </select>
@@ -637,9 +637,9 @@ export function EntriesCrudPanel({
             </button>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <select
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
             >
@@ -654,7 +654,7 @@ export function EntriesCrudPanel({
             </select>
             
             <select
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
               value={filterCaste}
               onChange={(e) => setFilterCaste(e.target.value)}
             >
@@ -665,7 +665,7 @@ export function EntriesCrudPanel({
             </select>
             
             <input
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
               placeholder="Crédit photo"
               value={filterPhotoCredit}
               onChange={(e) => setFilterPhotoCredit(e.target.value)}
@@ -673,15 +673,15 @@ export function EntriesCrudPanel({
           </div>
         </div>
 
-        <div className="mt-3 mb-2 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+        <div className="mt-3 mb-2 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
             <strong>{sortedEntries.length}</strong> entrée{sortedEntries.length !== 1 ? 's' : ''} affichée{sortedEntries.length !== 1 ? 's' : ''}
             {' '}
             sur <strong>{entriesTotal}</strong>
           </p>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <label className="flex items-center gap-2 sm:whitespace-nowrap">
               <span>Par page</span>
               <select
                 className="rounded border border-slate-300 bg-white px-2 py-1"
@@ -697,19 +697,19 @@ export function EntriesCrudPanel({
               </select>
             </label>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 self-start sm:self-auto">
               <button
                 type="button"
-                className="rounded border border-slate-300 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={entriesPage <= 1}
                 onClick={() => setEntriesPage(Math.max(1, entriesPage - 1))}
               >
                 Préc.
               </button>
-              <span className="px-1 text-xs">{entriesPage} / {Math.max(1, entriesPages)}</span>
+              <span className="px-1 text-xs sm:text-sm">{entriesPage} / {Math.max(1, entriesPages)}</span>
               <button
                 type="button"
-                className="rounded border border-slate-300 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={entriesPage >= entriesPages}
                 onClick={() => setEntriesPage(Math.min(entriesPages, entriesPage + 1))}
               >
@@ -719,20 +719,20 @@ export function EntriesCrudPanel({
           </div>
         </div>
 
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <ul className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
           {sortedEntries.map((entry) => (
             <li
               key={entry.id}
-              className={`rounded border p-2 ${selectedEntryId === entry.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}
+              className={`rounded border p-2 sm:p-3 ${selectedEntryId === entry.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <button className="flex-1 text-left" type="button" onClick={() => loadEntryInForm(entry)}>
                   {renderEntryTaxonLabel(entry)}{' '}
                   - {entry.department} - {new Date(entry.observedAt).toLocaleDateString('fr-FR')}
                   <span className="mt-1 block text-xs text-slate-600">Biotope: {entry.biotope}</span>
                   <span className="block text-xs text-slate-600">Crédit photo: {entry.photoCredit}</span>
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-start sm:self-auto">
                   <AdminIconButton
                     title="Modifier"
                     onClick={() => loadEntryInForm(entry)}
@@ -812,7 +812,7 @@ export function EntriesCrudPanel({
 
       {previewImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-3 sm:p-4"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative" onClick={(event) => event.stopPropagation()}>
@@ -826,24 +826,24 @@ export function EntriesCrudPanel({
 
             <button
               type="button"
-              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white p-1.5 text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14 sm:px-3 sm:py-2 sm:text-lg"
               onClick={showPreviousPreviewImage}
               disabled={previewImage.images.length <= 1}
               aria-label="Image précédente"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
 
             <button
               type="button"
-              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white p-1.5 text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14 sm:px-3 sm:py-2 sm:text-lg"
               onClick={showNextPreviewImage}
               disabled={previewImage.images.length <= 1}
               aria-label="Image suivante"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>
