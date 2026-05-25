@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate workspace
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint workspace
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload backend coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: apps/backend/coverage
+          if-no-files-found: error
+
+      - name: Upload frontend coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: apps/frontend/coverage
+          if-no-files-found: error
+
+      - name: Build backend
+        run: npm run build -w apps/backend
+
+      - name: Build frontend
+        run: npm run build -w apps/frontend

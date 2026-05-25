@@ -120,6 +120,49 @@ async function createGameSession(entryId: string, level: GameLevel, userId?: str
   })
 }
 
+function getScoreDelta(step: 'subfamily' | 'genus' | 'species', correct: boolean) {
+  if (!correct) {
+    return step === 'subfamily' ? -2 : -5
+  }
+
+  if (step === 'subfamily') {
+    return 5
+  }
+
+  if (step === 'genus') {
+    return 10
+  }
+
+  return 15
+}
+
+async function recordSessionProgress(sessionId: string, userId: string | null | undefined, pointsDelta: number, finalCorrect?: boolean) {
+  const operations: Promise<unknown>[] = []
+
+  if (finalCorrect !== undefined) {
+    operations.push(
+      prisma.gameSession.updateMany({
+        where: { id: sessionId, finalCorrect: null },
+        data: {
+          finalCorrect,
+          validatedAt: new Date(),
+        },
+      }),
+    )
+  }
+
+  if (userId) {
+    operations.push(
+      prisma.user.update({
+        where: { id: userId },
+        data: { points: { increment: pointsDelta } },
+      }),
+    )
+  }
+
+  await Promise.all(operations)
+}
+
 function buildQuestionDetails(entry: { species?: string | null; genus?: string | null; subfamily: string; department: string; observedAt: Date; biotope: string; photoCredit: string }) {
   return {
     size: null as string | null,
@@ -289,25 +332,7 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     throw new AppError(404, 'Session de jeu introuvable.')
   }
 
-  const requestedLevel = normalizeGameLevel(level)
-  const shouldPersistFinalResult = !!session && session.level === toDbGameDifficulty(requestedLevel)
-
-  async function persistFinalResult(correct: boolean) {
-    if (!shouldPersistFinalResult || !session) {
-      return
-    }
-
-    await prisma.gameSession.updateMany({
-      where: {
-        id: session.id,
-        finalCorrect: null,
-      },
-      data: {
-        finalCorrect: correct,
-        validatedAt: new Date(),
-      },
-    })
-  }
+  const shouldPersistProgress = !!session
 
   const resolvedAnswer = {
     subfamily: entry?.subfamily ?? answer?.subfamily,
@@ -340,7 +365,9 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
 
   const subfamilyOk = selected.subfamily === resolvedAnswer.subfamily
   if (!subfamilyOk) {
-    await persistFinalResult(false)
+    if (shouldPersistProgress) {
+      await recordSessionProgress(session!.id, session.userId, getScoreDelta('subfamily', false), false)
+    }
     return {
       correct: false,
       reason: 'Sous-famille incorrecte',
@@ -352,7 +379,14 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
   }
 
   if (level === 'easy') {
-    await persistFinalResult(true)
+    if (shouldPersistProgress) {
+      await recordSessionProgress(
+        session!.id,
+        session.userId,
+        getScoreDelta('subfamily', true),
+        session.level === 'EASY' ? true : undefined,
+      )
+    }
     return {
       correct: true,
       identification: {
@@ -364,7 +398,9 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
 
   const genusOk = selected.genus === resolvedAnswer.genus
   if (!genusOk) {
-    await persistFinalResult(false)
+    if (shouldPersistProgress) {
+      await recordSessionProgress(session!.id, session.userId, getScoreDelta('genus', false), false)
+    }
     return {
       correct: false,
       reason: 'Genre incorrect',
@@ -376,7 +412,9 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
   }
 
   if (level === 'medium') {
-    await persistFinalResult(true)
+    if (shouldPersistProgress) {
+      await recordSessionProgress(session!.id, session.userId, getScoreDelta('genus', true), true)
+    }
     return {
       correct: true,
       identification: {
@@ -388,7 +426,9 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
 
   const speciesOk = selected.species === resolvedAnswer.species
   if (!speciesOk) {
-    await persistFinalResult(false)
+    if (shouldPersistProgress) {
+      await recordSessionProgress(session!.id, session.userId, getScoreDelta('species', false), false)
+    }
     return {
       correct: false,
       reason: 'Espèce incorrecte',
@@ -399,7 +439,9 @@ export async function validateGameAnswer(input: z.infer<typeof validateGameAnswe
     }
   }
 
-  await persistFinalResult(true)
+  if (shouldPersistProgress) {
+    await recordSessionProgress(session!.id, session.userId, getScoreDelta('species', true), true)
+  }
   return {
     correct: true,
     identification: {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
 import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
@@ -61,6 +61,7 @@ export function GamePage() {
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{ url: string; index: number } | null>(null)
   const [sessionScore, setSessionScore] = useState(0)
+  const fullscreenTouchStartX = useRef<number | null>(null)
   const isConnected = typeof window !== 'undefined' && !!window.localStorage.getItem('antidtraining-auth-token')
 
   useEffect(() => {
@@ -146,13 +147,21 @@ export function GamePage() {
   function goToPreviousImage() {
     if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
     setImageLoadFailed(false)
-    setCurrentImageIndex((index) => (index - 1 + question.images.length) % question.images.length)
+    setCurrentImageIndex((index) => {
+      const nextIndex = (index - 1 + question.images.length) % question.images.length
+      setFullscreenImage({ url: question.images[nextIndex], index: nextIndex })
+      return nextIndex
+    })
   }
 
   function goToNextImage() {
     if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
     setImageLoadFailed(false)
-    setCurrentImageIndex((index) => (index + 1) % question.images.length)
+    setCurrentImageIndex((index) => {
+      const nextIndex = (index + 1) % question.images.length
+      setFullscreenImage({ url: question.images[nextIndex], index: nextIndex })
+      return nextIndex
+    })
   }
 
   useEffect(() => {
@@ -323,7 +332,7 @@ export function GamePage() {
               <button
                 type="button"
                 onClick={() => setFullscreenImage({ url: question.images[currentImageIndex], index: currentImageIndex })}
-                className="absolute right-12 top-2 z-10 rounded-lg bg-white/90 px-2 py-1 text-sm text-slate-900 shadow-sm hover:bg-white"
+                className="absolute right-2 top-2 z-10 rounded-lg bg-white/90 px-2 py-1 text-sm text-slate-900 shadow-sm hover:bg-white sm:right-12"
                 aria-label="Agrandir l'image"
                 title="Agrandir l'image"
               >
@@ -551,32 +560,86 @@ export function GamePage() {
         </div>
       )}
 
-      {fullscreenImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
-              onClick={() => setFullscreenImage(null)}
-              aria-label="Fermer"
-            >
-              ✕
-            </button>
+      {fullscreenImage && (() => {
+        const images = question?.images ?? []
 
-            <img
-              {...getResponsiveImageProps(fullscreenImage.url, {
-                sizes: '(max-width: 768px) 95vw, 80vw',
-              })}
-              alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
-              className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
-              decoding="async"
-            />
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <div
+              className="relative"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={(event) => {
+                if (event.touches.length === 1) {
+                  fullscreenTouchStartX.current = event.touches[0].clientX
+                }
+              }}
+              onTouchEnd={(event) => {
+                if (fullscreenTouchStartX.current === null || event.changedTouches.length === 0) {
+                  return
+                }
+
+                const deltaX = event.changedTouches[0].clientX - fullscreenTouchStartX.current
+                if (Math.abs(deltaX) > 50) {
+                  if (deltaX < 0) {
+                    goToNextImage()
+                  } else {
+                    goToPreviousImage()
+                  }
+                }
+
+                fullscreenTouchStartX.current = null
+              }}
+            >
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Photo précédente"
+                    onClick={goToPreviousImage}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Photo suivante"
+                    onClick={goToNextImage}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+                </>
+              )}
+
+              <button
+                type="button"
+                className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
+                onClick={() => setFullscreenImage(null)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+
+              <img
+                {...getResponsiveImageProps(fullscreenImage.url, {
+                  sizes: '(max-width: 768px) 95vw, 80vw',
+                })}
+                alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
+                className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+                decoding="async"
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </section>
   )
 }
