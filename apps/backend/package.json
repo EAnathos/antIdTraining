@@ -4,8 +4,10 @@
   "description": "API backend d'Ant ID Training avec Express, Prisma et PostgreSQL.",
   "main": "index.js",
   "scripts": {
+    "pretest": "prisma generate",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:coverage": "prisma generate",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "dev": "tsx watch src/index.ts",
