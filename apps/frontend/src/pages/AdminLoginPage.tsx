@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
@@ -28,7 +28,7 @@ export function AdminLoginPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     try {
-      const { data } = await api.post<{ token: string; role: string }>('/auth/login', { username, password })
+      const { data } = await api.post<{ token: string; role: string }>('/auth/login', { email, password })
       if (data.role !== 'ADMIN') {
         setError('Compte non administrateur')
         return
@@ -58,10 +58,10 @@ export function AdminLoginPage() {
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>
         <input
           className="w-full rounded-lg border border-slate-300 p-2"
-          placeholder="Nom d'utilisateur"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Adresse e-mail"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input

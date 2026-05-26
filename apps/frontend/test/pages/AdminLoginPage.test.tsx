@@ -41,7 +41,7 @@ describe('AdminLoginPage', () => {
     renderWithRouter(<AdminLoginPage />)
 
     await screen.findByText('Connexion administrateur')
-    expect(screen.getByPlaceholderText('Nom d\'utilisateur')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Adresse e-mail')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Mot de passe')).toBeInTheDocument()
   })
 
@@ -50,7 +50,7 @@ describe('AdminLoginPage', () => {
       data: { userId: 'admin_1', role: 'ADMIN' },
     })
 
-    const { container } = renderWithRouter(<AdminLoginPage />)
+    renderWithRouter(<AdminLoginPage />)
 
     await waitFor(() => {
       expect(apiMocks.get).toHaveBeenCalledWith('/auth/me')
@@ -71,8 +71,8 @@ describe('AdminLoginPage', () => {
 
     await screen.findByText('Connexion administrateur')
 
-    fireEvent.change(screen.getByPlaceholderText('Nom d\'utilisateur'), {
-      target: { value: 'admin' },
+    fireEvent.change(screen.getByPlaceholderText('Adresse e-mail'), {
+      target: { value: 'admin@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), {
       target: { value: 'admin_password' },
@@ -82,7 +82,7 @@ describe('AdminLoginPage', () => {
 
     await waitFor(() => {
       expect(apiMocks.post).toHaveBeenCalledWith('/auth/login', {
-        username: 'admin',
+        email: 'admin@example.com',
         password: 'admin_password',
       })
     })
@@ -98,8 +98,8 @@ describe('AdminLoginPage', () => {
 
     await screen.findByText('Connexion administrateur')
 
-    fireEvent.change(screen.getByPlaceholderText('Nom d\'utilisateur'), {
-      target: { value: 'regularuser' },
+    fireEvent.change(screen.getByPlaceholderText('Adresse e-mail'), {
+      target: { value: 'regularuser@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), {
       target: { value: 'password' },
@@ -118,8 +118,8 @@ describe('AdminLoginPage', () => {
 
     await screen.findByText('Connexion administrateur')
 
-    fireEvent.change(screen.getByPlaceholderText('Nom d\'utilisateur'), {
-      target: { value: 'admin' },
+    fireEvent.change(screen.getByPlaceholderText('Adresse e-mail'), {
+      target: { value: 'admin@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), {
       target: { value: 'wrongpass' },

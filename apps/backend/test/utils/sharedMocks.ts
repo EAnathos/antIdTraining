@@ -4,6 +4,8 @@ export const prismaMocks = {
   user: {
     findUnique: vi.fn(),
     create: vi.fn(),
+    delete: vi.fn(),
+    update: vi.fn(),
   },
   gameSession: {
     create: vi.fn(),
@@ -41,6 +43,9 @@ export const commonMocks = {
   getGameQuestion: vi.fn(),
   validateGameAnswer: vi.fn(),
   validateGameAnswerSchema: { safeParse: vi.fn() },
+  sendLoginNotificationEmail: vi.fn(),
+  sendVerificationEmail: vi.fn(),
+  verifyRegistrationEmail: vi.fn(),
 }
 
 export function resetSharedMocks() {

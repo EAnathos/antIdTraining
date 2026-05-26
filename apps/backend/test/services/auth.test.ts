@@ -22,8 +22,12 @@ vi.mock('../../src/lib/rateLimit.js', () => ({
   enforceIpRateLimit: commonMocks.enforceIpRateLimit,
   resetIpRateLimit: commonMocks.resetIpRateLimit,
 }))
+vi.mock('../../src/lib/mail.js', () => ({
+  sendLoginNotificationEmail: commonMocks.sendLoginNotificationEmail,
+  sendVerificationEmail: commonMocks.sendVerificationEmail,
+}))
 
-import { loginAdmin, registerUser } from '../../src/services/auth.js'
+import { loginAdmin, registerUser, verifyRegistrationEmail } from '../../src/services/auth.js'
 
 describe('auth service', () => {
   beforeEach(() => {
@@ -35,7 +39,7 @@ describe('auth service', () => {
   it('rejects login when user is missing and applies login rate-limit', async () => {
     prismaMocks.user.findUnique.mockResolvedValue(null)
 
-    await expect(loginAdmin('unknown', 'password', '127.0.0.1')).rejects.toMatchObject({
+    await expect(loginAdmin('unknown@example.com', 'password', '127.0.0.1')).rejects.toMatchObject({
       status: 401,
       message: 'Identifiants invalides.',
     })
@@ -54,25 +58,55 @@ describe('auth service', () => {
     prismaMocks.user.findUnique.mockResolvedValue({
       id: 'user_1',
       username: 'admin',
+      email: 'admin@example.com',
       role: 'ADMIN',
+      emailVerifiedAt: new Date(),
       passwordHash: 'stored-hash',
     })
     commonMocks.bcryptCompare.mockResolvedValue(true)
 
-    const result = await loginAdmin('admin', 'good-password', '127.0.0.1')
+    const result = await loginAdmin('admin@example.com', 'good-password', '127.0.0.1')
 
-    expect(result).toEqual({ token: 'jwt-token', role: 'ADMIN' })
+    expect(result).toEqual({
+      token: 'jwt-token',
+      role: 'ADMIN',
+      user: {
+        id: 'user_1',
+        username: 'admin',
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      },
+    })
     expect(commonMocks.bcryptCompare).toHaveBeenCalledWith('good-password', 'stored-hash')
     expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('login', '127.0.0.1')
     expect(commonMocks.jwtSign).toHaveBeenCalledWith({ userId: 'user_1', role: 'ADMIN' }, 'test-secret', {
       expiresIn: '12h',
     })
+    expect(commonMocks.sendLoginNotificationEmail).toHaveBeenCalledWith('admin@example.com', 'admin')
+  })
+
+  it('rejects login when the email is not verified', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({
+      id: 'user_1',
+      username: 'admin',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      emailVerifiedAt: null,
+      passwordHash: 'stored-hash',
+    })
+    commonMocks.bcryptCompare.mockResolvedValue(true)
+
+    await expect(loginAdmin('admin@example.com', 'good-password', '127.0.0.1')).rejects.toMatchObject({
+      status: 403,
+      message: 'Veuillez valider votre adresse e-mail avant de vous connecter.',
+    })
+    expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith('login', '127.0.0.1')
   })
 
   it('rejects registration when username already exists', async () => {
     prismaMocks.user.findUnique.mockResolvedValue({ id: 'existing' })
 
-    await expect(registerUser('existing', 'password123', '127.0.0.1')).rejects.toMatchObject({
+    await expect(registerUser('existing', 'existing@example.com', 'password123', '127.0.0.1')).rejects.toMatchObject({
       status: 409,
       message: 'Ce nom d’utilisateur est déjà utilisé.',
     })
@@ -88,39 +122,89 @@ describe('auth service', () => {
     expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith('registration', '127.0.0.1')
   })
 
-  it('registers a new user and returns auth payload', async () => {
-    prismaMocks.user.findUnique.mockResolvedValue(null)
+  it('registers a new user and sends a verification email', async () => {
+    prismaMocks.user.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     prismaMocks.user.create.mockResolvedValue({
       id: 'user_2',
       username: 'new-user',
+      email: 'new-user@example.com',
       role: 'USER',
     })
 
-    const result = await registerUser('new-user', 'password123', '127.0.0.1')
+    const result = await registerUser('new-user', 'new-user@example.com', 'password123', '127.0.0.1')
 
     expect(result).toEqual({
-      token: 'jwt-token',
-      role: 'USER',
-      user: {
-        id: 'user_2',
-        username: 'new-user',
-        role: 'USER',
-      },
+      requiresEmailVerification: true,
+      email: 'new-user@example.com',
     })
 
     expect(commonMocks.bcryptHash).toHaveBeenCalledWith('password123', 10)
     expect(prismaMocks.user.create).toHaveBeenCalledWith({
       data: {
         username: 'new-user',
+        email: 'new-user@example.com',
+        emailVerifiedAt: null,
+        emailVerificationCodeHash: expect.any(String),
+        emailVerificationCodeExpiresAt: expect.any(Date),
         passwordHash: 'hashed-password',
         role: 'USER',
       },
       select: {
         id: true,
         username: true,
+        email: true,
         role: true,
       },
     })
+    expect(commonMocks.sendVerificationEmail).toHaveBeenCalledWith('new-user@example.com', 'new-user', expect.any(String))
     expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('registration', '127.0.0.1')
+  })
+
+  it('verifies an email and returns an authenticated payload', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({
+      id: 'user_3',
+      username: 'new-user',
+      email: 'new-user@example.com',
+      role: 'USER',
+      emailVerifiedAt: null,
+      emailVerificationCodeHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+      emailVerificationCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    })
+    prismaMocks.user.update.mockResolvedValue({
+      id: 'user_3',
+      username: 'new-user',
+      email: 'new-user@example.com',
+      role: 'USER',
+    })
+
+    const result = await verifyRegistrationEmail('new-user@example.com', 'password', '127.0.0.1')
+
+    expect(result).toEqual({
+      token: 'jwt-token',
+      role: 'USER',
+      user: {
+        id: 'user_3',
+        username: 'new-user',
+        email: 'new-user@example.com',
+        role: 'USER',
+      },
+    })
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({
+      where: { id: 'user_3' },
+      data: {
+        emailVerifiedAt: expect.any(Date),
+        emailVerificationCodeHash: null,
+        emailVerificationCodeExpiresAt: null,
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+      },
+    })
+    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('email-verification', '127.0.0.1')
   })
 })

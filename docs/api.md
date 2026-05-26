@@ -18,10 +18,15 @@
 
 ### Authentification
 
-- `POST /api/auth/login`
-- `POST /api/auth/register`
+- `POST /api/auth/login` : connexion avec l’adresse e-mail et le mot de passe
+- `POST /api/auth/register` : création d’un compte avec nom d’utilisateur, adresse e-mail et mot de passe, puis envoi d’un code de vérification
+- `POST /api/auth/verify-email` : validation du code reçu par e-mail et activation du compte
 - `POST /api/auth/logout`
-- `GET /api/auth/me`
+- `GET /api/auth/me` : profil courant, e-mail et points
+
+Chaque connexion déclenche l’envoi d’un e-mail de notification au compte concerné.
+Une inscription n’est finalisée qu’après saisie du code de vérification reçu par e-mail.
+L’envoi utilise Resend lorsque `RESEND_API_KEY` et `RESEND_FROM` sont configurés.
 
 ### Jeu
 

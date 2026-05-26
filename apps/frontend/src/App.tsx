@@ -6,6 +6,7 @@ const GamePage = lazy(() => import('./pages/GamePage').then((module) => ({ defau
 const TaxonsPage = lazy(() => import('./pages/TaxonsPage').then((module) => ({ default: module.TaxonsPage })))
 const ReferencesPage = lazy(() => import('./pages/ReferencesPage').then((module) => ({ default: module.ReferencesPage })))
 const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })))
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((module) => ({ default: module.LeaderboardPage })))
 const ContributionPage = lazy(() => import('./pages/ContributionPage').then((module) => ({ default: module.ContributionPage })))
@@ -30,6 +31,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/classement" element={<LeaderboardPage />} />
           <Route path="/connexion" element={<AuthPage />} />
+          <Route path="/profil" element={<ProfilePage />} />
           <Route path="/admin/login" element={<Navigate to="/connexion" replace />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
         </Routes>
