@@ -81,16 +81,16 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
-      <h3 className="text-sm font-semibold text-slate-700">Points des utilisateurs</h3>
-      <p className="text-sm text-slate-600">Modifiez les points des utilisateurs. Le total inclut les points gagnés aux jeux et les ajustements.</p>
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Points des utilisateurs</h3>
+      <p className="text-sm text-slate-700 dark:text-slate-300">Modifiez les points des utilisateurs. Le total inclut les points gagnés aux jeux et les ajustements.</p>
 
       <div>
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500" htmlFor="admin-user-points-search">
+        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-600" htmlFor="admin-user-points-search">
           Rechercher un utilisateur
         </label>
         <input
           id="admin-user-points-search"
-          className="w-full rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
+          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
           type="search"
           placeholder="Nom d'utilisateur"
           value={search}
@@ -98,29 +98,29 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
         />
       </div>
 
-      <p className="text-sm text-slate-500">Clique sur un en-tête pour trier le tableau.</p>
+      <p className="text-sm text-slate-600 dark:text-slate-400">Clique sur un en-tête pour trier le tableau.</p>
 
       <div className="overflow-hidden rounded-lg border border-slate-200">
         <table className="user-points-table w-full table-fixed text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-slate-700">
+            <tr className="border-b border-slate-200 text-slate-700 dark:text-slate-100">
               <th className="w-[30%] bg-white p-2">
-                <button className="flex items-center gap-2 font-medium" type="button" onClick={() => handleSort('username')}>
+                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('username')}>
                   Utilisateur <span className="text-xs text-slate-500">{sortIndicator('username')}</span>
                 </button>
               </th>
               <th className="w-[14%] bg-white p-2">
-                <button className="flex items-center gap-2 font-medium" type="button" onClick={() => handleSort('role')}>
+                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('role')}>
                   Rôle <span className="text-xs text-slate-500">{sortIndicator('role')}</span>
                 </button>
               </th>
               <th className="w-[16%] bg-white p-2">
-                <button className="flex items-center gap-2 font-medium" type="button" onClick={() => handleSort('points')}>
+                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('points')}>
                   Points <span className="text-xs text-slate-500">{sortIndicator('points')}</span>
                 </button>
               </th>
               <th className="w-[18%] bg-white p-2">
-                <button className="flex items-center gap-2 font-medium" type="button" onClick={() => handleSort('createdAt')}>
+                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('createdAt')}>
                   Créé le <span className="text-xs text-slate-500">{sortIndicator('createdAt')}</span>
                 </button>
               </th>
@@ -133,8 +133,8 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
               return (
                 <tr key={user.id} className="border-b border-slate-100 odd:bg-slate-50">
-                  <td className="max-w-0 truncate p-2 font-medium text-slate-900" title={user.username}>{user.username}</td>
-                  <td className="p-2 text-slate-600">{user.role === 'ADMIN' ? 'Admin' : 'User'}</td>
+                  <td className="max-w-0 truncate p-2 font-medium text-slate-900 dark:text-slate-100" title={user.username}>{user.username}</td>
+                  <td className="p-2 text-slate-700 dark:text-slate-300">{user.role === 'ADMIN' ? 'Admin' : 'User'}</td>
                   <td className="p-2">
                     <input
                       className="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-right text-slate-700"
@@ -155,7 +155,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <td className="p-2">
                     <button
                       type="button"
-                      className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-white text-slate-900 border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 hover:bg-slate-50 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
                       disabled={savingUserId === user.id}
                       onClick={() => void handleSave(user.id, user.points)}
                     >
@@ -168,7 +168,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
             {filteredUsers.length === 0 && (
               <tr>
-                <td className="p-3 text-sm text-slate-600" colSpan={5}>
+                <td className="p-3 text-sm text-slate-700 dark:text-slate-300" colSpan={5}>
                   Aucun utilisateur trouvé.
                 </td>
               </tr>

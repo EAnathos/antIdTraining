@@ -3,6 +3,22 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { prismaMocks, commonMocks, resetSharedMocks } from '../utils/sharedMocks'
 import { AppError } from '../../src/lib/errors.js'
 
+const sharpToFile = vi.fn().mockResolvedValue(undefined)
+const sharpMetadata = vi.fn().mockResolvedValue({ width: 64, height: 64 })
+const sharpResize = vi.fn().mockReturnValue({ webp: () => ({ toFile: sharpToFile }) })
+
+vi.mock('sharp', () => ({
+  default: vi.fn(() => ({
+    rotate: () => ({
+      metadata: sharpMetadata,
+      clone: () => ({
+        resize: sharpResize,
+        webp: () => ({ toFile: sharpToFile }),
+      }),
+    }),
+  })),
+}))
+
 vi.mock('../../src/middleware/auth.js', () => ({
   getAdminCookieOptions: () => ({
     httpOnly: true,
@@ -34,6 +50,9 @@ vi.mock('../../src/prisma.js', () => ({
   prisma: {
     user: {
       findUnique: prismaMocks.user.findUnique,
+      update: prismaMocks.user.update,
+      create: prismaMocks.user.create,
+      delete: prismaMocks.user.delete,
     },
   },
 }))
@@ -98,6 +117,23 @@ async function get(path: string, headers?: Record<string, string>) {
   const response = await fetch(`${baseUrl}${path}`, {
     method: 'GET',
     headers,
+  })
+
+  const text = await response.text()
+  return {
+    response,
+    json: text ? JSON.parse(text) : null,
+  }
+}
+
+async function patch(path: string, body: unknown, headers?: Record<string, string>) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(headers ?? {}),
+    },
+    body: JSON.stringify(body),
   })
 
   const text = await response.text()
@@ -239,7 +275,7 @@ describe('authRouter', () => {
   })
 
   it('returns authenticated profile on /me', async () => {
-    prismaMocks.user.findUnique.mockResolvedValue({ username: 'player_one', email: 'player@example.com' })
+    prismaMocks.user.findUnique.mockResolvedValue({ username: 'player_one', email: 'player@example.com', avatar: null, bio: null })
     commonMocks.getUserPoints.mockResolvedValue(42)
 
     const { response, json } = await get('/api/auth/me', {
@@ -252,11 +288,13 @@ describe('authRouter', () => {
       role: 'USER',
       username: 'player_one',
       email: 'player@example.com',
+      avatar: null,
+      bio: null,
       points: 42,
     })
     expect(prismaMocks.user.findUnique).toHaveBeenCalledWith({
       where: { id: 'user_42' },
-      select: { username: true, email: true },
+      select: { username: true, email: true, avatar: true, bio: true },
     })
     expect(commonMocks.getUserPoints).toHaveBeenCalledWith('user_42')
   })
@@ -269,5 +307,145 @@ describe('authRouter', () => {
     expect(response.status).toBe(204)
     const setCookie = response.headers.get('set-cookie')
     expect(setCookie).toContain('adminToken=')
+  })
+
+  it('updates profile with valid payload', async () => {
+    prismaMocks.user.update.mockResolvedValue({ username: 'player_one', email: 'player@example.com', avatar: null, bio: 'Salut' })
+    commonMocks.getUserPoints.mockResolvedValue(5)
+
+    const { response, json } = await patch('/api/auth/profile', { bio: 'Salut' }, { 'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }) })
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({
+      userId: 'user_1',
+      role: 'USER',
+      username: 'player_one',
+      email: 'player@example.com',
+      avatar: null,
+      bio: 'Salut',
+      points: 5,
+    })
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({ where: { id: 'user_1' }, data: { bio: 'Salut' }, select: { username: true, email: true, avatar: true, bio: true } })
+  })
+
+  it('accepts empty string and stores null for bio', async () => {
+    prismaMocks.user.update.mockResolvedValue({ username: 'player_one', email: 'player@example.com', avatar: null, bio: null })
+    commonMocks.getUserPoints.mockResolvedValue(0)
+
+    const { response, json } = await patch('/api/auth/profile', { bio: '' }, { 'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }) })
+
+    expect(response.status).toBe(200)
+    expect(json.bio).toBeNull()
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({ where: { id: 'user_1' }, data: { bio: null }, select: { username: true, email: true, avatar: true, bio: true } })
+  })
+
+  it('records password reset request when allowed', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({ passwordResetRequestedAt: null })
+    prismaMocks.user.update.mockResolvedValue({})
+
+    const { response, json } = await post('/api/auth/password-reset-request', {}, { 'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }) })
+
+    expect(response.status).toBe(200)
+    expect(json.message).toBe('Demande de réinitialisation enregistrée.')
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({ where: { id: 'user_1' }, data: { passwordResetRequestedAt: expect.any(Date) } })
+  })
+
+  it('rejects password reset request when requested recently', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({ passwordResetRequestedAt: new Date() })
+
+    const { response, json } = await post('/api/auth/password-reset-request', {}, { 'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }) })
+
+    expect(response.status).toBe(429)
+    expect(json.message).toContain('une fois par semaine')
+  })
+
+  it('deletes account when requested', async () => {
+    prismaMocks.user.delete.mockResolvedValue({})
+
+    const response = await fetch(`${baseUrl}/api/auth/delete-account`, {
+      method: 'POST',
+      headers: {
+        'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }),
+      },
+    })
+
+    expect(response.status).toBe(204)
+    expect(prismaMocks.user.delete).toHaveBeenCalledWith({ where: { id: 'user_1' } })
+  })
+
+  it('returns public user profile for username', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({ id: 'user_5', username: 'bob', avatar: '/uploads/bob.webp', bio: 'hello' })
+    commonMocks.getUserPoints.mockResolvedValue(7)
+
+    const { response, json } = await get('/api/auth/users/bob')
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ username: 'bob', avatar: '/uploads/bob.webp', bio: 'hello', points: 7 })
+  })
+
+  it('returns 404 for unknown username', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue(null)
+
+    const { response, json } = await get('/api/auth/users/unknown_user')
+
+    expect(response.status).toBe(404)
+    expect(json.message).toBe('Utilisateur introuvable.')
+  })
+
+  it('returns 401 on PATCH /profile when unauthenticated', async () => {
+    const { response, json } = await patch('/api/auth/profile', { bio: 'noauth' })
+
+    expect(response.status).toBe(401)
+    expect(json).toEqual({ message: 'Non autorisé.' })
+  })
+
+  it('accepts empty string for avatar and stores null', async () => {
+    prismaMocks.user.update.mockResolvedValue({ username: 'player_one', email: 'player@example.com', avatar: null, bio: null })
+    commonMocks.getUserPoints.mockResolvedValue(1)
+
+    const { response, json } = await patch('/api/auth/profile', { avatar: '' }, { 'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }) })
+
+    expect(response.status).toBe(200)
+    expect(json.avatar).toBeNull()
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({ where: { id: 'user_1' }, data: { avatar: null }, select: { username: true, email: true, avatar: true, bio: true } })
+  })
+
+  it('returns 401 for password-reset-request when unauthenticated', async () => {
+    const { response, json } = await post('/api/auth/password-reset-request', {})
+    expect(response.status).toBe(401)
+    expect(json).toEqual({ message: 'Non autorisé.' })
+  })
+
+  it('uploads avatar and updates the user profile', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({ avatar: null })
+    prismaMocks.user.update.mockResolvedValue({ username: 'player_one', email: 'player@example.com', avatar: '/uploads/avatar.webp', bio: null })
+    commonMocks.getUserPoints.mockResolvedValue(11)
+
+    const form = new FormData()
+    form.append('avatar', new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' }), 'avatar.png')
+
+    const response = await fetch(`${baseUrl}/api/auth/avatar`, {
+      method: 'POST',
+      headers: {
+        'x-test-user': JSON.stringify({ userId: 'user_1', role: 'USER' }),
+      },
+      body: form,
+    })
+
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.username).toBe('player_one')
+    expect(json.email).toBe('player@example.com')
+    expect(json.avatar).toMatch(/^\/uploads\/.*\.webp$/)
+    expect(json.bio).toBeNull()
+    expect(prismaMocks.user.findUnique).toHaveBeenCalledWith({ where: { id: 'user_1' }, select: { avatar: true } })
+    expect(prismaMocks.user.update).toHaveBeenCalledWith({
+      where: { id: 'user_1' },
+      data: { avatar: expect.stringMatching(/^\/uploads\/.*\.webp$/) },
+      select: { username: true, email: true, avatar: true, bio: true },
+    })
+    expect(sharpMetadata).toHaveBeenCalled()
+    expect(sharpToFile).toHaveBeenCalled()
   })
 })

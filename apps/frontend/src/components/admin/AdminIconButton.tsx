@@ -11,8 +11,8 @@ type Props = {
 export function AdminIconButton({ title, tone = 'default', onClick, icon, disabled = false }: Props) {
   const classes =
     tone === 'danger'
-      ? 'admin-icon-button rounded border border-red-300 bg-red-100 px-2 py-1 text-red-700 shadow-sm transition hover:bg-red-200'
-      : 'admin-icon-button rounded border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700 shadow-sm transition hover:bg-slate-200'
+      ? 'admin-icon-button rounded border border-red-300 bg-red-100 px-2 py-1 text-red-700 shadow-sm transition hover:bg-red-200 dark:border-red-800 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900'
+      : 'admin-icon-button rounded border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700 shadow-sm transition hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
 
   return (
     <button

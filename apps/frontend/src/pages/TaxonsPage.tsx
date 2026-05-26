@@ -248,7 +248,7 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
             {nodes.map(({ node, x, y }) => (
               <g key={node.id} transform={`translate(${x},${y})`} style={{ cursor: node.taxon ? 'pointer' : 'default' }} onClick={() => onNodeClick(node)}>
                 <circle r={node.taxon ? 8 : 6} fill={node.taxon ? '#4f46e5' : '#94a3b8'} />
-                  <text x={12} y={6} fontSize={12} className="fill-current text-slate-900 dark:text-white">{node.name || ''}</text>
+                  <text x={12} y={6} fontSize={12} className="fill-current text-slate-950 dark:text-white font-medium">{node.name || ''}</text>
               </g>
             ))}
           </g>

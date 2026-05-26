@@ -134,6 +134,8 @@ export type GameStatsPeriod = '7d' | '30d' | 'all'
 export type LeaderboardItem = {
   userId: string
   username: string
+  avatar: string | null
+  bio: string | null
   gamesPlayed: number
   correctCount: number
   wrongCount: number
@@ -167,6 +169,8 @@ export type AuthMeResponse = {
   role: 'ADMIN' | 'USER'
   username: string | null
   email: string | null
+  avatar: string | null
+  bio: string | null
   points: number
 }
 
@@ -222,6 +226,12 @@ export type Suggestion = {
   createdAt: string
   processedAt?: string | null
   user?: { username: string }
+}
+export type UserProfile = {
+  username: string
+  avatar: string | null
+  bio: string | null
+  points: number
 }
 
 export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'points' | 'history'
