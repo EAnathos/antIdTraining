@@ -81,8 +81,8 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
-      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Points des utilisateurs</h3>
-      <p className="text-sm text-slate-700 dark:text-slate-300">Modifiez les points des utilisateurs. Le total inclut les points gagnés aux jeux et les ajustements.</p>
+      <h3 className="text-sm font-semibold text-slate-900">Points des utilisateurs</h3>
+      <p className="text-sm text-slate-700">Modifiez les points des utilisateurs. Le total inclut les points gagnés aux jeux et les ajustements.</p>
 
       <div>
         <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-600" htmlFor="admin-user-points-search">
@@ -90,7 +90,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
         </label>
         <input
           id="admin-user-points-search"
-          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
+          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400 shadow-sm"
           type="search"
           placeholder="Nom d'utilisateur"
           value={search}
@@ -98,44 +98,44 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
         />
       </div>
 
-      <p className="text-sm text-slate-600 dark:text-slate-400">Clique sur un en-tête pour trier le tableau.</p>
+      <p className="text-sm text-slate-600">Clique sur un en-tête pour trier le tableau.</p>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200">
-        <table className="user-points-table w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-slate-700 dark:text-slate-100">
-              <th className="w-[30%] bg-white p-2">
-                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('username')}>
-                  Utilisateur <span className="text-xs text-slate-500">{sortIndicator('username')}</span>
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <table className="user-points-table min-w-full divide-y divide-slate-200 text-sm">
+          <thead className="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th className="px-4 py-3 font-medium">
+                <button className="flex items-center gap-2" type="button" onClick={() => handleSort('username')}>
+                  Utilisateur <span className="text-xs">{sortIndicator('username')}</span>
                 </button>
               </th>
-              <th className="w-[14%] bg-white p-2">
-                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('role')}>
-                  Rôle <span className="text-xs text-slate-500">{sortIndicator('role')}</span>
+              <th className="px-4 py-3 font-medium">
+                <button className="flex items-center gap-2" type="button" onClick={() => handleSort('role')}>
+                  Rôle <span className="text-xs">{sortIndicator('role')}</span>
                 </button>
               </th>
-              <th className="w-[16%] bg-white p-2">
-                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('points')}>
-                  Points <span className="text-xs text-slate-500">{sortIndicator('points')}</span>
+              <th className="px-4 py-3 font-medium">
+                <button className="flex items-center gap-2" type="button" onClick={() => handleSort('points')}>
+                  Points <span className="text-xs">{sortIndicator('points')}</span>
                 </button>
               </th>
-              <th className="w-[18%] bg-white p-2">
-                  <button className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100" type="button" onClick={() => handleSort('createdAt')}>
-                  Créé le <span className="text-xs text-slate-500">{sortIndicator('createdAt')}</span>
+              <th className="px-4 py-3 font-medium">
+                <button className="flex items-center gap-2" type="button" onClick={() => handleSort('createdAt')}>
+                  Créé le <span className="text-xs">{sortIndicator('createdAt')}</span>
                 </button>
               </th>
-              <th className="w-[14%] bg-white p-2">Action</th>
+              <th className="px-4 py-3 font-medium">Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
             {filteredUsers.map((user) => {
               const draftValue = drafts[user.id] ?? String(user.points)
 
               return (
-                <tr key={user.id} className="border-b border-slate-100 odd:bg-slate-50">
-                  <td className="max-w-0 truncate p-2 font-medium text-slate-900 dark:text-slate-100" title={user.username}>{user.username}</td>
-                  <td className="p-2 text-slate-700 dark:text-slate-300">{user.role === 'ADMIN' ? 'Admin' : 'User'}</td>
-                  <td className="p-2">
+                <tr key={user.id}>
+                  <td className="px-4 py-3 font-medium max-w-0 truncate" title={user.username}>{user.username}</td>
+                  <td className="px-4 py-3">{user.role === 'ADMIN' ? 'Admin' : 'User'}</td>
+                  <td className="px-4 py-3">
                     <input
                       className="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-right text-slate-700"
                       type="number"
@@ -151,11 +151,11 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                       title={`Points: ${user.points}`}
                     />
                   </td>
-                  <td className="p-2 text-slate-600">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</td>
-                  <td className="p-2">
+                  <td className="px-4 py-3 text-slate-600">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</td>
+                  <td className="px-4 py-3">
                     <button
                       type="button"
-                      className="w-full rounded-lg bg-white text-slate-900 border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 hover:bg-slate-50 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+                      className="w-full rounded-lg bg-slate-100 text-slate-900 border border-slate-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 hover:bg-slate-200"
                       disabled={savingUserId === user.id}
                       onClick={() => void handleSave(user.id, user.points)}
                     >
@@ -168,7 +168,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
             {filteredUsers.length === 0 && (
               <tr>
-                <td className="p-3 text-sm text-slate-700 dark:text-slate-300" colSpan={5}>
+                <td className="px-4 py-3 text-sm text-slate-700" colSpan={5}>
                   Aucun utilisateur trouvé.
                 </td>
               </tr>

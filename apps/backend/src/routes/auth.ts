@@ -42,8 +42,13 @@ const verifyEmailSchema = z.object({
   code: z.string().trim().min(6, 'Le code de vérification est requis').max(6, 'Le code de vérification est invalide'),
 })
 
+const avatarSchema = z.union([
+  z.string().url('Avatar doit être une URL valide'),
+  z.string().regex(/^\/.*/, 'Avatar doit être une URL valide ou un chemin relatif'),
+]).nullable().optional()
+
 const updateProfileSchema = z.object({
-  avatar: z.string().url('Avatar doit être une URL valide').nullable().optional(),
+  avatar: avatarSchema,
   bio: z.string().max(500, 'La biographie doit contenir au maximum 500 caractères').nullable().optional(),
 })
 
