@@ -27,6 +27,7 @@ interface RequestMethods {
   get<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
   post<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
   put<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
+  patch<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
   delete<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
 }
 
@@ -132,6 +133,9 @@ function createApiClient(
     },
     put(url, body, config) {
       return makeRequest('PUT', url, body, config)
+    },
+    patch(url, body, config) {
+      return makeRequest('PATCH', url, body, config)
     },
     delete(url, config) {
       return makeRequest('DELETE', url, undefined, config)

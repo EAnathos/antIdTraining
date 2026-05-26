@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
+import { UserProfileModal } from '../components/UserProfileModal'
 
 export function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentUserPoints, setCurrentUserPoints] = useState<number | null>(null)
+  const [selectedUsername, setSelectedUsername] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const fetchData = async (cancelled: { value: boolean }) => {
     const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
@@ -107,7 +110,18 @@ export function LeaderboardPage() {
               {data.items.map((item, index) => (
                 <tr key={item.userId} className={index < 3 ? 'bg-amber-50/40' : ''}>
                   <td className="px-4 py-3 font-medium text-slate-900">{index + 1}</td>
-                  <td className="px-4 py-3 text-slate-900">{item.username}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedUsername(item.username)
+                        setModalOpen(true)
+                      }}
+                      className="text-slate-900 hover:text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {item.username}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-slate-700">{item.gamesPlayed}</td>
                   <td className="px-4 py-3 text-slate-700">{item.correctCount}</td>
                   <td className="px-4 py-3 font-semibold text-slate-900">{item.points}</td>
@@ -124,6 +138,12 @@ export function LeaderboardPage() {
           </table>
         </div>
       )}
+
+      <UserProfileModal
+        username={selectedUsername || ''}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
     </section>
   )
 }
