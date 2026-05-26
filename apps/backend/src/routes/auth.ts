@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { getAdminCookieOptions, optionalAuth } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { AppError } from '../lib/errors.js'
-import { loginAdmin, registerUser } from '../services/auth.js'
+import { loginAdmin, registerUser, verifyRegistrationEmail } from '../services/auth.js'
 import { prisma } from '../prisma.js'
 import { getUserPoints } from '../services/stats.js'
+import { emailSchema } from '../lib/zodUtils.js'
 
 const usernameSchema = z.string()
   .min(3, 'Le nom d\'utilisateur doit contenir au moins 3 caractères')
@@ -17,15 +18,23 @@ const passwordSchema = z.string()
   .max(256, 'Le mot de passe est trop long')
 
 const loginSchema = z.object({
-  username: usernameSchema,
+  email: emailSchema,
   password: passwordSchema,
 })
 
-const registerSchema = loginSchema.extend({
+const registerSchema = z.object({
+  username: usernameSchema,
+  email: emailSchema,
+  password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
+})
+
+const verifyEmailSchema = z.object({
+  email: emailSchema,
+  code: z.string().trim().min(6, 'Le code de vérification est requis').max(6, 'Le code de vérification est invalide'),
 })
 
 export const authRouter = Router()
@@ -36,11 +45,11 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
     throw parsed.error
   }
 
-  const auth = await loginAdmin(parsed.data.username, parsed.data.password, req.ip)
+  const auth = await loginAdmin(parsed.data.email, parsed.data.password, req.ip)
 
   res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
-  return res.json({ token: auth.token, role: auth.role })
+  return res.json({ token: auth.token, role: auth.role, user: auth.user })
 }))
 
 authRouter.post('/register', asyncHandler(async (req, res) => {
@@ -49,11 +58,22 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
     throw parsed.error
   }
 
-  const auth = await registerUser(parsed.data.username, parsed.data.password, req.ip)
+  const result = await registerUser(parsed.data.username, parsed.data.email, parsed.data.password, req.ip)
+
+  return res.status(201).json(result)
+}))
+
+authRouter.post('/verify-email', asyncHandler(async (req, res) => {
+  const parsed = verifyEmailSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw parsed.error
+  }
+
+  const auth = await verifyRegistrationEmail(parsed.data.email, parsed.data.code, req.ip)
 
   res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
-  return res.status(201).json({ token: auth.token, role: auth.role, user: auth.user })
+  return res.json({ token: auth.token, role: auth.role, user: auth.user })
 }))
 
 authRouter.post('/logout', (_req, res) => {
@@ -66,13 +86,14 @@ authRouter.get('/me', optionalAuth, asyncHandler(async (req, res) => {
     throw new AppError(401, 'Non autorisé.')
   }
 
-  const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { username: true } })
+  const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { username: true, email: true } })
   const points = await getUserPoints(req.user.userId)
 
   return res.json({
     userId: req.user.userId,
     role: req.user.role,
     username: user?.username ?? null,
+    email: user?.email ?? null,
     points,
   })
 }))

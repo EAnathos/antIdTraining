@@ -2,16 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const apiMocks = vi.hoisted(() => ({
-  post: vi.fn(),
-}))
-
-vi.mock('../../../src/lib/api', () => ({
-  api: {
-    post: apiMocks.post,
-  },
-}))
-
 import { AppShell } from '../../../src/components/layout/AppShell'
 
 beforeEach(() => {
@@ -38,10 +28,11 @@ describe('AppShell', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light')
   })
 
-  it('toggles theme and handles logout', async () => {
+  it('toggles theme and shows profile navigation', async () => {
     localStorage.setItem('antidtraining-auth-token', 'token_1')
     localStorage.setItem('antidtraining-auth-role', 'USER')
     localStorage.setItem('antidtraining-auth-username', 'alice')
+    localStorage.setItem('antidtraining-auth-email', 'alice@example.com')
 
     render(
       <MemoryRouter>
@@ -53,10 +44,7 @@ describe('AppShell', () => {
 
     fireEvent.click(screen.getByLabelText(/Passer en mode/))
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
-
-    apiMocks.post.mockResolvedValue({})
-    fireEvent.click(screen.getByRole('button', { name: 'Déconnexion' }))
-    await waitFor(() => expect(apiMocks.post).toHaveBeenCalledWith('/auth/logout'))
+    expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
   })
 
   it('shows admin, offline and install states', async () => {
@@ -84,6 +72,7 @@ describe('AppShell', () => {
     fireEvent(window, beforeInstallPrompt)
 
     expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Installer l’app' })).toBeInTheDocument()
     expect(screen.getByLabelText('Passer en mode clair')).toBeInTheDocument()
 

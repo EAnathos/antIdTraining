@@ -145,25 +145,53 @@ export const openApiDocument = {
       },
       LoginInput: {
         type: 'object',
-        required: ['username', 'password'],
+        required: ['email', 'password'],
         properties: {
-          username: { type: 'string' },
+          email: { type: 'string', format: 'email' },
           password: { type: 'string' },
         },
         example: {
-          username: 'admin',
+          email: 'admin@example.com',
           password: 'admin123',
         },
       },
       LoginResponse: {
         type: 'object',
+        required: ['token', 'role', 'user'],
         properties: {
           token: { type: 'string' },
           role: { type: 'string', enum: ['ADMIN', 'USER'] },
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              username: { type: 'string' },
+              email: { type: 'string', format: 'email', nullable: true },
+              role: { type: 'string', enum: ['ADMIN', 'USER'] },
+            },
+          },
         },
         example: {
           token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
           role: 'ADMIN',
+          user: {
+            id: 'user_123',
+            username: 'admin',
+            email: 'admin@example.com',
+            role: 'ADMIN',
+          },
+        },
+      },
+      RegisterResponse: {
+        type: 'object',
+        required: ['requiresEmailVerification', 'email'],
+        properties: {
+          requiresEmailVerification: { type: 'boolean' },
+          email: { type: 'string', format: 'email' },
+        },
+        example: {
+          requiresEmailVerification: true,
+          email: 'joueur1@example.com',
         },
       },
       LeaderboardItem: {
@@ -270,7 +298,7 @@ export const openApiDocument = {
             'application/json': {
               schema: { $ref: '#/components/schemas/LoginInput' },
               example: {
-                username: 'admin',
+                email: 'admin@example.com',
                 password: 'admin123',
               },
             },
@@ -285,6 +313,12 @@ export const openApiDocument = {
                 example: {
                   token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
                   role: 'ADMIN',
+                  user: {
+                    id: 'user_123',
+                    username: 'admin',
+                    email: 'admin@example.com',
+                    role: 'ADMIN',
+                  },
                 },
               },
             },
@@ -295,6 +329,15 @@ export const openApiDocument = {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
                 example: { message: 'Identifiants invalides.' },
+              },
+            },
+          },
+          403: {
+            description: 'Adresse e-mail non vérifiée.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorMessage' },
+                example: { message: 'Veuillez valider votre adresse e-mail avant de vous connecter.' },
               },
             },
           },
@@ -309,9 +352,19 @@ export const openApiDocument = {
           required: true,
           content: {
             'application/json': {
-              schema: { $ref: '#/components/schemas/LoginInput' },
+              schema: {
+                type: 'object',
+                required: ['username', 'email', 'password', 'confirmPassword'],
+                properties: {
+                  username: { type: 'string' },
+                  email: { type: 'string', format: 'email' },
+                  password: { type: 'string' },
+                  confirmPassword: { type: 'string' },
+                },
+              },
               example: {
                 username: 'joueur1',
+                email: 'joueur1@example.com',
                 password: 'motdepasse',
               },
             },
@@ -319,10 +372,14 @@ export const openApiDocument = {
         },
         responses: {
           201: {
-            description: 'Compte créé.',
+            description: 'Compte créé, vérification e-mail requise.',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/LoginResponse' },
+                schema: { $ref: '#/components/schemas/RegisterResponse' },
+                example: {
+                  requiresEmailVerification: true,
+                  email: 'joueur1@example.com',
+                },
               },
             },
           },
@@ -335,6 +392,95 @@ export const openApiDocument = {
               },
             },
           },
+        },
+      },
+    },
+    '/auth/verify-email': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Vérification de l’adresse e-mail',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email', 'code'],
+                properties: {
+                  email: { type: 'string', format: 'email' },
+                  code: { type: 'string' },
+                },
+              },
+              example: {
+                email: 'joueur1@example.com',
+                code: '123456',
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Adresse e-mail vérifiée.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/LoginResponse' },
+                example: {
+                  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                  role: 'USER',
+                  user: {
+                    id: 'user_123',
+                    username: 'joueur1',
+                    email: 'joueur1@example.com',
+                    role: 'USER',
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: 'Code de vérification invalide ou expiré.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorMessage' },
+                example: { message: 'Code de vérification invalide ou expiré.' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/auth/me': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Profil courant',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Profil courant.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['userId', 'role', 'username', 'email', 'points'],
+                  properties: {
+                    userId: { type: 'string' },
+                    role: { type: 'string', enum: ['ADMIN', 'USER'] },
+                    username: { type: 'string', nullable: true },
+                    email: { type: 'string', format: 'email', nullable: true },
+                    points: { type: 'integer' },
+                  },
+                },
+                example: {
+                  userId: 'user_123',
+                  role: 'USER',
+                  username: 'joueur1',
+                  email: 'joueur1@example.com',
+                  points: 42,
+                },
+              },
+            },
+          },
+          401: { description: 'Non autorisé.' },
         },
       },
     },

@@ -1,6 +1,7 @@
 import express from 'express'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, commonMocks, resetSharedMocks } from '../utils/sharedMocks'
+import { AppError } from '../../src/lib/errors.js'
 
 vi.mock('../../src/middleware/auth.js', () => ({
   getAdminCookieOptions: () => ({
@@ -22,6 +23,7 @@ vi.mock('../../src/middleware/auth.js', () => ({
 vi.mock('../../src/services/auth.js', () => ({
   loginAdmin: commonMocks.loginAdmin,
   registerUser: commonMocks.registerUser,
+  verifyRegistrationEmail: commonMocks.verifyRegistrationEmail,
 }))
 
 vi.mock('../../src/services/stats.js', () => ({
@@ -108,35 +110,66 @@ async function get(path: string, headers?: Record<string, string>) {
 describe('authRouter', () => {
   it('returns 400 on invalid login payload', async () => {
     const { response, json } = await post('/api/auth/login', {
-      username: 'ab',
+      email: 'not-an-email',
       password: 'short',
     })
 
     expect(response.status).toBe(400)
     expect(json.message).toBe('Requête invalide.')
-    expect(json.errors.username?.[0]).toContain('au moins 3 caractères')
+    expect(json.errors.email?.[0]).toContain('Email invalide')
     expect(json.errors.password?.[0]).toContain('au moins 8 caractères')
     expect((commonMocks as any).loginAdmin).not.toHaveBeenCalled()
   })
 
   it('logs in and sets admin cookie', async () => {
-    ;(commonMocks as any).loginAdmin.mockResolvedValue({ token: 'jwt-token', role: 'ADMIN' })
+    ;(commonMocks as any).loginAdmin.mockResolvedValue({
+      token: 'jwt-token',
+      role: 'ADMIN',
+      user: {
+        id: 'admin_1',
+        username: 'admin_user',
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      },
+    })
 
     const { response, json } = await post('/api/auth/login', {
-      username: 'admin_user',
+      email: 'admin@example.com',
       password: 'password123',
     })
 
     expect(response.status).toBe(200)
-    expect(json).toEqual({ token: 'jwt-token', role: 'ADMIN' })
-    expect((commonMocks as any).loginAdmin).toHaveBeenCalledWith('admin_user', 'password123', '::ffff:127.0.0.1')
+    expect(json).toEqual({
+      token: 'jwt-token',
+      role: 'ADMIN',
+      user: {
+        id: 'admin_1',
+        username: 'admin_user',
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      },
+    })
+    expect((commonMocks as any).loginAdmin).toHaveBeenCalledWith('admin@example.com', 'password123', '::ffff:127.0.0.1')
     const setCookie = response.headers.get('set-cookie')
     expect(setCookie).toContain('adminToken=jwt-token')
+  })
+
+  it('returns 403 when logging in before email verification', async () => {
+    ;(commonMocks as any).loginAdmin.mockRejectedValue(new AppError(403, 'Veuillez valider votre adresse e-mail avant de vous connecter.'))
+
+    const { response, json } = await post('/api/auth/login', {
+      email: 'admin@example.com',
+      password: 'password123',
+    })
+
+    expect(response.status).toBe(403)
+    expect(json.message).toBe('Veuillez valider votre adresse e-mail avant de vous connecter.')
   })
 
   it('returns 400 on register payload with mismatched passwords', async () => {
     const { response, json } = await post('/api/auth/register', {
       username: 'new_user',
+      email: 'new_user@example.com',
       password: 'password123',
       confirmPassword: 'different123',
     })
@@ -149,31 +182,53 @@ describe('authRouter', () => {
 
   it('registers user and returns auth payload with 201', async () => {
     ;(commonMocks as any).registerUser.mockResolvedValue({
-      token: 'new-token',
-      role: 'USER',
-      user: {
-        id: 'user_1',
-        username: 'new_user',
-        role: 'USER',
-      },
+      requiresEmailVerification: true,
+      email: 'new_user@example.com',
     })
 
     const { response, json } = await post('/api/auth/register', {
       username: 'new_user',
+      email: 'new_user@example.com',
       password: 'password123',
       confirmPassword: 'password123',
     })
 
     expect(response.status).toBe(201)
     expect(json).toEqual({
-      token: 'new-token',
+      requiresEmailVerification: true,
+      email: 'new_user@example.com',
+    })
+  })
+
+  it('verifies email and returns auth payload', async () => {
+    ;(commonMocks as any).verifyRegistrationEmail.mockResolvedValue({
+      token: 'verified-token',
       role: 'USER',
       user: {
-        id: 'user_1',
+        id: 'user_2',
         username: 'new_user',
+        email: 'new_user@example.com',
         role: 'USER',
       },
     })
+
+    const { response, json } = await post('/api/auth/verify-email', {
+      email: 'new_user@example.com',
+      code: '123456',
+    })
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({
+      token: 'verified-token',
+      role: 'USER',
+      user: {
+        id: 'user_2',
+        username: 'new_user',
+        email: 'new_user@example.com',
+        role: 'USER',
+      },
+    })
+    expect((commonMocks as any).verifyRegistrationEmail).toHaveBeenCalledWith('new_user@example.com', '123456', '::ffff:127.0.0.1')
   })
 
   it('returns 401 on /me when unauthenticated', async () => {
@@ -184,7 +239,7 @@ describe('authRouter', () => {
   })
 
   it('returns authenticated profile on /me', async () => {
-    prismaMocks.user.findUnique.mockResolvedValue({ username: 'player_one' })
+    prismaMocks.user.findUnique.mockResolvedValue({ username: 'player_one', email: 'player@example.com' })
     commonMocks.getUserPoints.mockResolvedValue(42)
 
     const { response, json } = await get('/api/auth/me', {
@@ -196,11 +251,12 @@ describe('authRouter', () => {
       userId: 'user_42',
       role: 'USER',
       username: 'player_one',
+      email: 'player@example.com',
       points: 42,
     })
     expect(prismaMocks.user.findUnique).toHaveBeenCalledWith({
       where: { id: 'user_42' },
-      select: { username: true },
+      select: { username: true, email: true },
     })
     expect(commonMocks.getUserPoints).toHaveBeenCalledWith('user_42')
   })

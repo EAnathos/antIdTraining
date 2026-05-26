@@ -144,15 +144,29 @@ export type LeaderboardResponse = {
   items: LeaderboardItem[]
 }
 
+export type AuthUser = {
+  id: string
+  username: string
+  email: string | null
+  role: 'ADMIN' | 'USER'
+}
+
 export type AuthResponse = {
   token: string
   role: 'ADMIN' | 'USER'
+  user: AuthUser
+}
+
+export type AuthRegistrationResponse = {
+  requiresEmailVerification: true
+  email: string
 }
 
 export type AuthMeResponse = {
   userId: string
   role: 'ADMIN' | 'USER'
   username: string | null
+  email: string | null
   points: number
 }
 

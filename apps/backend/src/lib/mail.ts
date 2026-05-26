@@ -1,0 +1,84 @@
+import { config } from '../config.js'
+import { logger } from './logger.js'
+
+type ResendMessage = {
+  from: string
+  to: string
+  subject: string
+  text: string
+  html: string
+}
+
+async function sendResendEmail(message: ResendMessage, logContext: string) {
+  const from = config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>'
+
+  if (!config.resendApiKey) {
+    logger.warn({ to: message.to }, `${logContext}: RESEND_API_KEY non configurée, email non envoyé`)
+    return
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...message,
+      from,
+    }),
+  })
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    throw new Error(`Resend a répondu ${response.status}${body ? `: ${body}` : ''}`)
+  }
+
+  const payload = await response.json().catch(() => null) as { id?: string } | null
+  logger.info({ to: message.to, messageId: payload?.id ?? null }, `${logContext}: email envoyé`)
+}
+
+export async function sendLoginNotificationEmail(email: string, username: string) {
+  await sendResendEmail({
+    from: config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
+    to: email,
+    subject: 'Connexion à Ant ID Training',
+    text: [
+      `Bonjour ${username},`,
+      '',
+      'Une connexion à votre compte Ant ID Training vient d’être effectuée.',
+      'Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.',
+    ].join('\n'),
+    html: `
+      <p>Bonjour ${username},</p>
+      <p>Une connexion à votre compte Ant ID Training vient d’être effectuée.</p>
+      <p>Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.</p>
+    `,
+  }, 'Email de connexion')
+}
+
+export async function sendVerificationEmail(email: string, username: string, code: string) {
+  if (!config.resendApiKey) {
+    throw new Error('RESEND_API_KEY non configurée, impossible d’envoyer le code de vérification')
+  }
+
+  await sendResendEmail({
+    from: config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
+    to: email,
+    subject: 'Validez votre adresse e-mail',
+    text: [
+      `Bonjour ${username},`,
+      '',
+      `Voici votre code de vérification : ${code}`,
+      '',
+      'Ce code expire dans 15 minutes.',
+      'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.',
+    ].join('\n'),
+    html: `
+      <p>Bonjour ${username},</p>
+      <p>Voici votre code de vérification : <strong>${code}</strong></p>
+      <p>Ce code expire dans 15 minutes.</p>
+      <p>Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.</p>
+    `,
+  }, 'Email de vérification')
+}

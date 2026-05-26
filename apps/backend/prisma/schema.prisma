@@ -57,6 +57,10 @@ enum EntryProposalStatus {
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
+  email        String?  @unique
+  emailVerifiedAt DateTime?
+  emailVerificationCodeHash String?
+  emailVerificationCodeExpiresAt DateTime?
   passwordHash String
   role         UserRole @default(USER)
   points       Int      @default(0)

@@ -12,6 +12,8 @@ erDiagram
     User {
         string id PK
         string username UK
+        string email UK
+        datetime emailVerifiedAt
         string role
         int points
         datetime createdAt
@@ -177,7 +179,7 @@ erDiagram
 
 ## Lecture rapide
 
-- `User` : comptes admin et utilisateur.
+- `User` : comptes admin et utilisateur, identifiés par un nom d’utilisateur et une adresse e-mail, avec validation e-mail avant activation.
 - `Taxon` : référentiel scientifique principal.
 - `TaxonConfusion` : confusions possibles entre taxons, avec explication, enregistrées de façon miroir pour apparaître sur les deux taxons.
 - `ObservationEntry` : entrées de jeu et observations.

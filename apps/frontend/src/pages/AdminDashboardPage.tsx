@@ -33,6 +33,7 @@ export function AdminDashboardPage() {
     window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
+    window.localStorage.removeItem('antidtraining-auth-email')
     window.dispatchEvent(new Event('antidtraining-auth-changed'))
     navigate('/connexion', { replace: true })
   }, [navigate])

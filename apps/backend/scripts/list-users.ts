@@ -17,6 +17,7 @@ async function main() {
     orderBy: { createdAt: 'asc' },
     select: {
       username: true,
+      email: true,
       role: true,
       createdAt: true,
       updatedAt: true,
@@ -30,7 +31,7 @@ async function main() {
 
   for (const user of users) {
     console.log(
-      `${user.username}\t${user.role}\tcréé: ${user.createdAt.toISOString()}\tmaj: ${user.updatedAt.toISOString()}`,
+      `${user.username}\t${user.email ?? '—'}\t${user.role}\tcréé: ${user.createdAt.toISOString()}\tmaj: ${user.updatedAt.toISOString()}`,
     )
   }
 }
