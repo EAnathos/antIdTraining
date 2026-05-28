@@ -20,7 +20,9 @@ describe('DatabaseToolsPanel', () => {
     await waitFor(() => expect(exportDatabaseSnapshot).toHaveBeenCalled())
 
     const file = new File(['{}'], 'db.json', { type: 'application/json' })
-    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement | null
+    const fileInput = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement | null
     expect(fileInput).not.toBeNull()
     fireEvent.click(screen.getByRole('checkbox'))
     const fileList = {
@@ -30,7 +32,9 @@ describe('DatabaseToolsPanel', () => {
     } as unknown as FileList
     fireEvent.change(fileInput!, { target: { files: fileList } })
     fireEvent.click(screen.getByRole('button', { name: 'Importer la base' }))
-    await waitFor(() => expect(importDatabaseSnapshot).toHaveBeenCalledWith(file))
+    await waitFor(() =>
+      expect(importDatabaseSnapshot).toHaveBeenCalledWith(file),
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Nettoyer /uploads' }))
     await waitFor(() => expect(cleanupUploads).toHaveBeenCalled())

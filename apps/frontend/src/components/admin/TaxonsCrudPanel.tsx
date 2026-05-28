@@ -3,7 +3,10 @@ import type { FormEvent } from 'react'
 import type { Taxon } from '../../types/models'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 import { FranceMap } from '../FranceMap'
-import { ALL_FRENCH_DEPARTMENT_CODES, type FrenchDepartmentCode } from '../../lib/frenchDepartments'
+import {
+  ALL_FRENCH_DEPARTMENT_CODES,
+  type FrenchDepartmentCode,
+} from '../../lib/frenchDepartments'
 import { TaxonLevelEditor } from './TaxonLevelEditor'
 
 type TaxonForm = {
@@ -97,17 +100,24 @@ const EMPTY_TAXON_FORM: TaxonForm = {
   distribution: [],
 }
 
-function normalizeDistribution(departments: unknown[] | undefined): FrenchDepartmentCode[] {
-  return (departments ?? []).filter((department): department is FrenchDepartmentCode => typeof department === 'string')
+function normalizeDistribution(
+  departments: unknown[] | undefined,
+): FrenchDepartmentCode[] {
+  return (departments ?? []).filter(
+    (department): department is FrenchDepartmentCode =>
+      typeof department === 'string',
+  )
 }
 
-function buildLevelDetailDraft(detail?: {
-  description?: string | null
-  sizeWorker?: string | null
-  sizeQueen?: string | null
-  sizeMale?: string | null
-  criteria?: { label: string }[] | null
-} | null): LevelDetailDraft {
+function buildLevelDetailDraft(
+  detail?: {
+    description?: string | null
+    sizeWorker?: string | null
+    sizeQueen?: string | null
+    sizeMale?: string | null
+    criteria?: { label: string }[] | null
+  } | null,
+): LevelDetailDraft {
   return {
     description: detail?.description ?? '',
     sizeWorker: detail?.sizeWorker ?? '',
@@ -129,8 +139,12 @@ function buildTaxonDetailsDraft(taxon: Taxon): TaxonDetailsDraft {
   }
 }
 
-function buildTaxonLabel(taxon: Pick<Taxon, 'subfamily' | 'genus' | 'species'>) {
-  return [taxon.subfamily, taxon.genus, taxon.species].filter(Boolean).join(' · ')
+function buildTaxonLabel(
+  taxon: Pick<Taxon, 'subfamily' | 'genus' | 'species'>,
+) {
+  return [taxon.subfamily, taxon.genus, taxon.species]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function TaxonsCrudPanel({
@@ -155,12 +169,19 @@ export function TaxonsCrudPanel({
     [taxons],
   )
 
-  const handleTaxonChange = useCallback((field: TaxonFormKey, value: string) => {
-    setTaxonForm({ ...taxonForm, [field]: value })
-  }, [taxonForm, setTaxonForm])
+  const handleTaxonChange = useCallback(
+    (field: TaxonFormKey, value: string) => {
+      setTaxonForm({ ...taxonForm, [field]: value })
+    },
+    [taxonForm, setTaxonForm],
+  )
 
   const validateTaxonForm = (): boolean => {
-    if (!taxonForm.subfamily.trim() || !taxonForm.genus.trim() || !taxonForm.species.trim()) {
+    if (
+      !taxonForm.subfamily.trim() ||
+      !taxonForm.genus.trim() ||
+      !taxonForm.species.trim()
+    ) {
       return false
     }
     return true
@@ -178,7 +199,9 @@ export function TaxonsCrudPanel({
     if (!value) return taxons
 
     return taxons.filter((taxon) => {
-      const haystack = [taxon.subfamily, taxon.genus, taxon.species].join(' ').toLowerCase()
+      const haystack = [taxon.subfamily, taxon.genus, taxon.species]
+        .join(' ')
+        .toLowerCase()
       return haystack.includes(value)
     })
   }, [query, taxons])
@@ -242,7 +265,7 @@ export function TaxonsCrudPanel({
   }
 
   const updateSwarmingRange = (anchorMonth: number, currentMonth: number) => {
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       swarming: {
         swarmingStartMonth: Math.min(anchorMonth, currentMonth),
@@ -252,7 +275,7 @@ export function TaxonsCrudPanel({
   }
 
   const beginSwarmingRangeSelection = (month: number) => {
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       isSelectingSwarmingRange: true,
       selectionAnchorMonth: month,
@@ -264,14 +287,17 @@ export function TaxonsCrudPanel({
   }
 
   const continueSwarmingRangeSelection = (month: number) => {
-    if (!modal.isSelectingSwarmingRange || modal.selectionAnchorMonth === null) {
+    if (
+      !modal.isSelectingSwarmingRange ||
+      modal.selectionAnchorMonth === null
+    ) {
       return
     }
     updateSwarmingRange(modal.selectionAnchorMonth, month)
   }
 
   const endSwarmingRangeSelection = useCallback(() => {
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       isSelectingSwarmingRange: false,
       selectionAnchorMonth: null,
@@ -279,18 +305,30 @@ export function TaxonsCrudPanel({
   }, [])
 
   const isMonthInSelectedRange = (month: number): boolean => {
-    if (modal.swarming.swarmingStartMonth === null || modal.swarming.swarmingEndMonth === null) {
+    if (
+      modal.swarming.swarmingStartMonth === null ||
+      modal.swarming.swarmingEndMonth === null
+    ) {
       return false
     }
-    return month >= modal.swarming.swarmingStartMonth && month <= modal.swarming.swarmingEndMonth
+    return (
+      month >= modal.swarming.swarmingStartMonth &&
+      month <= modal.swarming.swarmingEndMonth
+    )
   }
 
   const isMonthRangeEndpoint = (month: number): boolean => {
-    if (modal.swarming.swarmingStartMonth === null || modal.swarming.swarmingEndMonth === null) {
+    if (
+      modal.swarming.swarmingStartMonth === null ||
+      modal.swarming.swarmingEndMonth === null
+    ) {
       return false
     }
 
-    return month === modal.swarming.swarmingStartMonth || month === modal.swarming.swarmingEndMonth
+    return (
+      month === modal.swarming.swarmingStartMonth ||
+      month === modal.swarming.swarmingEndMonth
+    )
   }
 
   useEffect(() => {
@@ -304,9 +342,12 @@ export function TaxonsCrudPanel({
     }
   }, [modal.isSelectingSwarmingRange, endSwarmingRangeSelection])
 
-  const updateLevelDescription = (levelKey: keyof TaxonDetailsDraft, value: string) => {
+  const updateLevelDescription = (
+    levelKey: keyof TaxonDetailsDraft,
+    value: string,
+  ) => {
     if (!modal.draft) return
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
@@ -318,11 +359,15 @@ export function TaxonsCrudPanel({
     }))
   }
 
-  const updateCriterion = (levelKey: keyof TaxonDetailsDraft, index: number, value: string) => {
+  const updateCriterion = (
+    levelKey: keyof TaxonDetailsDraft,
+    index: number,
+    value: string,
+  ) => {
     if (!modal.draft) return
     const nextCriteria = [...modal.draft[levelKey].criteria]
     nextCriteria[index] = value
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
@@ -334,9 +379,13 @@ export function TaxonsCrudPanel({
     }))
   }
 
-  const updateLevelSize = (levelKey: keyof TaxonDetailsDraft, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) => {
+  const updateLevelSize = (
+    levelKey: keyof TaxonDetailsDraft,
+    casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale',
+    value: string,
+  ) => {
     if (!modal.draft) return
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
@@ -350,7 +399,7 @@ export function TaxonsCrudPanel({
 
   const addCriterion = (levelKey: keyof TaxonDetailsDraft) => {
     if (!modal.draft) return
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
@@ -362,21 +411,30 @@ export function TaxonsCrudPanel({
     }))
   }
 
-  const removeCriterion = (levelKey: keyof TaxonDetailsDraft, index: number) => {
+  const removeCriterion = (
+    levelKey: keyof TaxonDetailsDraft,
+    index: number,
+  ) => {
     if (!modal.draft) return
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
         [levelKey]: {
           ...prev.draft![levelKey],
-          criteria: prev.draft![levelKey].criteria.filter((_, currentIndex) => currentIndex !== index),
+          criteria: prev.draft![levelKey].criteria.filter(
+            (_, currentIndex) => currentIndex !== index,
+          ),
         },
       },
     }))
   }
 
-  const moveCriterion = (levelKey: keyof TaxonDetailsDraft, index: number, direction: -1 | 1) => {
+  const moveCriterion = (
+    levelKey: keyof TaxonDetailsDraft,
+    index: number,
+    direction: -1 | 1,
+  ) => {
     if (!modal.draft) return
 
     const targetIndex = index + direction
@@ -386,9 +444,12 @@ export function TaxonsCrudPanel({
     }
 
     const nextCriteria = [...criteria]
-    ;[nextCriteria[index], nextCriteria[targetIndex]] = [nextCriteria[targetIndex], nextCriteria[index]]
+    ;[nextCriteria[index], nextCriteria[targetIndex]] = [
+      nextCriteria[targetIndex],
+      nextCriteria[index],
+    ]
 
-    setModal(prev => ({
+    setModal((prev) => ({
       ...prev,
       draft: {
         ...prev.draft!,
@@ -407,7 +468,11 @@ export function TaxonsCrudPanel({
     }))
   }
 
-  const updateConfusion = (index: number, field: keyof ConfusionDraft, value: string) => {
+  const updateConfusion = (
+    index: number,
+    field: keyof ConfusionDraft,
+    value: string,
+  ) => {
     setModal((prev) => ({
       ...prev,
       confusions: prev.confusions.map((confusion, currentIndex) =>
@@ -419,7 +484,9 @@ export function TaxonsCrudPanel({
   const removeConfusion = (index: number) => {
     setModal((prev) => ({
       ...prev,
-      confusions: prev.confusions.filter((_, currentIndex) => currentIndex !== index),
+      confusions: prev.confusions.filter(
+        (_, currentIndex) => currentIndex !== index,
+      ),
     }))
   }
 
@@ -431,25 +498,44 @@ export function TaxonsCrudPanel({
     const currentTaxonId = modal.taxon.id
     const resolved = modal.confusions
       .map((confusion) => {
-        const matchedTaxon = taxonOptions.find((option) => option.label === confusion.confusedTaxonLabel.trim())?.taxon
+        const matchedTaxon = taxonOptions.find(
+          (option) => option.label === confusion.confusedTaxonLabel.trim(),
+        )?.taxon
         return {
           confusedTaxonId: matchedTaxon?.id ?? '',
           detail: confusion.detail.trim(),
         }
       })
-      .filter((confusion) => confusion.confusedTaxonId && confusion.confusedTaxonId !== currentTaxonId && confusion.detail)
+      .filter(
+        (confusion) =>
+          confusion.confusedTaxonId &&
+          confusion.confusedTaxonId !== currentTaxonId &&
+          confusion.detail,
+      )
 
-    return Array.from(new Map(resolved.map((confusion) => [confusion.confusedTaxonId, confusion])).values())
+    return Array.from(
+      new Map(
+        resolved.map((confusion) => [confusion.confusedTaxonId, confusion]),
+      ).values(),
+    )
   }
 
   const saveDetailsModal = async () => {
     if (!modal.taxon || !modal.draft) return
     if (!validateSwarmingPeriod()) {
-      alert('Période d\'essaimage invalide')
+      alert("Période d'essaimage invalide")
       return
     }
-    const hasEmptyCriteria = ['subfamily', 'genus', 'subgenus', 'speciesGroup', 'species'].some(key => {
-      return modal.draft![key as keyof TaxonDetailsDraft].criteria.some(c => !c.trim())
+    const hasEmptyCriteria = [
+      'subfamily',
+      'genus',
+      'subgenus',
+      'speciesGroup',
+      'species',
+    ].some((key) => {
+      return modal.draft![key as keyof TaxonDetailsDraft].criteria.some(
+        (c) => !c.trim(),
+      )
     })
     if (hasEmptyCriteria) {
       alert('Les critères vides doivent être supprimés')
@@ -462,20 +548,32 @@ export function TaxonsCrudPanel({
         return false
       }
 
-      return !taxonOptions.some((option) => option.label === label && option.taxon.id !== modal.taxon?.id)
+      return !taxonOptions.some(
+        (option) =>
+          option.label === label && option.taxon.id !== modal.taxon?.id,
+      )
     })
 
     if (unresolvedConfusions.length > 0) {
-      alert('Veuillez sélectionner un taxon existant pour chaque confusion et remplir le détail.')
+      alert(
+        'Veuillez sélectionner un taxon existant pour chaque confusion et remplir le détail.',
+      )
       return
     }
 
     try {
-      await saveTaxonLevelDetails(modal.taxon.id, modal.draft, modal.invasive, modal.swarming, modal.distribution, resolveConfusions())
+      await saveTaxonLevelDetails(
+        modal.taxon.id,
+        modal.draft,
+        modal.invasive,
+        modal.swarming,
+        modal.distribution,
+        resolveConfusions(),
+      )
       closeDetailsModal()
     } catch (error) {
       console.error('Error saving taxon details:', error)
-      alert('Erreur lors de l\'enregistrement')
+      alert("Erreur lors de l'enregistrement")
     }
   }
 
@@ -494,21 +592,63 @@ export function TaxonsCrudPanel({
   return (
     <div className="mt-3 space-y-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Ajout / modification</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          Ajout / modification
+        </h3>
         <form className="grid gap-2 md:grid-cols-6" onSubmit={submitTaxon}>
-          <input className="rounded border p-2" placeholder="Sous-famille" value={taxonForm.subfamily} onChange={(e) => handleTaxonChange('subfamily', e.target.value)} required />
-          <input className="rounded border p-2" placeholder="Tribu" value={taxonForm.tribe} onChange={(e) => handleTaxonChange('tribe', e.target.value)} />
-          <input className="rounded border p-2" placeholder="Genre" value={taxonForm.genus} onChange={(e) => handleTaxonChange('genus', e.target.value)} required />
-          <input className="rounded border p-2" placeholder="Sous-genre" value={taxonForm.subgenus} onChange={(e) => handleTaxonChange('subgenus', e.target.value)} />
-          <input className="rounded border p-2" placeholder="Groupe d'espèces" value={taxonForm.speciesGroup} onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)} />
-          <input className="rounded border p-2" placeholder="Espèce" value={taxonForm.species} onChange={(e) => handleTaxonChange('species', e.target.value)} required />
+          <input
+            className="rounded border p-2"
+            placeholder="Sous-famille"
+            value={taxonForm.subfamily}
+            onChange={(e) => handleTaxonChange('subfamily', e.target.value)}
+            required
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Tribu"
+            value={taxonForm.tribe}
+            onChange={(e) => handleTaxonChange('tribe', e.target.value)}
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Genre"
+            value={taxonForm.genus}
+            onChange={(e) => handleTaxonChange('genus', e.target.value)}
+            required
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Sous-genre"
+            value={taxonForm.subgenus}
+            onChange={(e) => handleTaxonChange('subgenus', e.target.value)}
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Groupe d'espèces"
+            value={taxonForm.speciesGroup}
+            onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)}
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Espèce"
+            value={taxonForm.species}
+            onChange={(e) => handleTaxonChange('species', e.target.value)}
+            required
+          />
 
           <div className="md:col-span-6 flex flex-wrap gap-2">
-            <button className="rounded bg-slate-900 px-3 py-2 text-white" type="submit">
+            <button
+              className="rounded bg-slate-900 px-3 py-2 text-white"
+              type="submit"
+            >
               {selectedTaxonId ? 'Modifier taxon' : 'Créer taxon'}
             </button>
             {selectedTaxonId && (
-              <button className="rounded bg-slate-100 px-3 py-2 text-slate-700" type="button" onClick={resetTaxonForm}>
+              <button
+                className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                type="button"
+                onClick={resetTaxonForm}
+              >
                 Annuler la modification
               </button>
             )}
@@ -517,7 +657,9 @@ export function TaxonsCrudPanel({
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          Recherche / liste
+        </h3>
         <div className="mt-3 flex flex-wrap gap-2">
           <input
             className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
@@ -528,7 +670,8 @@ export function TaxonsCrudPanel({
         </div>
 
         <p className="mt-3 text-sm text-slate-600">
-          {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
+          {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''}{' '}
+          trouvée{filteredTaxons.length > 1 ? 's' : ''}
         </p>
 
         <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200">
@@ -539,7 +682,9 @@ export function TaxonsCrudPanel({
                 <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
+                <th className="sticky top-0 z-10 bg-white p-2">
+                  Groupe d'espèce
+                </th>
                 <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Détails</th>
                 <th className="sticky top-0 z-10 bg-white p-2">Actions</th>
@@ -551,21 +696,64 @@ export function TaxonsCrudPanel({
                   key={taxon.id}
                   className={`border-b ${selectedTaxonId === taxon.id ? 'border-slate-200 bg-slate-50' : 'border-slate-100'}`}
                 >
-                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.subfamily}>{taxon.subfamily}</td>
-                  <td className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.tribe ?? '-'}>{taxon.tribe ?? '-'}</td>
-                  <td className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.genus}><em>{taxon.genus}</em></td>
-                  <td className="max-w-[140px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}>{taxon.subgenus ? `(${taxon.subgenus})` : '-'}</td>
-                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.speciesGroup ?? '-'}>{taxon.speciesGroup ?? '-'}</td>
-                  <td className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis" title={taxon.species}><em>{taxon.species}</em></td>
+                  <td
+                    className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.subfamily}
+                  >
+                    {taxon.subfamily}
+                  </td>
+                  <td
+                    className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.tribe ?? '-'}
+                  >
+                    {taxon.tribe ?? '-'}
+                  </td>
+                  <td
+                    className="max-w-[160px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.genus}
+                  >
+                    <em>{taxon.genus}</em>
+                  </td>
+                  <td
+                    className="max-w-[140px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.subgenus ? `(${taxon.subgenus})` : '-'}
+                  >
+                    {taxon.subgenus ? `(${taxon.subgenus})` : '-'}
+                  </td>
+                  <td
+                    className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.speciesGroup ?? '-'}
+                  >
+                    {taxon.speciesGroup ?? '-'}
+                  </td>
+                  <td
+                    className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
+                    title={taxon.species}
+                  >
+                    <em>{taxon.species}</em>
+                  </td>
                   <td className="p-2">
-                    <button className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" type="button" onClick={() => openDetailsModal(taxon)}>
+                    <button
+                      className="rounded bg-indigo-50 px-2 py-1 text-indigo-700"
+                      type="button"
+                      onClick={() => openDetailsModal(taxon)}
+                    >
                       Ouvrir
                     </button>
                   </td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
-                      <AdminIconButton title="Modifier" onClick={() => loadTaxonInForm(taxon)} icon={<EditIcon />} />
-                      <AdminIconButton title="Supprimer" tone="danger" onClick={() => void handleDeleteTaxon(taxon.id)} icon={<TrashIcon />} />
+                      <AdminIconButton
+                        title="Modifier"
+                        onClick={() => loadTaxonInForm(taxon)}
+                        icon={<EditIcon />}
+                      />
+                      <AdminIconButton
+                        title="Supprimer"
+                        tone="danger"
+                        onClick={() => void handleDeleteTaxon(taxon.id)}
+                        icon={<TrashIcon />}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -577,12 +765,26 @@ export function TaxonsCrudPanel({
 
       {modal.taxon && modal.draft && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            role="dialog"
+            aria-labelledby="modal-title"
+            aria-modal="true"
+          >
             <div className="mb-4 flex items-center justify-between">
-              <h3 id="modal-title" className="text-base font-semibold text-slate-900">
-                Critères et description — <em>{modal.taxon.genus}</em> <em>{modal.taxon.species}</em>
+              <h3
+                id="modal-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                Critères et description — <em>{modal.taxon.genus}</em>{' '}
+                <em>{modal.taxon.species}</em>
               </h3>
-              <button className="rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={closeDetailsModal} aria-label="Fermer la boîte de dialogue">
+              <button
+                className="rounded bg-slate-100 px-3 py-1 text-sm"
+                type="button"
+                onClick={closeDetailsModal}
+                aria-label="Fermer la boîte de dialogue"
+              >
                 Fermer
               </button>
             </div>
@@ -607,7 +809,9 @@ export function TaxonsCrudPanel({
                   isMonthInSelectedRange={isMonthInSelectedRange}
                   isMonthRangeEndpoint={isMonthRangeEndpoint}
                   onBeginSwarmingRangeSelection={beginSwarmingRangeSelection}
-                  onContinueSwarmingRangeSelection={continueSwarmingRangeSelection}
+                  onContinueSwarmingRangeSelection={
+                    continueSwarmingRangeSelection
+                  }
                   onEndSwarmingRangeSelection={endSwarmingRangeSelection}
                   onUpdateDescription={updateLevelDescription}
                   onUpdateSize={updateLevelSize}
@@ -624,7 +828,9 @@ export function TaxonsCrudPanel({
                 <input
                   type="checkbox"
                   checked={modal.invasive}
-                  onChange={(event) => updateModalInvasive(event.target.checked)}
+                  onChange={(event) =>
+                    updateModalInvasive(event.target.checked)
+                  }
                 />
                 Espèce invasive
               </label>
@@ -633,10 +839,19 @@ export function TaxonsCrudPanel({
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-800">Confusions possibles</h4>
-                  <p className="text-xs text-slate-600">Indique les taxons proches et explique comment les distinguer.</p>
+                  <h4 className="text-sm font-semibold text-slate-800">
+                    Confusions possibles
+                  </h4>
+                  <p className="text-xs text-slate-600">
+                    Indique les taxons proches et explique comment les
+                    distinguer.
+                  </p>
                 </div>
-                <button className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200" type="button" onClick={addConfusion}>
+                <button
+                  className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                  type="button"
+                  onClick={addConfusion}
+                >
                   + Ajouter une confusion
                 </button>
               </div>
@@ -652,7 +867,10 @@ export function TaxonsCrudPanel({
               {modal.confusions.length > 0 ? (
                 <div className="space-y-3">
                   {modal.confusions.map((confusion, index) => (
-                    <div key={`confusion-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                    <div
+                      key={`confusion-${index}`}
+                      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+                    >
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <label className="block text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -662,12 +880,24 @@ export function TaxonsCrudPanel({
                               list="taxon-confusion-options"
                               placeholder="Rechercher un taxon"
                               value={confusion.confusedTaxonLabel}
-                              onChange={(event) => updateConfusion(index, 'confusedTaxonLabel', event.target.value)}
+                              onChange={(event) =>
+                                updateConfusion(
+                                  index,
+                                  'confusedTaxonLabel',
+                                  event.target.value,
+                                )
+                              }
                             />
                           </label>
-                          <p className="mt-1 text-[11px] text-slate-500">L’autocomplétion propose les taxons existants.</p>
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            L’autocomplétion propose les taxons existants.
+                          </p>
                         </div>
-                        <button className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700" type="button" onClick={() => removeConfusion(index)}>
+                        <button
+                          className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700"
+                          type="button"
+                          onClick={() => removeConfusion(index)}
+                        >
                           Supprimer
                         </button>
                       </div>
@@ -677,39 +907,49 @@ export function TaxonsCrudPanel({
                           className="mt-1 min-h-24 w-full rounded border border-slate-300 bg-white p-2 text-sm"
                           placeholder="Ex. couleur similaire, pilosité, taille… et le détail qui permet de les distinguer"
                           value={confusion.detail}
-                          onChange={(event) => updateConfusion(index, 'detail', event.target.value)}
+                          onChange={(event) =>
+                            updateConfusion(index, 'detail', event.target.value)
+                          }
                         />
                       </label>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-600">Aucune confusion renseignée pour le moment.</p>
+                <p className="text-sm text-slate-600">
+                  Aucune confusion renseignée pour le moment.
+                </p>
               )}
             </div>
 
             {modal.taxon.levelDetails.species && (
               <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <label className="block text-sm font-medium text-slate-700">Aire de répartition</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Aire de répartition
+                  </label>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
                     <button
                       className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
                       type="button"
-                      onClick={() => setModal(prev => ({
-                        ...prev,
-                        distribution: [],
-                      }))}
+                      onClick={() =>
+                        setModal((prev) => ({
+                          ...prev,
+                          distribution: [],
+                        }))
+                      }
                     >
                       Réinitialiser
                     </button>
                     <button
                       className="rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white hover:bg-indigo-700"
                       type="button"
-                      onClick={() => setModal(prev => ({
-                        ...prev,
-                        distribution: [...ALL_FRENCH_DEPARTMENT_CODES],
-                      }))}
+                      onClick={() =>
+                        setModal((prev) => ({
+                          ...prev,
+                          distribution: [...ALL_FRENCH_DEPARTMENT_CODES],
+                        }))
+                      }
                     >
                       Toute la France
                     </button>
@@ -718,10 +958,12 @@ export function TaxonsCrudPanel({
                 <FranceMap
                   selectedDepartments={modal.distribution}
                   onToggleDepartment={(departmentCode) => {
-                    setModal(prev => ({
+                    setModal((prev) => ({
                       ...prev,
                       distribution: prev.distribution.includes(departmentCode)
-                        ? prev.distribution.filter((value) => value !== departmentCode)
+                        ? prev.distribution.filter(
+                            (value) => value !== departmentCode,
+                          )
                         : [...prev.distribution, departmentCode],
                     }))
                   }}
@@ -730,10 +972,18 @@ export function TaxonsCrudPanel({
             )}
 
             <div className="mt-2 flex justify-end gap-2">
-              <button className="rounded bg-slate-100 px-3 py-2" type="button" onClick={closeDetailsModal}>
+              <button
+                className="rounded bg-slate-100 px-3 py-2"
+                type="button"
+                onClick={closeDetailsModal}
+              >
                 Annuler
               </button>
-              <button className="rounded bg-slate-900 px-3 py-2 text-white" type="button" onClick={() => void saveDetailsModal()}>
+              <button
+                className="rounded bg-slate-900 px-3 py-2 text-white"
+                type="button"
+                onClick={() => void saveDetailsModal()}
+              >
                 Enregistrer
               </button>
             </div>

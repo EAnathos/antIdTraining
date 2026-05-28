@@ -1,5 +1,13 @@
 import express from 'express'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   listSubfamilies: vi.fn(),
@@ -36,7 +44,10 @@ vi.mock('../../src/lib/adminAudit.js', () => ({
 }))
 
 import { errorHandler } from '../../src/middleware/error.js'
-import { adminTaxonsRouter, publicTaxonsRouter } from '../../src/routes/taxons.js'
+import {
+  adminTaxonsRouter,
+  publicTaxonsRouter,
+} from '../../src/routes/taxons.js'
 
 let server: ReturnType<express.Express['listen']>
 let baseUrl = ''
@@ -105,7 +116,9 @@ describe('publicTaxonsRouter', () => {
   it('lists genera for a subfamily', async () => {
     mocks.listGenera.mockResolvedValue(['Formica', 'Camponotus'])
 
-    const { response, json } = await get('/api/taxons/genera?subfamily=Formicinae')
+    const { response, json } = await get(
+      '/api/taxons/genera?subfamily=Formicinae',
+    )
 
     expect(response.status).toBe(200)
     expect(json).toEqual(['Formica', 'Camponotus'])
@@ -125,7 +138,9 @@ describe('publicTaxonsRouter', () => {
   it('lists species groups for a genus', async () => {
     mocks.listSpeciesGroups.mockResolvedValue(['group-a', 'group-b'])
 
-    const { response, json } = await get('/api/taxons/species-groups?genus=Formica')
+    const { response, json } = await get(
+      '/api/taxons/species-groups?genus=Formica',
+    )
 
     expect(response.status).toBe(200)
     expect(json).toEqual(['group-a', 'group-b'])
@@ -143,22 +158,39 @@ describe('publicTaxonsRouter', () => {
   })
 
   it('lists species metadata', async () => {
-    mocks.getSpeciesMetadata.mockResolvedValue({ genus: 'Formica', species: 'rufibarbis' })
+    mocks.getSpeciesMetadata.mockResolvedValue({
+      genus: 'Formica',
+      species: 'rufibarbis',
+    })
 
-    const { response, json } = await get('/api/taxons/species-metadata?genus=Formica&species=rufibarbis')
+    const { response, json } = await get(
+      '/api/taxons/species-metadata?genus=Formica&species=rufibarbis',
+    )
 
     expect(response.status).toBe(200)
     expect(json).toEqual({ genus: 'Formica', species: 'rufibarbis' })
   })
 
   it('lists taxons with filters', async () => {
-    mocks.listTaxons.mockResolvedValue({ items: [{ id: 'taxon_1' }], pagination: { page: 1 } })
+    mocks.listTaxons.mockResolvedValue({
+      items: [{ id: 'taxon_1' }],
+      pagination: { page: 1 },
+    })
 
-    const { response, json } = await get('/api/taxons?level=SPECIES&q=Formica&offset=10')
+    const { response, json } = await get(
+      '/api/taxons?level=SPECIES&q=Formica&offset=10',
+    )
 
     expect(response.status).toBe(200)
-    expect(json).toEqual({ items: [{ id: 'taxon_1' }], pagination: { page: 1 } })
-    expect(mocks.listTaxons).toHaveBeenCalledWith({ level: 'SPECIES', q: 'Formica', offset: '10' })
+    expect(json).toEqual({
+      items: [{ id: 'taxon_1' }],
+      pagination: { page: 1 },
+    })
+    expect(mocks.listTaxons).toHaveBeenCalledWith({
+      level: 'SPECIES',
+      q: 'Formica',
+      offset: '10',
+    })
   })
 })
 
@@ -166,7 +198,9 @@ describe('adminTaxonsRouter', () => {
   it('returns 400 for invalid create payload', async () => {
     mocks.taxonSchema.safeParse.mockReturnValue({ success: false })
 
-    const { response, json } = await post('/api/admin/taxons', { invalid: true })
+    const { response, json } = await post('/api/admin/taxons', {
+      invalid: true,
+    })
 
     expect(response.status).toBe(400)
     expect(json.message).toBe('Requête invalide.')
@@ -175,7 +209,11 @@ describe('adminTaxonsRouter', () => {
   it('creates a taxon and records audit log', async () => {
     mocks.taxonSchema.safeParse.mockReturnValue({
       success: true,
-      data: { subfamily: 'Formicinae', genus: 'Formica', species: 'rufibarbis' },
+      data: {
+        subfamily: 'Formicinae',
+        genus: 'Formica',
+        species: 'rufibarbis',
+      },
     })
     mocks.createTaxon.mockResolvedValue({
       id: 'taxon_1',

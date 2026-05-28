@@ -21,7 +21,9 @@ function getUniqueConflictFields(error: unknown) {
   const { target } = prismaError.meta ?? {}
 
   if (Array.isArray(target)) {
-    const fields = target.filter((field): field is string => typeof field === 'string' && field.length > 0)
+    const fields = target.filter(
+      (field): field is string => typeof field === 'string' && field.length > 0,
+    )
     return fields.length > 0 ? fields : null
   }
 
@@ -36,7 +38,12 @@ export function notFoundHandler(_req: Request, res: Response) {
   return res.status(404).json({ message: 'Route introuvable.' })
 }
 
-export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(
+  error: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+) {
   if (error instanceof AppError) {
     return res.status(error.status).json({ message: error.message })
   }
@@ -74,16 +81,20 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
   if (isErrorWithCode(error) && error.code === 'P2002') {
     const fields = getUniqueConflictFields(error)
     return res.status(409).json({
-      message: fields && fields.length > 0
-        ? `La valeur pour "${fields.join('", "')}" existe déjà.`
-        : 'Conflit : la ressource existe déjà.',
+      message:
+        fields && fields.length > 0
+          ? `La valeur pour "${fields.join('", "')}" existe déjà.`
+          : 'Conflit : la ressource existe déjà.',
       field: fields?.[0] ?? null,
       fields: fields ?? undefined,
     })
   }
 
   const errorId = crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-  logger.error({ err: error, errorId, method: _req.method, path: _req.originalUrl }, 'Unhandled error in request')
+  logger.error(
+    { err: error, errorId, method: _req.method, path: _req.originalUrl },
+    'Unhandled error in request',
+  )
 
   return res.status(500).json({
     message: 'Erreur interne du serveur.',

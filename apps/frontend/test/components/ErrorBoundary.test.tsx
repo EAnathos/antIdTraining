@@ -22,7 +22,9 @@ describe('ErrorBoundary', () => {
   })
 
   it('renders fallback UI when a child throws', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
 
     render(
       <ErrorBoundary>
@@ -30,7 +32,9 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     )
 
-    expect(screen.getByText("Oups ! Une erreur s'est produite")).toBeInTheDocument()
+    expect(
+      screen.getByText("Oups ! Une erreur s'est produite"),
+    ).toBeInTheDocument()
     expect(screen.getByText(/Boom/)).toBeInTheDocument()
     expect(errorSpy).toHaveBeenCalled()
   })

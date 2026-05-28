@@ -58,7 +58,9 @@ describe('AdminLoginPage', () => {
 
     // The component will navigate, so the form should not be visible
     // We can verify by checking that no error message is visible
-    expect(screen.queryByText('Connexion administrateur')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Connexion administrateur'),
+    ).not.toBeInTheDocument()
   })
 
   it('submits admin login form and redirects on success', async () => {

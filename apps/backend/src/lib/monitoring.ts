@@ -37,7 +37,10 @@ const requestMetrics: RequestMetrics = {
   lastErrorAt: null,
 }
 
-function buildDependencyStatus(error: unknown, latencyMs: number): DependencyStatus {
+function buildDependencyStatus(
+  error: unknown,
+  latencyMs: number,
+): DependencyStatus {
   return {
     ok: false,
     latencyMs,

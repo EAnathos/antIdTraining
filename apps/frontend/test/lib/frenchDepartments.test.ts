@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { FRENCH_DEPARTMENTS, IDF_CODE, getDepartmentLabel, getDepartmentMapData } from '../../src/lib/frenchDepartments'
+import {
+  FRENCH_DEPARTMENTS,
+  IDF_CODE,
+  getDepartmentLabel,
+  getDepartmentMapData,
+} from '../../src/lib/frenchDepartments'
 
 describe('french departments', () => {
   it('exposes the Île-de-France grouped entry', () => {

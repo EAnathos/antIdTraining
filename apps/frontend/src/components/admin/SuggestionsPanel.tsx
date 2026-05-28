@@ -5,23 +5,52 @@ import { getResponsiveImageProps } from '../../lib/image'
 
 type Props = {
   suggestions: Suggestion[]
-  setSuggestionStatus: (id: string, status: 'PENDING' | 'PROCESSED' | 'REJECTED', rejectionMessage?: string) => Promise<void>
+  setSuggestionStatus: (
+    id: string,
+    status: 'PENDING' | 'PROCESSED' | 'REJECTED',
+    rejectionMessage?: string,
+  ) => Promise<void>
   deleteSuggestion: (id: string) => Promise<void>
-  updateSuggestionRejectionMessage: (id: string, rejectionMessage: string) => Promise<void>
+  updateSuggestionRejectionMessage: (
+    id: string,
+    rejectionMessage: string,
+  ) => Promise<void>
   proposals: EntryProposal[]
-  setProposalStatus: (id: string, action: 'ACCEPT' | 'REJECT', rejectionMessage?: string) => Promise<void>
+  setProposalStatus: (
+    id: string,
+    action: 'ACCEPT' | 'REJECT',
+    rejectionMessage?: string,
+  ) => Promise<void>
   deleteProposal: (id: string) => Promise<void>
-  updateProposalRejectionMessage: (id: string, rejectionMessage: string) => Promise<void>
+  updateProposalRejectionMessage: (
+    id: string,
+    rejectionMessage: string,
+  ) => Promise<void>
 }
 
-export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSuggestion, updateSuggestionRejectionMessage, proposals, setProposalStatus, deleteProposal, updateProposalRejectionMessage }: Props) {
+export function SuggestionsPanel({
+  suggestions,
+  setSuggestionStatus,
+  deleteSuggestion,
+  updateSuggestionRejectionMessage,
+  proposals,
+  setProposalStatus,
+  deleteProposal,
+  updateProposalRejectionMessage,
+}: Props) {
   const [tab, setTab] = useState<'suggestions' | 'proposals'>('suggestions')
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED' | string>('ALL')
+  const [filter, setFilter] = useState<
+    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED' | string
+  >('ALL')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingMessage, setEditingMessage] = useState('')
-  const [preview, setPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [preview, setPreview] = useState<{
+    images: string[]
+    index: number
+    alt: string
+  } | null>(null)
 
   function resolveImageUrl(imageUrl: string) {
     if (!imageUrl) return imageUrl
@@ -34,7 +63,7 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
 
   const filteredSuggestions = useMemo(() => {
     if (filter === 'ALL') return suggestions
-    return suggestions.filter((s) => s.status === filter as any)
+    return suggestions.filter((s) => s.status === (filter as any))
   }, [suggestions, filter])
 
   const filteredProposals = useMemo(() => {
@@ -98,13 +127,17 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                 <div className="text-left">
                   <p className="font-medium">{s.name ?? 'Anonyme'}</p>
                   <p className="text-xs text-slate-600">{s.email ?? ''}</p>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">Message de contribution</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+                    Message de contribution
+                  </p>
                   <p className="mt-2 whitespace-pre-wrap">{s.message}</p>
                   {s.rejectionMessage && (
                     <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                       {editingMessageId === s.id ? (
                         <>
-                          <p className="mb-1 font-semibold uppercase tracking-wide">Modifier le message</p>
+                          <p className="mb-1 font-semibold uppercase tracking-wide">
+                            Modifier le message
+                          </p>
                           <textarea
                             className="mb-2 w-full rounded border p-1 text-xs text-slate-700"
                             value={editingMessage}
@@ -115,7 +148,10 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               type="button"
                               className="rounded bg-red-600 px-2 py-1 text-xs text-white"
                               onClick={() => {
-                                void updateSuggestionRejectionMessage(s.id, editingMessage).then(() => {
+                                void updateSuggestionRejectionMessage(
+                                  s.id,
+                                  editingMessage,
+                                ).then(() => {
                                   setEditingMessageId(null)
                                   setEditingMessage('')
                                 })
@@ -137,8 +173,12 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         </>
                       ) : (
                         <>
-                          <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
-                          <p className="whitespace-pre-wrap">{s.rejectionMessage}</p>
+                          <p className="font-semibold uppercase tracking-wide">
+                            Message de l'administration
+                          </p>
+                          <p className="whitespace-pre-wrap">
+                            {s.rejectionMessage}
+                          </p>
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
@@ -155,7 +195,9 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                       )}
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-slate-500">{new Date(s.createdAt).toLocaleString()}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {new Date(s.createdAt).toLocaleString()}
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
@@ -169,7 +211,9 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                       <button
                         type="button"
                         className="rounded bg-emerald-600 px-2 py-1 text-xs text-white"
-                        onClick={() => void setSuggestionStatus(s.id, 'PROCESSED')}
+                        onClick={() =>
+                          void setSuggestionStatus(s.id, 'PROCESSED')
+                        }
                       >
                         Marquer traitée
                       </button>
@@ -188,7 +232,11 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         type="button"
                         className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
                         onClick={() => {
-                          if (window.confirm('Supprimer définitivement cette suggestion ?')) {
+                          if (
+                            window.confirm(
+                              'Supprimer définitivement cette suggestion ?',
+                            )
+                          ) {
                             void deleteSuggestion(s.id)
                           }
                         }}
@@ -212,7 +260,13 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                     <button
                       type="button"
                       className="rounded bg-red-600 px-2 py-1 text-xs text-white"
-                      onClick={() => void setSuggestionStatus(s.id, 'REJECTED', rejectMessage)}
+                      onClick={() =>
+                        void setSuggestionStatus(
+                          s.id,
+                          'REJECTED',
+                          rejectMessage,
+                        )
+                      }
                     >
                       Confirmer
                     </button>
@@ -241,21 +295,41 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{p.user?.username ?? 'Utilisateur'}</p>
+                    <p className="font-medium">
+                      {p.user?.username ?? 'Utilisateur'}
+                    </p>
                     <p className="text-xs text-slate-500">{p.taxonLevel}</p>
                   </div>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-blue-600">Proposition d’entrée</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-blue-600">
+                    Proposition d’entrée
+                  </p>
                   <p className="text-sm text-slate-900">{p.taxonValue}</p>
-                  {p.subfamily && <p className="text-xs text-slate-600">Subfamily: {p.subfamily}</p>}
-                  {p.genus && <p className="text-xs text-slate-600">Genus: {p.genus}</p>}
-                  {p.species && <p className="text-xs text-slate-600">Species: {p.species}</p>}
-                  {p.size && <p className="text-xs text-slate-600">Size: {p.size}</p>}
-                  {p.caste && <p className="text-xs text-slate-600">Caste: {p.caste}</p>}
+                  {p.subfamily && (
+                    <p className="text-xs text-slate-600">
+                      Subfamily: {p.subfamily}
+                    </p>
+                  )}
+                  {p.genus && (
+                    <p className="text-xs text-slate-600">Genus: {p.genus}</p>
+                  )}
+                  {p.species && (
+                    <p className="text-xs text-slate-600">
+                      Species: {p.species}
+                    </p>
+                  )}
+                  {p.size && (
+                    <p className="text-xs text-slate-600">Size: {p.size}</p>
+                  )}
+                  {p.caste && (
+                    <p className="text-xs text-slate-600">Caste: {p.caste}</p>
+                  )}
                   {p.rejectionMessage && (
                     <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                       {editingMessageId === p.id ? (
                         <>
-                          <p className="mb-1 font-semibold uppercase tracking-wide">Modifier le message</p>
+                          <p className="mb-1 font-semibold uppercase tracking-wide">
+                            Modifier le message
+                          </p>
                           <textarea
                             className="mb-2 w-full rounded border p-1 text-xs text-slate-700"
                             value={editingMessage}
@@ -266,7 +340,10 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                               type="button"
                               className="rounded bg-red-600 px-2 py-1 text-xs text-white"
                               onClick={() => {
-                                void updateProposalRejectionMessage(p.id, editingMessage).then(() => {
+                                void updateProposalRejectionMessage(
+                                  p.id,
+                                  editingMessage,
+                                ).then(() => {
                                   setEditingMessageId(null)
                                   setEditingMessage('')
                                 })
@@ -288,8 +365,12 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         </>
                       ) : (
                         <>
-                          <p className="font-semibold uppercase tracking-wide">Message de l'administration</p>
-                          <p className="whitespace-pre-wrap">{p.rejectionMessage}</p>
+                          <p className="font-semibold uppercase tracking-wide">
+                            Message de l'administration
+                          </p>
+                          <p className="whitespace-pre-wrap">
+                            {p.rejectionMessage}
+                          </p>
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
@@ -307,10 +388,17 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                     </div>
                   )}
                   <p className="mt-2 text-xs text-slate-600">
-                    {p.department} • {new Date(p.observedAt).toLocaleDateString()}
+                    {p.department} •{' '}
+                    {new Date(p.observedAt).toLocaleDateString()}
                   </p>
-                  {p.images.length > 0 && <p className="text-xs text-slate-500 mt-1">{p.images.length} image(s)</p>}
-                  <p className="mt-2 text-xs text-slate-500">{new Date(p.createdAt).toLocaleString()}</p>
+                  {p.images.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      {p.images.length} image(s)
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-slate-500">
+                    {new Date(p.createdAt).toLocaleString()}
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
@@ -343,7 +431,11 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                         type="button"
                         className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
                         onClick={() => {
-                          if (window.confirm('Supprimer définitivement cette proposition ?')) {
+                          if (
+                            window.confirm(
+                              'Supprimer définitivement cette proposition ?',
+                            )
+                          ) {
                             void deleteProposal(p.id)
                           }
                         }}
@@ -364,7 +456,9 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                       className="overflow-hidden rounded border border-slate-200 bg-slate-50"
                       onClick={() =>
                         setPreview({
-                          images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                          images: p.images.map((proposalImage) =>
+                            resolveImageUrl(proposalImage.imageUrl),
+                          ),
                           index,
                           alt: `${p.user?.username ?? 'Utilisateur'} · ${p.taxonValue}`,
                         })
@@ -396,7 +490,9 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                     <button
                       type="button"
                       className="rounded bg-red-600 px-2 py-1 text-xs text-white"
-                      onClick={() => void setProposalStatus(p.id, 'REJECT', rejectMessage)}
+                      onClick={() =>
+                        void setProposalStatus(p.id, 'REJECT', rejectMessage)
+                      }
                     >
                       Confirmer
                     </button>
@@ -419,8 +515,14 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
       )}
 
       {preview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4" onClick={() => setPreview(null)}>
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="relative"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
@@ -436,13 +538,27 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                 setPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                    : {
+                        ...current,
+                        index:
+                          (current.index - 1 + current.images.length) %
+                          current.images.length,
+                      },
                 )
               }
               disabled={preview.images.length <= 1}
               aria-label="Image précédente"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
@@ -454,13 +570,25 @@ export function SuggestionsPanel({ suggestions, setSuggestionStatus, deleteSugge
                 setPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index + 1) % current.images.length },
+                    : {
+                        ...current,
+                        index: (current.index + 1) % current.images.length,
+                      },
                 )
               }
               disabled={preview.images.length <= 1}
               aria-label="Image suivante"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>

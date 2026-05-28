@@ -10,87 +10,114 @@ export const adminSuggestionsRouter = Router()
 
 const updateSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
-  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
+  rejectionMessage: z
+    .string()
+    .min(3, 'Message trop court')
+    .max(1000, 'Message trop long')
+    .trim()
+    .optional(),
 })
 
-function publicSuggestion<T extends { name: string | null; email: string | null; user?: unknown }>(suggestion: T): T {
+function publicSuggestion<
+  T extends { name: string | null; email: string | null; user?: unknown },
+>(suggestion: T): T {
   return {
     ...suggestion,
-    name: suggestion.name ? (decryptSensitiveText(suggestion.name) ?? suggestion.name) : suggestion.name,
-    email: suggestion.email ? (decryptSensitiveText(suggestion.email) ?? suggestion.email) : suggestion.email,
+    name: suggestion.name
+      ? (decryptSensitiveText(suggestion.name) ?? suggestion.name)
+      : suggestion.name,
+    email: suggestion.email
+      ? (decryptSensitiveText(suggestion.email) ?? suggestion.email)
+      : suggestion.email,
   }
 }
 
-adminSuggestionsRouter.get('/', asyncHandler(async (req, res) => {
-  const rawStatus = req.query.status
-  const statusSchema = z.enum(['PENDING', 'PROCESSED', 'REJECTED']).optional()
-  const parsed = statusSchema.safeParse(rawStatus)
-  const where = parsed.success && parsed.data ? { status: parsed.data } : undefined
+adminSuggestionsRouter.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const rawStatus = req.query.status
+    const statusSchema = z.enum(['PENDING', 'PROCESSED', 'REJECTED']).optional()
+    const parsed = statusSchema.safeParse(rawStatus)
+    const where =
+      parsed.success && parsed.data ? { status: parsed.data } : undefined
 
-  const items = await prisma.suggestion.findMany({
-    where,
-    include: { user: true },
-    orderBy: { createdAt: 'desc' },
-  })
-  return res.json(items.map((item) => publicSuggestion(item)))
-}))
+    const items = await prisma.suggestion.findMany({
+      where,
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    return res.json(items.map((item) => publicSuggestion(item)))
+  }),
+)
 
-adminSuggestionsRouter.put('/:id', asyncHandler(async (req, res) => {
-  const parsed = updateSchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
-  }
-
-  const data: any = { status: parsed.data.status }
-  if (parsed.data.status === 'PROCESSED' || parsed.data.status === 'REJECTED') {
-    data.processedAt = new Date()
-    if (parsed.data.rejectionMessage) {
-      data.rejectionMessage = parsed.data.rejectionMessage
+adminSuggestionsRouter.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const parsed = updateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
     }
-  } else {
-    data.processedAt = null
-  }
 
-  const updated = await prisma.suggestion.update({
-    where: { id: req.params.id as string },
-    data,
-    include: { user: true },
-  })
+    const data: any = { status: parsed.data.status }
+    if (
+      parsed.data.status === 'PROCESSED' ||
+      parsed.data.status === 'REJECTED'
+    ) {
+      data.processedAt = new Date()
+      if (parsed.data.rejectionMessage) {
+        data.rejectionMessage = parsed.data.rejectionMessage
+      }
+    } else {
+      data.processedAt = null
+    }
 
-  await recordAdminAudit(req, {
-    action: 'Suggestion mise à jour',
-    detail: `Suggestion ${updated.id} → ${updated.status}${updated.user ? ` (${updated.user.username})` : ''}`,
-    tone: 'INFO',
-    entityType: 'suggestion',
-    entityId: updated.id,
-  })
-  return res.json(publicSuggestion(updated))
-}))
+    const updated = await prisma.suggestion.update({
+      where: { id: req.params.id as string },
+      data,
+      include: { user: true },
+    })
 
-adminSuggestionsRouter.delete('/:id', asyncHandler(async (req, res) => {
-  const existing = await prisma.suggestion.findUnique({
-    where: { id: req.params.id as string },
-  })
+    await recordAdminAudit(req, {
+      action: 'Suggestion mise à jour',
+      detail: `Suggestion ${updated.id} → ${updated.status}${updated.user ? ` (${updated.user.username})` : ''}`,
+      tone: 'INFO',
+      entityType: 'suggestion',
+      entityId: updated.id,
+    })
+    return res.json(publicSuggestion(updated))
+  }),
+)
 
-  if (!existing) {
-    throw new AppError(404, 'Suggestion introuvable.')
-  }
+adminSuggestionsRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.suggestion.findUnique({
+      where: { id: req.params.id as string },
+    })
 
-  if (existing.status === 'PENDING') {
-    throw new AppError(400, 'Vous ne pouvez supprimer qu\'une suggestion déjà traitée ou rejetée.')
-  }
+    if (!existing) {
+      throw new AppError(404, 'Suggestion introuvable.')
+    }
 
-  await prisma.suggestion.delete({
-    where: { id: req.params.id as string },
-  })
+    if (existing.status === 'PENDING') {
+      throw new AppError(
+        400,
+        "Vous ne pouvez supprimer qu'une suggestion déjà traitée ou rejetée.",
+      )
+    }
 
-  await recordAdminAudit(req, {
-    action: 'Suggestion supprimée',
-    detail: `Suggestion ${existing.id} supprimée (${existing.status})`,
-    tone: 'INFO',
-    entityType: 'suggestion',
-    entityId: existing.id,
-  })
+    await prisma.suggestion.delete({
+      where: { id: req.params.id as string },
+    })
 
-  return res.status(204).send()
-}))
+    await recordAdminAudit(req, {
+      action: 'Suggestion supprimée',
+      detail: `Suggestion ${existing.id} supprimée (${existing.status})`,
+      tone: 'INFO',
+      entityType: 'suggestion',
+      entityId: existing.id,
+    })
+
+    return res.status(204).send()
+  }),
+)

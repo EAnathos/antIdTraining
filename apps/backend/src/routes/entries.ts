@@ -10,8 +10,15 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { upload } from '../middleware/upload.js'
 import { AppError } from '../lib/errors.js'
-import { deleteUploadFilesForImageUrl, ensureUploadsDir, resolveUploadFilePath } from '../lib/imageFiles.js'
-import { decryptSensitiveText, encryptSensitiveText } from '../lib/encryption.js'
+import {
+  deleteUploadFilesForImageUrl,
+  ensureUploadsDir,
+  resolveUploadFilePath,
+} from '../lib/imageFiles.js'
+import {
+  decryptSensitiveText,
+  encryptSensitiveText,
+} from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
@@ -26,25 +33,54 @@ function publicEntry<T extends { photoCredit: string }>(entry: T): T {
 }
 
 const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
-const VALID_IMAGE_MIMETYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const VALID_IMAGE_MIMETYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+])
 
 const entrySchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
-  taxonValue: z.string().min(1, 'Valeur requise').max(255, 'Valeur trop longue').trim(),
+  taxonValue: z
+    .string()
+    .min(1, 'Valeur requise')
+    .max(255, 'Valeur trop longue')
+    .trim(),
   taxonGenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
   subgenus: z.string().max(255, 'Trop long').trim().optional().nullable(),
   speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
-  department: z.string().min(2, 'Département invalide').max(2, 'Département invalide').regex(/^[0-9]{2}$/, 'Département invalide').trim(),
-  observedAt: z.coerce.date().max(new Date(), 'La date ne peut pas être dans le futur'),
-  biotope: z.string().min(3, 'Biotope trop court').max(1000, 'Biotope trop long').trim(),
-  photoCredit: z.string().min(3, 'Crédit photo trop court').max(255, 'Crédit photo trop long').trim(),
+  department: z
+    .string()
+    .min(2, 'Département invalide')
+    .max(2, 'Département invalide')
+    .regex(/^[0-9]{2}$/, 'Département invalide')
+    .trim(),
+  observedAt: z.coerce
+    .date()
+    .max(new Date(), 'La date ne peut pas être dans le futur'),
+  biotope: z
+    .string()
+    .min(3, 'Biotope trop court')
+    .max(1000, 'Biotope trop long')
+    .trim(),
+  photoCredit: z
+    .string()
+    .min(3, 'Crédit photo trop court')
+    .max(255, 'Crédit photo trop long')
+    .trim(),
   size: z.string().max(100, 'Taille trop longue').trim().optional().nullable(),
   caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
 })
 
 export const entriesRouter = Router()
 
-function parsePagination(value: unknown, fallback: number, min: number, max: number) {
+function parsePagination(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+) {
   const parsed = typeof value === 'string' ? Number.parseInt(value, 10) : NaN
   if (Number.isNaN(parsed)) {
     return fallback
@@ -67,12 +103,17 @@ function sanitizeFileStem(name: string) {
 }
 
 async function cleanupSavedFiles(savedPaths: string[]) {
-  await Promise.allSettled(savedPaths.map((savedPath) => fs.promises.unlink(savedPath)))
+  await Promise.allSettled(
+    savedPaths.map((savedPath) => fs.promises.unlink(savedPath)),
+  )
 }
 
 async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
   if (!VALID_IMAGE_MIMETYPES.has(file.mimetype)) {
-    throw new AppError(400, 'Format d’image non accepté. Formats acceptés : JPEG, PNG, WebP, GIF.')
+    throw new AppError(
+      400,
+      'Format d’image non accepté. Formats acceptés : JPEG, PNG, WebP, GIF.',
+    )
   }
 
   const safeStem = sanitizeFileStem(file.originalname)
@@ -97,7 +138,8 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
     }
 
     for (const width of RESPONSIVE_IMAGE_WIDTHS) {
-      const outputFileName = width === 1600 ? baseFileName : `${fileId}-${width}.webp`
+      const outputFileName =
+        width === 1600 ? baseFileName : `${fileId}-${width}.webp`
       const outputPath = resolveUploadFilePath(outputFileName)
 
       await image
@@ -130,219 +172,280 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
 
 const uploadEntryImages: RequestHandler = (req, res, next) => {
   upload.array('images', 3)(req, res, (error) => {
-    if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ message: 'Chaque image doit faire 8 Mo maximum.' })
+    if (
+      error instanceof multer.MulterError &&
+      error.code === 'LIMIT_FILE_SIZE'
+    ) {
+      return res
+        .status(413)
+        .json({ message: 'Chaque image doit faire 8 Mo maximum.' })
     }
 
-    if (error instanceof multer.MulterError && error.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({ message: 'Vous pouvez envoyer 3 images maximum.' })
+    if (
+      error instanceof multer.MulterError &&
+      error.code === 'LIMIT_UNEXPECTED_FILE'
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Vous pouvez envoyer 3 images maximum.' })
     }
 
     if (error instanceof Error && error.message === 'ONLY_IMAGE_FILES') {
-      return res.status(400).json({ message: 'Seules les images sont acceptées.' })
+      return res
+        .status(400)
+        .json({ message: 'Seules les images sont acceptées.' })
     }
 
     if (error) {
-      return res.status(400).json({ message: 'Erreur lors de l’upload des images.' })
+      return res
+        .status(400)
+        .json({ message: 'Erreur lors de l’upload des images.' })
     }
 
     return next()
   })
 }
 
-entriesRouter.get('/', asyncHandler(async (req, res) => {
-  const page = parsePagination(req.query.page, 1, 1, 10_000)
-  const limit = parsePagination(req.query.limit, 50, 1, 100)
-  const skip = (page - 1) * limit
+entriesRouter.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const page = parsePagination(req.query.page, 1, 1, 10_000)
+    const limit = parsePagination(req.query.limit, 50, 1, 100)
+    const skip = (page - 1) * limit
 
-  const [entries, total] = await Promise.all([
-    prisma.observationEntry.findMany({
-      include: { images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
-      orderBy: { observedAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.observationEntry.count(),
-  ])
+    const [entries, total] = await Promise.all([
+      prisma.observationEntry.findMany({
+        include: {
+          images: {
+            orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }],
+          },
+        },
+        orderBy: { observedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.observationEntry.count(),
+    ])
 
-  return res.json({
-    items: entries.map((entry) => publicEntry(entry)),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.max(1, Math.ceil(total / limit)),
-    },
-  })
-}))
-
-entriesRouter.post('/', uploadEntryImages, asyncHandler(async (req, res) => {
-  const parsed = entrySchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
-  }
-
-  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
-  if (!taxonSelection) {
-    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
-  }
-
-  const files = (req.files as Express.Multer.File[] | undefined) ?? []
-  const optimizedFileNames = await Promise.all(
-    files.map(async (file, index) => {
-      const result = await optimizeAndSaveImage(file, index)
-      return result.baseFileName
-    }),
-  )
-
-  const createData: Prisma.ObservationEntryUncheckedCreateInput = {
-    ...taxonSelection,
-    caste: parsed.data.caste,
-    size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
-    department: parsed.data.department,
-    observedAt: parsed.data.observedAt,
-    biotope: parsed.data.biotope,
-    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
-    subgenus: parsed.data.subgenus ?? undefined,
-    speciesGroup: parsed.data.speciesGroup ?? undefined,
-  }
-
-  const created = await prisma.observationEntry.create({
-    data: {
-      ...createData,
-      images: {
-        create: optimizedFileNames.map((filename, i) => ({ imageUrl: `/uploads/${filename}`, position: i })),
+    return res.json({
+      items: entries.map((entry) => publicEntry(entry)),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / limit)),
       },
-    },
-    include: { images: true },
-  })
+    })
+  }),
+)
 
-  await recordAdminAudit(req, {
-    action: 'Entrée créée',
-    detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department})`,
-    tone: 'SUCCESS',
-    entityType: 'entry',
-    entityId: created.id,
-  })
-
-  invalidateGameEntryCacheSafely('entry created')
-
-  return res.status(201).json(publicEntry(created))
-}))
-
-entriesRouter.put('/:id', asyncHandler(async (req, res) => {
-  const parsed = entrySchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
-  }
-
-  const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
-  if (!taxonSelection) {
-    throw new AppError(400, 'Taxon introuvable pour ce niveau.')
-  }
-
-  const updateData: Prisma.ObservationEntryUncheckedUpdateInput = {
-    ...taxonSelection,
-    caste: parsed.data.caste,
-    size: parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
-    department: parsed.data.department,
-    observedAt: parsed.data.observedAt,
-    biotope: parsed.data.biotope,
-    photoCredit: encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit,
-    subgenus: parsed.data.subgenus ?? undefined,
-    speciesGroup: parsed.data.speciesGroup ?? undefined,
-  }
-
-  const updated = await prisma.observationEntry.update({
-    where: { id: req.params.id as string },
-    data: updateData,
-    include: { images: true },
-  })
-
-  await recordAdminAudit(req, {
-    action: 'Entrée modifiée',
-    detail: `${updated.subfamily} · ${updated.genus ?? '-'} · ${updated.species ?? '-'} (${updated.department})`,
-    tone: 'INFO',
-    entityType: 'entry',
-    entityId: updated.id,
-  })
-
-  invalidateGameEntryCacheSafely('entry updated')
-
-  return res.json(publicEntry(updated))
-}))
-
-entriesRouter.put('/:id/images/order', asyncHandler(async (req, res) => {
-  const bodySchema = z.object({ imageIds: z.array(z.string().min(1)).min(1, 'Au moins une image requise').max(10, 'Max 10 images') })
-  const parsed = bodySchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
-  }
-
-  const { imageIds } = parsed.data
-  const entryId = req.params.id as string
-
-  const existing = await prisma.entryImage.findMany({ where: { entryId } })
-  const existingIds = new Set(existing.map((i) => i.id))
-
-  // Ensure provided ids belong to the entry
-  for (const id of imageIds) {
-    if (!existingIds.has(id)) {
-      throw new AppError(400, 'Une des images n’appartient pas à cette entrée.')
+entriesRouter.post(
+  '/',
+  uploadEntryImages,
+  asyncHandler(async (req, res) => {
+    const parsed = entrySchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
     }
-  }
 
-  // Apply new positions in a transaction
-  await prisma.$transaction(
-    imageIds.map((id, index) => prisma.entryImage.update({ where: { id }, data: ({ position: index } as any) })),
-  )
+    const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
+    if (!taxonSelection) {
+      throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+    }
 
-  const updatedImages = await prisma.entryImage.findMany({ where: { entryId }, orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] })
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    const optimizedFileNames = await Promise.all(
+      files.map(async (file, index) => {
+        const result = await optimizeAndSaveImage(file, index)
+        return result.baseFileName
+      }),
+    )
 
-  await recordAdminAudit(req, {
-    action: 'Ordre des images modifié',
-    detail: `Entrée ${entryId}`,
-    tone: 'INFO',
-    entityType: 'entry',
-    entityId: entryId,
-  })
+    const createData: Prisma.ObservationEntryUncheckedCreateInput = {
+      ...taxonSelection,
+      caste: parsed.data.caste,
+      size:
+        parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
+      department: parsed.data.department,
+      observedAt: parsed.data.observedAt,
+      biotope: parsed.data.biotope,
+      photoCredit:
+        encryptSensitiveText(parsed.data.photoCredit) ??
+        parsed.data.photoCredit,
+      subgenus: parsed.data.subgenus ?? undefined,
+      speciesGroup: parsed.data.speciesGroup ?? undefined,
+    }
 
-  invalidateGameEntryCacheSafely('entry images reordered')
-
-  return res.json(updatedImages)
-}))
-
-entriesRouter.delete('/:id', asyncHandler(async (req, res) => {
-  const entry = await prisma.observationEntry.findUnique({
-    where: { id: req.params.id as string },
-    select: {
-      images: {
-        select: {
-          imageUrl: true,
+    const created = await prisma.observationEntry.create({
+      data: {
+        ...createData,
+        images: {
+          create: optimizedFileNames.map((filename, i) => ({
+            imageUrl: `/uploads/${filename}`,
+            position: i,
+          })),
         },
       },
-    },
-  })
+      include: { images: true },
+    })
 
-  if (!entry) {
-    throw new AppError(404, 'Entrée introuvable.')
-  }
+    await recordAdminAudit(req, {
+      action: 'Entrée créée',
+      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department})`,
+      tone: 'SUCCESS',
+      entityType: 'entry',
+      entityId: created.id,
+    })
 
-  await prisma.observationEntry.delete({ where: { id: req.params.id as string } })
+    invalidateGameEntryCacheSafely('entry created')
 
-  for (const image of entry.images) {
-    deleteUploadFilesForImageUrl(image.imageUrl)
-  }
+    return res.status(201).json(publicEntry(created))
+  }),
+)
 
-  await recordAdminAudit(req, {
-    action: 'Entrée supprimée',
-    detail: `Entrée ${req.params.id as string}`,
-    tone: 'ERROR',
-    entityType: 'entry',
-    entityId: req.params.id as string,
-  })
+entriesRouter.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const parsed = entrySchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
+    }
 
-  invalidateGameEntryCacheSafely('entry deleted')
+    const taxonSelection = await resolveEntryTaxonSelection(parsed.data)
+    if (!taxonSelection) {
+      throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+    }
 
-  return res.status(204).send()
-}))
+    const updateData: Prisma.ObservationEntryUncheckedUpdateInput = {
+      ...taxonSelection,
+      caste: parsed.data.caste,
+      size:
+        parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
+      department: parsed.data.department,
+      observedAt: parsed.data.observedAt,
+      biotope: parsed.data.biotope,
+      photoCredit:
+        encryptSensitiveText(parsed.data.photoCredit) ??
+        parsed.data.photoCredit,
+      subgenus: parsed.data.subgenus ?? undefined,
+      speciesGroup: parsed.data.speciesGroup ?? undefined,
+    }
+
+    const updated = await prisma.observationEntry.update({
+      where: { id: req.params.id as string },
+      data: updateData,
+      include: { images: true },
+    })
+
+    await recordAdminAudit(req, {
+      action: 'Entrée modifiée',
+      detail: `${updated.subfamily} · ${updated.genus ?? '-'} · ${updated.species ?? '-'} (${updated.department})`,
+      tone: 'INFO',
+      entityType: 'entry',
+      entityId: updated.id,
+    })
+
+    invalidateGameEntryCacheSafely('entry updated')
+
+    return res.json(publicEntry(updated))
+  }),
+)
+
+entriesRouter.put(
+  '/:id/images/order',
+  asyncHandler(async (req, res) => {
+    const bodySchema = z.object({
+      imageIds: z
+        .array(z.string().min(1))
+        .min(1, 'Au moins une image requise')
+        .max(10, 'Max 10 images'),
+    })
+    const parsed = bodySchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
+    }
+
+    const { imageIds } = parsed.data
+    const entryId = req.params.id as string
+
+    const existing = await prisma.entryImage.findMany({ where: { entryId } })
+    const existingIds = new Set(existing.map((i) => i.id))
+
+    // Ensure provided ids belong to the entry
+    for (const id of imageIds) {
+      if (!existingIds.has(id)) {
+        throw new AppError(
+          400,
+          'Une des images n’appartient pas à cette entrée.',
+        )
+      }
+    }
+
+    // Apply new positions in a transaction
+    await prisma.$transaction(
+      imageIds.map((id, index) =>
+        prisma.entryImage.update({
+          where: { id },
+          data: { position: index } as any,
+        }),
+      ),
+    )
+
+    const updatedImages = await prisma.entryImage.findMany({
+      where: { entryId },
+      orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }],
+    })
+
+    await recordAdminAudit(req, {
+      action: 'Ordre des images modifié',
+      detail: `Entrée ${entryId}`,
+      tone: 'INFO',
+      entityType: 'entry',
+      entityId: entryId,
+    })
+
+    invalidateGameEntryCacheSafely('entry images reordered')
+
+    return res.json(updatedImages)
+  }),
+)
+
+entriesRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const entry = await prisma.observationEntry.findUnique({
+      where: { id: req.params.id as string },
+      select: {
+        images: {
+          select: {
+            imageUrl: true,
+          },
+        },
+      },
+    })
+
+    if (!entry) {
+      throw new AppError(404, 'Entrée introuvable.')
+    }
+
+    await prisma.observationEntry.delete({
+      where: { id: req.params.id as string },
+    })
+
+    for (const image of entry.images) {
+      deleteUploadFilesForImageUrl(image.imageUrl)
+    }
+
+    await recordAdminAudit(req, {
+      action: 'Entrée supprimée',
+      detail: `Entrée ${req.params.id as string}`,
+      tone: 'ERROR',
+      entityType: 'entry',
+      entityId: req.params.id as string,
+    })
+
+    invalidateGameEntryCacheSafely('entry deleted')
+
+    return res.status(204).send()
+  }),
+)

@@ -30,7 +30,14 @@ describe('LeaderboardPage', () => {
         return {
           data: {
             items: [
-              { userId: 'u1', username: 'Alice', gamesPlayed: 10, correctCount: 8, wrongCount: 2, points: 240 },
+              {
+                userId: 'u1',
+                username: 'Alice',
+                gamesPlayed: 10,
+                correctCount: 8,
+                wrongCount: 2,
+                points: 240,
+              },
             ],
           },
         }
@@ -65,7 +72,9 @@ describe('LeaderboardPage', () => {
       }
 
       if (path === '/auth/me') {
-        return { data: { userId: 'u1', role: 'USER', username: 'Alice', points: 0 } }
+        return {
+          data: { userId: 'u1', role: 'USER', username: 'Alice', points: 0 },
+        }
       }
 
       throw new Error(`Unexpected call: ${path}`)
@@ -74,7 +83,9 @@ describe('LeaderboardPage', () => {
     render(<LeaderboardPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Aucun joueur classé pour le moment.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Aucun joueur classé pour le moment.'),
+      ).toBeInTheDocument()
     })
   })
 })

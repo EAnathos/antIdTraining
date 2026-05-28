@@ -8,7 +8,13 @@ interface RequestConfig {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 
-type JsonBody = Record<string, unknown> | unknown[] | string | number | boolean | null
+type JsonBody =
+  | Record<string, unknown>
+  | unknown[]
+  | string
+  | number
+  | boolean
+  | null
 
 type ApiErrorPayload = {
   message?: string
@@ -25,9 +31,21 @@ type ApiError = Error & {
 
 interface RequestMethods {
   get<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
-  post<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
-  put<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
-  patch<T = unknown>(url: string, body?: JsonBody | FormData, config?: RequestConfig): Promise<{ data: T }>
+  post<T = unknown>(
+    url: string,
+    body?: JsonBody | FormData,
+    config?: RequestConfig,
+  ): Promise<{ data: T }>
+  put<T = unknown>(
+    url: string,
+    body?: JsonBody | FormData,
+    config?: RequestConfig,
+  ): Promise<{ data: T }>
+  patch<T = unknown>(
+    url: string,
+    body?: JsonBody | FormData,
+    config?: RequestConfig,
+  ): Promise<{ data: T }>
   delete<T = unknown>(url: string, config?: RequestConfig): Promise<{ data: T }>
 }
 
@@ -42,9 +60,19 @@ function createApiClient(
   defaultHeaders: Record<string, string> = {},
   onUnauthorized?: () => void,
 ): RequestMethods & { create: (config: ApiClientConfig) => RequestMethods } {
-  const makeRequest = async (method: HttpMethod, url: string, body?: JsonBody | FormData, config?: RequestConfig) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
-    const normalizedBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL
+  const makeRequest = async (
+    method: HttpMethod,
+    url: string,
+    body?: JsonBody | FormData,
+    config?: RequestConfig,
+  ) => {
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'http://localhost'
+    const normalizedBaseURL = baseURL.endsWith('/')
+      ? baseURL.slice(0, -1)
+      : baseURL
     const normalizedUrl = url.startsWith('/') ? url : `/${url}`
     const fullUrl = new URL(`${normalizedBaseURL}${normalizedUrl}`, origin)
 
@@ -67,10 +95,17 @@ function createApiClient(
         method,
         credentials: 'include',
         headers,
-        body: body && !(body instanceof FormData) ? JSON.stringify(body) : body instanceof FormData ? body : undefined,
+        body:
+          body && !(body instanceof FormData)
+            ? JSON.stringify(body)
+            : body instanceof FormData
+              ? body
+              : undefined,
       })
     } catch {
-      const networkError = new Error('Réseau indisponible ou serveur injoignable.')
+      const networkError = new Error(
+        'Réseau indisponible ou serveur injoignable.',
+      )
       ;(networkError as Error & { status?: number }).status = 0
       throw networkError
     }
@@ -152,12 +187,13 @@ function createApiClient(
 
 export const api = createApiClient(apiBaseUrl)
 
-export function createAdminApiClient(token: string | null, onUnauthorized?: () => void) {
+export function createAdminApiClient(
+  token: string | null,
+  onUnauthorized?: () => void,
+) {
   return api.create({
     baseURL: `${apiBaseUrl}/admin`,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     onUnauthorized,
   })
 }
-
-export const createAuthApi = createAdminApiClient

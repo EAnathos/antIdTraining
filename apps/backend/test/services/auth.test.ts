@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { prismaMocks, commonMocks, resetSharedMocks } from '../utils/sharedMocks'
+import {
+  prismaMocks,
+  commonMocks,
+  resetSharedMocks,
+} from '../utils/sharedMocks'
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
 vi.mock('bcryptjs', () => ({
@@ -27,7 +31,11 @@ vi.mock('../../src/lib/mail.js', () => ({
   sendVerificationEmail: commonMocks.sendVerificationEmail,
 }))
 
-import { loginAdmin, registerUser, verifyRegistrationEmail } from '../../src/services/auth.js'
+import {
+  loginAdmin,
+  registerUser,
+  verifyRegistrationEmail,
+} from '../../src/services/auth.js'
 
 describe('auth service', () => {
   beforeEach(() => {
@@ -39,7 +47,9 @@ describe('auth service', () => {
   it('rejects login when user is missing and applies login rate-limit', async () => {
     prismaMocks.user.findUnique.mockResolvedValue(null)
 
-    await expect(loginAdmin('unknown@example.com', 'password', '127.0.0.1')).rejects.toMatchObject({
+    await expect(
+      loginAdmin('unknown@example.com', 'password', '127.0.0.1'),
+    ).rejects.toMatchObject({
       status: 401,
       message: 'Identifiants invalides.',
     })
@@ -65,7 +75,11 @@ describe('auth service', () => {
     })
     commonMocks.bcryptCompare.mockResolvedValue(true)
 
-    const result = await loginAdmin('admin@example.com', 'good-password', '127.0.0.1')
+    const result = await loginAdmin(
+      'admin@example.com',
+      'good-password',
+      '127.0.0.1',
+    )
 
     expect(result).toEqual({
       token: 'jwt-token',
@@ -77,12 +91,25 @@ describe('auth service', () => {
         role: 'ADMIN',
       },
     })
-    expect(commonMocks.bcryptCompare).toHaveBeenCalledWith('good-password', 'stored-hash')
-    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('login', '127.0.0.1')
-    expect(commonMocks.jwtSign).toHaveBeenCalledWith({ userId: 'user_1', role: 'ADMIN' }, 'test-secret', {
-      expiresIn: '12h',
-    })
-    expect(commonMocks.sendLoginNotificationEmail).toHaveBeenCalledWith('admin@example.com', 'admin')
+    expect(commonMocks.bcryptCompare).toHaveBeenCalledWith(
+      'good-password',
+      'stored-hash',
+    )
+    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith(
+      'login',
+      '127.0.0.1',
+    )
+    expect(commonMocks.jwtSign).toHaveBeenCalledWith(
+      { userId: 'user_1', role: 'ADMIN' },
+      'test-secret',
+      {
+        expiresIn: '12h',
+      },
+    )
+    expect(commonMocks.sendLoginNotificationEmail).toHaveBeenCalledWith(
+      'admin@example.com',
+      'admin',
+    )
   })
 
   it('rejects login when the email is not verified', async () => {
@@ -96,17 +123,29 @@ describe('auth service', () => {
     })
     commonMocks.bcryptCompare.mockResolvedValue(true)
 
-    await expect(loginAdmin('admin@example.com', 'good-password', '127.0.0.1')).rejects.toMatchObject({
+    await expect(
+      loginAdmin('admin@example.com', 'good-password', '127.0.0.1'),
+    ).rejects.toMatchObject({
       status: 403,
       message: 'Veuillez valider votre adresse e-mail avant de vous connecter.',
     })
-    expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith('login', '127.0.0.1')
+    expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith(
+      'login',
+      '127.0.0.1',
+    )
   })
 
   it('rejects registration when username already exists', async () => {
     prismaMocks.user.findUnique.mockResolvedValue({ id: 'existing' })
 
-    await expect(registerUser('existing', 'existing@example.com', 'password123', '127.0.0.1')).rejects.toMatchObject({
+    await expect(
+      registerUser(
+        'existing',
+        'existing@example.com',
+        'password123',
+        '127.0.0.1',
+      ),
+    ).rejects.toMatchObject({
       status: 409,
       message: 'Ce nom d’utilisateur est déjà utilisé.',
     })
@@ -119,7 +158,10 @@ describe('auth service', () => {
       'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
     )
     expect(prismaMocks.user.create).not.toHaveBeenCalled()
-    expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith('registration', '127.0.0.1')
+    expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith(
+      'registration',
+      '127.0.0.1',
+    )
   })
 
   it('registers a new user and sends a verification email', async () => {
@@ -133,7 +175,12 @@ describe('auth service', () => {
       role: 'USER',
     })
 
-    const result = await registerUser('new-user', 'new-user@example.com', 'password123', '127.0.0.1')
+    const result = await registerUser(
+      'new-user',
+      'new-user@example.com',
+      'password123',
+      '127.0.0.1',
+    )
 
     expect(result).toEqual({
       requiresEmailVerification: true,
@@ -158,8 +205,15 @@ describe('auth service', () => {
         role: true,
       },
     })
-    expect(commonMocks.sendVerificationEmail).toHaveBeenCalledWith('new-user@example.com', 'new-user', expect.any(String))
-    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('registration', '127.0.0.1')
+    expect(commonMocks.sendVerificationEmail).toHaveBeenCalledWith(
+      'new-user@example.com',
+      'new-user',
+      expect.any(String),
+    )
+    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith(
+      'registration',
+      '127.0.0.1',
+    )
   })
 
   it('verifies an email and returns an authenticated payload', async () => {
@@ -169,7 +223,8 @@ describe('auth service', () => {
       email: 'new-user@example.com',
       role: 'USER',
       emailVerifiedAt: null,
-      emailVerificationCodeHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+      emailVerificationCodeHash:
+        '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
       emailVerificationCodeExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
     })
     prismaMocks.user.update.mockResolvedValue({
@@ -179,7 +234,11 @@ describe('auth service', () => {
       role: 'USER',
     })
 
-    const result = await verifyRegistrationEmail('new-user@example.com', 'password', '127.0.0.1')
+    const result = await verifyRegistrationEmail(
+      'new-user@example.com',
+      'password',
+      '127.0.0.1',
+    )
 
     expect(result).toEqual({
       token: 'jwt-token',
@@ -205,6 +264,9 @@ describe('auth service', () => {
         role: true,
       },
     })
-    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith('email-verification', '127.0.0.1')
+    expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith(
+      'email-verification',
+      '127.0.0.1',
+    )
   })
 })

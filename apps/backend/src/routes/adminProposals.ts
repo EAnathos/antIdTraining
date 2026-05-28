@@ -13,155 +13,178 @@ export const adminProposalsRouter = Router()
 function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
   return {
     ...proposal,
-    photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+    photoCredit:
+      decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
   }
 }
 
 const approveProposalSchema = z.object({
   decision: z.enum(['ACCEPT', 'REJECT']),
-  rejectionMessage: z.string().min(3, 'Message trop court').max(1000, 'Message trop long').trim().optional(),
+  rejectionMessage: z
+    .string()
+    .min(3, 'Message trop court')
+    .max(1000, 'Message trop long')
+    .trim()
+    .optional(),
 })
 
 // Get all pending proposals
-adminProposalsRouter.get('/', asyncHandler(async (req, res) => {
-  const status = req.query.status as string | undefined
-  const userId = req.query.userId as string | undefined
+adminProposalsRouter.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const status = req.query.status as string | undefined
+    const userId = req.query.userId as string | undefined
 
-  const where: Prisma.EntryProposalWhereInput = {}
-  if (status && ['PENDING', 'ACCEPTED', 'REJECTED'].includes(status)) {
-    where.status = status as any
-  }
-  if (userId) {
-    where.userId = userId
-  }
-
-  const proposals = await prisma.entryProposal.findMany({
-    where,
-    include: { user: true, images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] } },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  return res.json(proposals.map((proposal) => publicProposal(proposal)))
-}))
-
-// Accept or reject proposal
-adminProposalsRouter.put('/:id', asyncHandler(async (req, res) => {
-  const parsed = approveProposalSchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(400, 'Requête invalide.')
-  }
-
-  const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id as string },
-    include: { images: true, user: true },
-  })
-
-  if (!proposal) {
-    throw new AppError(404, 'Proposition introuvable.')
-  }
-
-  if (parsed.data.decision === 'ACCEPT') {
-    const createData: Prisma.ObservationEntryUncheckedCreateInput = {
-      taxonLevel: proposal.taxonLevel,
-      taxonValue: proposal.taxonValue,
-      subfamily: proposal.subfamily,
-      genus: proposal.genus,
-      subgenus: proposal.subgenus,
-      species: proposal.species,
-      speciesGroup: proposal.speciesGroup,
-      size: proposal.size,
-      caste: proposal.caste,
-      department: proposal.department,
-      observedAt: proposal.observedAt,
-      biotope: proposal.biotope,
-      photoCredit: decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+    const where: Prisma.EntryProposalWhereInput = {}
+    if (status && ['PENDING', 'ACCEPTED', 'REJECTED'].includes(status)) {
+      where.status = status as any
+    }
+    if (userId) {
+      where.userId = userId
     }
 
-    const created = await prisma.observationEntry.create({
-      data: {
-        ...createData,
-        images: {
-          create: proposal.images.map((img) => ({
-            imageUrl: img.imageUrl,
-            position: img.position,
-          })),
+    const proposals = await prisma.entryProposal.findMany({
+      where,
+      include: {
+        user: true,
+        images: { orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return res.json(proposals.map((proposal) => publicProposal(proposal)))
+  }),
+)
+
+// Accept or reject proposal
+adminProposalsRouter.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const parsed = approveProposalSchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new AppError(400, 'Requête invalide.')
+    }
+
+    const proposal = await prisma.entryProposal.findUnique({
+      where: { id: req.params.id as string },
+      include: { images: true, user: true },
+    })
+
+    if (!proposal) {
+      throw new AppError(404, 'Proposition introuvable.')
+    }
+
+    if (parsed.data.decision === 'ACCEPT') {
+      const createData: Prisma.ObservationEntryUncheckedCreateInput = {
+        taxonLevel: proposal.taxonLevel,
+        taxonValue: proposal.taxonValue,
+        subfamily: proposal.subfamily,
+        genus: proposal.genus,
+        subgenus: proposal.subgenus,
+        species: proposal.species,
+        speciesGroup: proposal.speciesGroup,
+        size: proposal.size,
+        caste: proposal.caste,
+        department: proposal.department,
+        observedAt: proposal.observedAt,
+        biotope: proposal.biotope,
+        photoCredit:
+          decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
+      }
+
+      const created = await prisma.observationEntry.create({
+        data: {
+          ...createData,
+          images: {
+            create: proposal.images.map((img) => ({
+              imageUrl: img.imageUrl,
+              position: img.position,
+            })),
+          },
         },
-      },
-      include: { images: true },
+        include: { images: true },
+      })
+
+      // Update proposal status
+      await prisma.entryProposal.update({
+        where: { id: req.params.id as string },
+        data: {
+          status: 'ACCEPTED',
+          processedAt: new Date(),
+        },
+      })
+
+      await recordAdminAudit(req, {
+        action: "Proposition d'entrée acceptée",
+        detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) de ${proposal.user.username}`,
+        tone: 'SUCCESS',
+        entityType: 'entryProposal',
+        entityId: req.params.id as string,
+      })
+
+      invalidateGameEntryCacheSafely('proposal accepted')
+
+      return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
+    } else {
+      // Reject proposal
+      const rejectionMessage =
+        parsed.data.rejectionMessage || "Rejeté par l'administrateur."
+
+      await prisma.entryProposal.update({
+        where: { id: req.params.id as string },
+        data: {
+          status: 'REJECTED',
+          rejectionMessage,
+          processedAt: new Date(),
+        },
+      })
+
+      await recordAdminAudit(req, {
+        action: "Proposition d'entrée rejetée",
+        detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department}) de ${proposal.user.username}`,
+        tone: 'INFO',
+        entityType: 'entryProposal',
+        entityId: req.params.id as string,
+      })
+
+      return res.json({ status: 'REJECTED', rejectionMessage })
+    }
+  }),
+)
+
+adminProposalsRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const proposal = await prisma.entryProposal.findUnique({
+      where: { id: req.params.id as string },
+      include: { user: true },
     })
 
-    // Update proposal status
-    await prisma.entryProposal.update({
+    if (!proposal) {
+      throw new AppError(404, 'Proposition introuvable.')
+    }
+
+    if (proposal.status === 'PENDING') {
+      throw new AppError(
+        400,
+        'Vous ne pouvez supprimer qu’une proposition déjà acceptée ou rejetée.',
+      )
+    }
+
+    await prisma.entryProposal.delete({
       where: { id: req.params.id as string },
-      data: {
-        status: 'ACCEPTED',
-        processedAt: new Date(),
-      },
     })
 
     await recordAdminAudit(req, {
-      action: 'Proposition d\'entrée acceptée',
-      detail: `${created.subfamily} · ${created.genus ?? '-'} · ${created.species ?? '-'} (${created.department}) de ${proposal.user.username}`,
-      tone: 'SUCCESS',
-      entityType: 'entryProposal',
-      entityId: req.params.id as string,
-    })
-
-    invalidateGameEntryCacheSafely('proposal accepted')
-
-    return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
-  } else {
-    // Reject proposal
-    const rejectionMessage = parsed.data.rejectionMessage || 'Rejeté par l\'administrateur.'
-
-    await prisma.entryProposal.update({
-      where: { id: req.params.id as string },
-      data: {
-        status: 'REJECTED',
-        rejectionMessage,
-        processedAt: new Date(),
-      },
-    })
-
-    await recordAdminAudit(req, {
-      action: 'Proposition d\'entrée rejetée',
-      detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department}) de ${proposal.user.username}`,
+      action: 'Proposition d’entrée supprimée',
+      detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department})`,
       tone: 'INFO',
       entityType: 'entryProposal',
       entityId: req.params.id as string,
     })
 
-    return res.json({ status: 'REJECTED', rejectionMessage })
-  }
-}))
+    invalidateGameEntryCacheSafely('proposal rejected or deleted')
 
-adminProposalsRouter.delete('/:id', asyncHandler(async (req, res) => {
-  const proposal = await prisma.entryProposal.findUnique({
-    where: { id: req.params.id as string },
-    include: { user: true },
-  })
-
-  if (!proposal) {
-    throw new AppError(404, 'Proposition introuvable.')
-  }
-
-  if (proposal.status === 'PENDING') {
-    throw new AppError(400, 'Vous ne pouvez supprimer qu’une proposition déjà acceptée ou rejetée.')
-  }
-
-  await prisma.entryProposal.delete({
-    where: { id: req.params.id as string },
-  })
-
-  await recordAdminAudit(req, {
-    action: 'Proposition d’entrée supprimée',
-    detail: `${proposal.subfamily} · ${proposal.genus ?? '-'} · ${proposal.species ?? '-'} (${proposal.department})`,
-    tone: 'INFO',
-    entityType: 'entryProposal',
-    entityId: req.params.id as string,
-  })
-
-  invalidateGameEntryCacheSafely('proposal rejected or deleted')
-
-  return res.status(204).send()
-}))
+    return res.status(204).send()
+  }),
+)

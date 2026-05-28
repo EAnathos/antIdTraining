@@ -26,7 +26,9 @@ export function AdminDashboardPage() {
   const navigate = useNavigate()
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
-  const [toolsTab, setToolsTab] = useState<'database' | 'stats' | 'history'>('database')
+  const [toolsTab, setToolsTab] = useState<'database' | 'stats' | 'history'>(
+    'database',
+  )
 
   const logoutToLogin = useCallback(async () => {
     await api.post('/auth/logout').catch(() => undefined)
@@ -38,7 +40,10 @@ export function AdminDashboardPage() {
     navigate('/connexion', { replace: true })
   }, [navigate])
 
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('antidtraining-auth-token')
+      : null
   const data = useAdminData(token, logoutToLogin)
 
   const normalizedMessage = data.message.toLowerCase()
@@ -54,8 +59,12 @@ export function AdminDashboardPage() {
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">Administration</h2>
-            <p className="mt-1 text-sm text-slate-600">Espace réservé à la gestion du contenu et des contributions.</p>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              Administration
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Espace réservé à la gestion du contenu et des contributions.
+            </p>
           </div>
 
           <AdminMobileMenu
@@ -69,7 +78,9 @@ export function AdminDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:block">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Sections</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Sections
+          </p>
           <div className="flex flex-col gap-2">
             {adminSections.map((item) => (
               <button
@@ -85,7 +96,9 @@ export function AdminDashboardPage() {
 
         <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           {data.message && (
-            <div className={`mb-4 rounded-lg px-3 py-2 text-sm ${isErrorMessage ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            <div
+              className={`mb-4 rounded-lg px-3 py-2 text-sm ${isErrorMessage ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
+            >
               {data.message}
             </div>
           )}
@@ -116,7 +129,9 @@ export function AdminDashboardPage() {
               updateReference={data.updateReference}
               deleteReference={data.deleteReference}
               saveReferenceAuthorsAndTaxons={data.saveReferenceAuthorsAndTaxons}
-              saveReferenceAuthorsAndTaxonsById={data.saveReferenceAuthorsAndTaxonsById}
+              saveReferenceAuthorsAndTaxonsById={
+                data.saveReferenceAuthorsAndTaxonsById
+              }
             />
           )}
 
@@ -147,11 +162,15 @@ export function AdminDashboardPage() {
               suggestions={data.suggestions}
               setSuggestionStatus={data.setSuggestionStatus}
               deleteSuggestion={data.deleteSuggestion}
-              updateSuggestionRejectionMessage={data.updateSuggestionRejectionMessage}
+              updateSuggestionRejectionMessage={
+                data.updateSuggestionRejectionMessage
+              }
               proposals={data.proposals}
               setProposalStatus={data.setProposalStatus}
               deleteProposal={data.deleteProposal}
-              updateProposalRejectionMessage={data.updateProposalRejectionMessage}
+              updateProposalRejectionMessage={
+                data.updateProposalRejectionMessage
+              }
             />
           )}
 
@@ -165,11 +184,13 @@ export function AdminDashboardPage() {
           {section === 'database' && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-                {([
-                  { id: 'database', label: 'Base de données' },
-                  { id: 'stats', label: 'Statistiques' },
-                  { id: 'history', label: 'Historique' },
-                ] as const).map((item) => (
+                {(
+                  [
+                    { id: 'database', label: 'Base de données' },
+                    { id: 'stats', label: 'Statistiques' },
+                    { id: 'history', label: 'Historique' },
+                  ] as const
+                ).map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -197,7 +218,9 @@ export function AdminDashboardPage() {
                 />
               )}
 
-              {toolsTab === 'history' && <AdminHistoryPanel history={data.history} />}
+              {toolsTab === 'history' && (
+                <AdminHistoryPanel history={data.history} />
+              )}
             </div>
           )}
         </div>

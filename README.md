@@ -3,6 +3,7 @@
 Plateforme d'entraînement à l'identification des fourmis.
 
 Le projet est un monorepo avec:
+
 - un frontend en React + Vite + TypeScript + Tailwind CSS
 - un backend en Express + Prisma + PostgreSQL
 - un déploiement Docker Compose pour lancer l'ensemble rapidement
@@ -76,6 +77,7 @@ npm run dev
 ```
 
 Raccourcis utiles:
+
 - Frontend: http://localhost:5173
 - Backend: http://localhost:4000
 

@@ -18,7 +18,10 @@ const LEVELS: { db: DbLevel; api: 'easy' | 'medium' | 'hard' }[] = [
   { db: 'HARD', api: 'hard' },
 ]
 
-const GAME_POINTS_BY_LEVEL: Record<DbLevel, { correct: number; wrong: number }> = {
+const GAME_POINTS_BY_LEVEL: Record<
+  DbLevel,
+  { correct: number; wrong: number }
+> = {
   EASY: { correct: 5, wrong: -2 },
   MEDIUM: { correct: 10, wrong: -5 },
   HARD: { correct: 15, wrong: -5 },
@@ -102,7 +105,6 @@ export async function buildUserPointRows(userIds?: string[]) {
     if (group.finalCorrect === true) {
       current.correctCount += group._count._all
     }
-
   })
 
   return Array.from(rows.values()).map((row) => ({
@@ -126,8 +128,14 @@ export async function getGameStats(periodInput: unknown) {
     _count: { _all: true },
   })
 
-  const statsByLevel = new Map<DbLevel, { launchedCount: number; finalizedCount: number; finalCorrectCount: number }>(
-    LEVELS.map(({ db }) => [db, { launchedCount: 0, finalizedCount: 0, finalCorrectCount: 0 }]),
+  const statsByLevel = new Map<
+    DbLevel,
+    { launchedCount: number; finalizedCount: number; finalCorrectCount: number }
+  >(
+    LEVELS.map(({ db }) => [
+      db,
+      { launchedCount: 0, finalizedCount: 0, finalCorrectCount: 0 },
+    ]),
   )
 
   groupedStats.forEach(({ level, finalCorrect, _count }) => {
@@ -146,8 +154,20 @@ export async function getGameStats(periodInput: unknown) {
   })
 
   const levels = LEVELS.map(({ db, api }) => {
-    const current = statsByLevel.get(db) ?? { launchedCount: 0, finalizedCount: 0, finalCorrectCount: 0 }
-    const finalCorrectRate = current.finalizedCount > 0 ? Number(((current.finalCorrectCount / current.finalizedCount) * 100).toFixed(1)) : 0
+    const current = statsByLevel.get(db) ?? {
+      launchedCount: 0,
+      finalizedCount: 0,
+      finalCorrectCount: 0,
+    }
+    const finalCorrectRate =
+      current.finalizedCount > 0
+        ? Number(
+            (
+              (current.finalCorrectCount / current.finalizedCount) *
+              100
+            ).toFixed(1),
+          )
+        : 0
 
     return {
       level: api,
@@ -166,7 +186,9 @@ export async function getEntryStats(periodInput: unknown) {
   const startDate = getPeriodDate(period)
 
   // Total photos (optionally filtered by period)
-  const totalPhotos = await prisma.entryImage.count({ ...(startDate ? { where: { createdAt: { gte: startDate } } } : {}) })
+  const totalPhotos = await prisma.entryImage.count({
+    ...(startDate ? { where: { createdAt: { gte: startDate } } } : {}),
+  })
 
   // Number of posts per taxonValue (optionally filtered by period)
   const groupByTaxon = await prisma.observationEntry.groupBy({

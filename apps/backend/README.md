@@ -3,6 +3,7 @@
 API du projet Ant ID Training.
 
 Technologies:
+
 - Express
 - Prisma
 - PostgreSQL
@@ -61,6 +62,7 @@ Les connexions utilisateur déclenchent aussi un e-mail de notification via l'AP
 ## Base de données
 
 Le backend s'appuie sur Prisma pour:
+
 - les modèles métier
 - les migrations
 - la génération du client

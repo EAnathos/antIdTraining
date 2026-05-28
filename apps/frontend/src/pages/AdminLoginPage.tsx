@@ -28,7 +28,10 @@ export function AdminLoginPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     try {
-      const { data } = await api.post<{ token: string; role: string }>('/auth/login', { email, password })
+      const { data } = await api.post<{ token: string; role: string }>(
+        '/auth/login',
+        { email, password },
+      )
       if (data.role !== 'ADMIN') {
         setError('Compte non administrateur')
         return
@@ -54,7 +57,9 @@ export function AdminLoginPage() {
 
   return (
     <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Connexion administrateur</h2>
+      <h2 className="text-xl font-semibold text-slate-900">
+        Connexion administrateur
+      </h2>
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>
         <input
           className="w-full rounded-lg border border-slate-300 p-2"
@@ -72,7 +77,10 @@ export function AdminLoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white" type="submit">
+        <button
+          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white"
+          type="submit"
+        >
           Se connecter
         </button>
       </form>

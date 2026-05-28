@@ -14,11 +14,15 @@ type SizeBounds = {
 function parseSizeBounds(value: string | null | undefined): SizeBounds | null {
   if (!value) return null
 
-  const match = value.trim().match(/^(\d+(?:[.,]\d+)?)(?:\s*-\s*(\d+(?:[.,]\d+)?))?\s*mm$/i)
+  const match = value
+    .trim()
+    .match(/^(\d+(?:[.,]\d+)?)(?:\s*-\s*(\d+(?:[.,]\d+)?))?\s*mm$/i)
   if (!match) return null
 
   const first = Number.parseFloat(match[1].replace(',', '.'))
-  const second = match[2] ? Number.parseFloat(match[2].replace(',', '.')) : first
+  const second = match[2]
+    ? Number.parseFloat(match[2].replace(',', '.'))
+    : first
 
   if (!Number.isFinite(first) || !Number.isFinite(second)) {
     return null
@@ -44,7 +48,9 @@ function formatSizeBounds(bounds: SizeBounds | null): string | null {
   return bounds.min === bounds.max ? `${min} mm` : `${min}-${max} mm`
 }
 
-function mergeSizeValues(values: Array<string | null | undefined>): string | null {
+function mergeSizeValues(
+  values: Array<string | null | undefined>,
+): string | null {
   const bounds = values
     .map(parseSizeBounds)
     .filter((value): value is SizeBounds => Boolean(value))
@@ -57,7 +63,13 @@ function mergeSizeValues(values: Array<string | null | undefined>): string | nul
   })
 }
 
-function buildSizeDetails(profile: { sizeWorker: string | null; sizeQueen: string | null; sizeMale: string | null } | null): TaxonSizeDetails {
+function buildSizeDetails(
+  profile: {
+    sizeWorker: string | null
+    sizeQueen: string | null
+    sizeMale: string | null
+  } | null,
+): TaxonSizeDetails {
   return {
     sizeWorker: profile?.sizeWorker ?? null,
     sizeQueen: profile?.sizeQueen ?? null,
@@ -136,12 +148,26 @@ export async function buildTaxonSizeMaps() {
   }
 }
 
-export async function resolveTaxonSizeDetails(entry: { species?: string | null; genus?: string | null; subfamily: string }, caste?: 'WORKER' | 'QUEEN' | 'MALE' | null) {
-  const sizeKey = caste === 'QUEEN' ? 'sizeQueen' : caste === 'MALE' ? 'sizeMale' : 'sizeWorker'
+export async function resolveTaxonSizeDetails(
+  entry: { species?: string | null; genus?: string | null; subfamily: string },
+  caste?: 'WORKER' | 'QUEEN' | 'MALE' | null,
+) {
+  const sizeKey =
+    caste === 'QUEEN'
+      ? 'sizeQueen'
+      : caste === 'MALE'
+        ? 'sizeMale'
+        : 'sizeWorker'
 
   if (entry.species && entry.genus) {
     const profile = await prisma.taxonLevelProfile.findUnique({
-      where: { level_value_genusValue: { level: 'SPECIES', value: entry.species, genusValue: entry.genus } },
+      where: {
+        level_value_genusValue: {
+          level: 'SPECIES',
+          value: entry.species,
+          genusValue: entry.genus,
+        },
+      },
       select: { sizeWorker: true, sizeQueen: true, sizeMale: true },
     })
 
@@ -191,7 +217,9 @@ export async function resolveTaxonSizeDetails(entry: { species?: string | null; 
     select: { sizeWorker: true, sizeQueen: true, sizeMale: true },
   })
 
-  const derivedSize = mergeSizeValues(profiles.map((profile) => profile[sizeKey]))
+  const derivedSize = mergeSizeValues(
+    profiles.map((profile) => profile[sizeKey]),
+  )
   if (derivedSize) {
     return derivedSize
   }

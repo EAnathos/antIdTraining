@@ -31,14 +31,18 @@ function formatDepartment(value: string) {
   const hyphenMatch = normalized.match(/^([0-9]{1,3}[A-Za-z]?)\s*-\s*(.+)$/)
   if (hyphenMatch) {
     const [, code, label] = hyphenMatch
-    const formattedCode = /^\d+$/.test(code) ? code.padStart(2, '0') : code.toUpperCase()
+    const formattedCode = /^\d+$/.test(code)
+      ? code.padStart(2, '0')
+      : code.toUpperCase()
     return `${formattedCode} - ${label.toLowerCase()}`
   }
 
   const spacedMatch = normalized.match(/^([0-9]{1,3}[A-Za-z]?)\s+(.+)$/)
   if (spacedMatch) {
     const [, code, label] = spacedMatch
-    const formattedCode = /^\d+$/.test(code) ? code.padStart(2, '0') : code.toUpperCase()
+    const formattedCode = /^\d+$/.test(code)
+      ? code.padStart(2, '0')
+      : code.toUpperCase()
     return `${formattedCode} - ${label.toLowerCase()}`
   }
 
@@ -51,7 +55,8 @@ export function GamePage() {
   const [selectedSubfamily, setSelectedSubfamily] = useState('')
   const [selectedGenus, setSelectedGenus] = useState('')
   const [result, setResult] = useState<GameValidation | null>(null)
-  const [subfamilyValidation, setSubfamilyValidation] = useState<GameValidation | null>(null)
+  const [subfamilyValidation, setSubfamilyValidation] =
+    useState<GameValidation | null>(null)
   const [mediumStep, setMediumStep] = useState<MediumStep>('subfamily')
   const [stepFeedback, setStepFeedback] = useState('')
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false)
@@ -59,10 +64,15 @@ export function GamePage() {
   const [subfamilyOptions, setSubfamilyOptions] = useState<string[]>([])
   const [dynamicGenusOptions, setDynamicGenusOptions] = useState<string[]>([])
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
-  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; index: number } | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<{
+    url: string
+    index: number
+  } | null>(null)
   const [sessionScore, setSessionScore] = useState(0)
   const fullscreenTouchStartX = useRef<number | null>(null)
-  const isConnected = typeof window !== 'undefined' && !!window.localStorage.getItem('antidtraining-auth-token')
+  const isConnected =
+    typeof window !== 'undefined' &&
+    !!window.localStorage.getItem('antidtraining-auth-token')
 
   useEffect(() => {
     let cancelled = false
@@ -102,7 +112,10 @@ export function GamePage() {
     setSessionScore((current) => current + points)
   }
 
-  function getScoreDelta(step: 'subfamily' | 'genus' | 'species', correct: boolean) {
+  function getScoreDelta(
+    step: 'subfamily' | 'genus' | 'species',
+    correct: boolean,
+  ) {
     if (!correct) {
       return step === 'subfamily' ? -2 : -5
     }
@@ -145,17 +158,28 @@ export function GamePage() {
   }
 
   function goToPreviousImage() {
-    if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
+    if (
+      !question ||
+      !Array.isArray(question.images) ||
+      question.images.length <= 1
+    )
+      return
     setImageLoadFailed(false)
     setCurrentImageIndex((index) => {
-      const nextIndex = (index - 1 + question.images.length) % question.images.length
+      const nextIndex =
+        (index - 1 + question.images.length) % question.images.length
       setFullscreenImage({ url: question.images[nextIndex], index: nextIndex })
       return nextIndex
     })
   }
 
   function goToNextImage() {
-    if (!question || !Array.isArray(question.images) || question.images.length <= 1) return
+    if (
+      !question ||
+      !Array.isArray(question.images) ||
+      question.images.length <= 1
+    )
+      return
     setImageLoadFailed(false)
     setCurrentImageIndex((index) => {
       const nextIndex = (index + 1) % question.images.length
@@ -165,7 +189,11 @@ export function GamePage() {
   }
 
   useEffect(() => {
-    if (!question || !Array.isArray(question.images) || question.images.length <= 1) {
+    if (
+      !question ||
+      !Array.isArray(question.images) ||
+      question.images.length <= 1
+    ) {
       return
     }
 
@@ -189,14 +217,23 @@ export function GamePage() {
       : Array.isArray(question.choices?.subfamily)
         ? question.choices.subfamily
         : []
-    : [];
+    : []
 
-  const subfamilyChoices = Array.isArray(subfamilyOptions) && subfamilyOptions.length > 0 ? subfamilyOptions : fallbackSubfamilyChoices;
+  const subfamilyChoices =
+    Array.isArray(subfamilyOptions) && subfamilyOptions.length > 0
+      ? subfamilyOptions
+      : fallbackSubfamilyChoices
 
-  const fallbackGenusChoices = question && !Array.isArray(question.choices) && Array.isArray(question.choices?.genus)
-    ? question.choices.genus
-    : [];
-  const genusChoices = Array.isArray(dynamicGenusOptions) && dynamicGenusOptions.length > 0 ? dynamicGenusOptions : fallbackGenusChoices;
+  const fallbackGenusChoices =
+    question &&
+    !Array.isArray(question.choices) &&
+    Array.isArray(question.choices?.genus)
+      ? question.choices.genus
+      : []
+  const genusChoices =
+    Array.isArray(dynamicGenusOptions) && dynamicGenusOptions.length > 0
+      ? dynamicGenusOptions
+      : fallbackGenusChoices
 
   async function validateAnswer() {
     if (!question || !selectedSubfamily) return
@@ -214,11 +251,14 @@ export function GamePage() {
       if (data.correct) {
         applyScoreDelta(getScoreDelta('subfamily', true))
         try {
-          const { data: generaData } = await api.get<string[]>('/taxons/genera', {
-            params: {
-              subfamily: selectedSubfamily,
+          const { data: generaData } = await api.get<string[]>(
+            '/taxons/genera',
+            {
+              params: {
+                subfamily: selectedSubfamily,
+              },
             },
-          })
+          )
           setDynamicGenusOptions(generaData)
         } catch {
           setDynamicGenusOptions([])
@@ -231,8 +271,8 @@ export function GamePage() {
         return
       }
 
-        setSubfamilyValidation(null)
-        applyScoreDelta(getScoreDelta('subfamily', false))
+      setSubfamilyValidation(null)
+      applyScoreDelta(getScoreDelta('subfamily', false))
       setStepFeedback('')
       setMediumStep('done')
       setResult(data)
@@ -256,27 +296,31 @@ export function GamePage() {
       setMediumStep('done')
       setStepFeedback('')
     }
-    applyScoreDelta(getScoreDelta(level === 'medium' ? 'genus' : 'subfamily', data.correct))
+    applyScoreDelta(
+      getScoreDelta(level === 'medium' ? 'genus' : 'subfamily', data.correct),
+    )
     setResult(data)
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Lancer un niveau</h2>
-      <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+      <p className="rounded-lg px-3 py-2 text-sm bg-emerald-50 text-emerald-700">
         {isConnected ? (
           <>
             Le nombre de points gagnés ou perdus dépend du niveau de difficulté.
           </>
         ) : (
           <>
-            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous voulez suivre votre progression dans le classement.
+            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous
+            voulez suivre votre progression dans le classement.
           </>
         )}
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        Score de la session : <span className="font-semibold text-slate-900">{sessionScore}</span>
+        Score de la session :{' '}
+        <span className="font-semibold text-slate-900">{sessionScore}</span>
       </div>
 
       <div className="grid gap-2 md:grid-cols-3">
@@ -294,7 +338,10 @@ export function GamePage() {
           <p className="font-semibold">Niveau moyen</p>
           <p className="text-sm text-slate-600">Sous-famille puis genre.</p>
         </button>
-        <button className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 p-3 text-left opacity-60" disabled>
+        <button
+          className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 p-3 text-left opacity-60"
+          disabled
+        >
           <p className="font-semibold">Niveau difficile</p>
           <p className="text-sm text-slate-600">Bientôt disponible.</p>
         </button>
@@ -324,19 +371,42 @@ export function GamePage() {
                 className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Photo précédente"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="m15 18-6-6 6-6" />
                 </svg>
               </button>
 
               <button
                 type="button"
-                onClick={() => setFullscreenImage({ url: question.images[currentImageIndex], index: currentImageIndex })}
+                onClick={() =>
+                  setFullscreenImage({
+                    url: question.images[currentImageIndex],
+                    index: currentImageIndex,
+                  })
+                }
                 className="absolute right-2 top-2 z-10 rounded-lg bg-white/90 px-2 py-1 text-sm text-slate-900 shadow-sm hover:bg-white sm:right-12"
                 aria-label="Agrandir l'image"
                 title="Agrandir l'image"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
                 </svg>
               </button>
@@ -344,20 +414,29 @@ export function GamePage() {
               <div className="flex justify-center rounded-lg bg-slate-50 p-2">
                 {imageLoadFailed ? (
                   <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-center text-slate-600">
-                    Impossible de charger cette image. Passe à la suivante ou recharge la question.
+                    Impossible de charger cette image. Passe à la suivante ou
+                    recharge la question.
                   </div>
                 ) : (
                   <img
                     className="max-h-[70vh] w-auto max-w-full cursor-zoom-in rounded-lg object-contain"
-                    {...getResponsiveImageProps(question.images[currentImageIndex], {
-                      sizes: '(max-width: 768px) 100vw, 70vw',
-                    })}
+                    {...getResponsiveImageProps(
+                      question.images[currentImageIndex],
+                      {
+                        sizes: '(max-width: 768px) 100vw, 70vw',
+                      },
+                    )}
                     alt={`Spécimen ${currentImageIndex + 1}`}
                     loading="eager"
                     decoding="async"
                     onError={() => setImageLoadFailed(true)}
                     onLoad={() => setImageLoadFailed(false)}
-                    onClick={() => setFullscreenImage({ url: question.images[currentImageIndex], index: currentImageIndex })}
+                    onClick={() =>
+                      setFullscreenImage({
+                        url: question.images[currentImageIndex],
+                        index: currentImageIndex,
+                      })
+                    }
                   />
                 )}
               </div>
@@ -369,7 +448,16 @@ export function GamePage() {
                 className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Photo suivante"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="m9 18 6-6-6-6" />
                 </svg>
               </button>
@@ -384,53 +472,70 @@ export function GamePage() {
             <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 md:grid-cols-2">
               {question.details.size && (
                 <p>
-                  <span className="font-semibold">Taille :</span> {question.details.size}
+                  <span className="font-semibold">Taille :</span>{' '}
+                  {question.details.size}
                 </p>
               )}
               <p>
-                <span className="font-semibold">Département :</span> {formatDepartment(question.details.department)}
+                <span className="font-semibold">Département :</span>{' '}
+                {formatDepartment(question.details.department)}
               </p>
               <p>
                 <span className="font-semibold">Date :</span>{' '}
-                {new Date(question.details.observedAt).toLocaleDateString('fr-FR')}
+                {new Date(question.details.observedAt).toLocaleDateString(
+                  'fr-FR',
+                )}
               </p>
               <p>
-                <span className="font-semibold">Biotope :</span> {question.details.biotope}
+                <span className="font-semibold">Biotope :</span>{' '}
+                {question.details.biotope}
               </p>
               <p>
-                <span className="font-semibold">Crédit photo :</span> {question.details.photoCredit}
+                <span className="font-semibold">Crédit photo :</span>{' '}
+                {question.details.photoCredit}
               </p>
             </div>
           )}
 
-          {level === 'medium' && mediumStep === 'genus' && subfamilyValidation && (
-            <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <p className="font-medium text-amber-600">Correct : sous-famille validée</p>
-
-              {subfamilyValidation.identification?.subfamily.value && (
-                <p>
-                  <span className="font-semibold">Sous-famille :</span> {subfamilyValidation.identification.subfamily.value}
+          {level === 'medium' &&
+            mediumStep === 'genus' &&
+            subfamilyValidation && (
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="font-medium text-amber-600">
+                  Correct : sous-famille validée
                 </p>
-              )}
 
-              {subfamilyValidation.identification?.subfamily.description && (
-                <p>
-                  <span className="font-semibold">Description :</span> {subfamilyValidation.identification.subfamily.description}
-                </p>
-              )}
+                {subfamilyValidation.identification?.subfamily.value && (
+                  <p>
+                    <span className="font-semibold">Sous-famille :</span>{' '}
+                    {subfamilyValidation.identification.subfamily.value}
+                  </p>
+                )}
 
-              {!!subfamilyValidation.identification?.subfamily.criteria?.length && (
-                <div>
-                  <p className="font-semibold">Critère(s) d'identification :</p>
-                  <ul className="list-disc pl-6">
-                    {subfamilyValidation.identification.subfamily.criteria.map((criterion) => (
-                      <li key={criterion}>{criterion}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+                {subfamilyValidation.identification?.subfamily.description && (
+                  <p>
+                    <span className="font-semibold">Description :</span>{' '}
+                    {subfamilyValidation.identification.subfamily.description}
+                  </p>
+                )}
+
+                {!!subfamilyValidation.identification?.subfamily.criteria
+                  ?.length && (
+                  <div>
+                    <p className="font-semibold">
+                      Critère(s) d'identification :
+                    </p>
+                    <ul className="list-disc pl-6">
+                      {subfamilyValidation.identification.subfamily.criteria.map(
+                        (criterion) => (
+                          <li key={criterion}>{criterion}</li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
           {!result && !(level === 'medium' && mediumStep !== 'subfamily') && (
             <label className="block text-sm text-slate-700">
@@ -468,7 +573,9 @@ export function GamePage() {
             </label>
           )}
 
-          {stepFeedback && <p className="font-medium text-slate-900">{stepFeedback}</p>}
+          {stepFeedback && (
+            <p className="font-medium text-slate-900">{stepFeedback}</p>
+          )}
 
           {!result && (
             <button
@@ -476,46 +583,65 @@ export function GamePage() {
               onClick={validateAnswer}
               disabled={
                 !selectedSubfamily ||
-                (level === 'medium' && mediumStep === 'genus' && !selectedGenus) ||
+                (level === 'medium' &&
+                  mediumStep === 'genus' &&
+                  !selectedGenus) ||
                 (level === 'medium' && mediumStep === 'done')
               }
             >
-              {level === 'medium' && mediumStep === 'subfamily' ? 'Valider la sous-famille' : level === 'medium' ? 'Valider le genre' : 'Valider'}
+              {level === 'medium' && mediumStep === 'subfamily'
+                ? 'Valider la sous-famille'
+                : level === 'medium'
+                  ? 'Valider le genre'
+                  : 'Valider'}
             </button>
           )}
 
           {result && (
             <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <p className={`font-medium ${result.correct ? 'text-emerald-600' : 'text-red-600'}`}>
-                {result.correct ? 'Correct' : `Faux${result.reason ? ` : ${result.reason}` : ''}`}
+              <p
+                className={`font-medium ${result.correct ? 'text-emerald-600' : 'text-red-600'}`}
+              >
+                {result.correct
+                  ? 'Correct'
+                  : `Faux${result.reason ? ` : ${result.reason}` : ''}`}
               </p>
 
               <div className="space-y-3">
                 {result.identification?.subfamily.value && (
                   <p>
-                    <span className="font-semibold">Sous-famille attendue :</span> {result.identification.subfamily.value}
+                    <span className="font-semibold">
+                      Sous-famille attendue :
+                    </span>{' '}
+                    {result.identification.subfamily.value}
                   </p>
                 )}
 
                 {result.identification?.size && (
                   <p>
-                    <span className="font-semibold">Taille :</span> {result.identification.size}
+                    <span className="font-semibold">Taille :</span>{' '}
+                    {result.identification.size}
                   </p>
                 )}
 
                 {result.identification?.subfamily.description && (
                   <p>
-                    <span className="font-semibold">Description :</span> {result.identification.subfamily.description}
+                    <span className="font-semibold">Description :</span>{' '}
+                    {result.identification.subfamily.description}
                   </p>
                 )}
 
                 {!!result.identification?.subfamily.criteria?.length && (
                   <div>
-                    <p className="font-semibold">Critère(s) d'identification (sous-famille) :</p>
+                    <p className="font-semibold">
+                      Critère(s) d'identification (sous-famille) :
+                    </p>
                     <ul className="list-disc pl-6">
-                      {result.identification.subfamily.criteria.map((criterion) => (
-                        <li key={criterion}>{criterion}</li>
-                      ))}
+                      {result.identification.subfamily.criteria.map(
+                        (criterion) => (
+                          <li key={criterion}>{criterion}</li>
+                        ),
+                      )}
                     </ul>
                   </div>
                 )}
@@ -525,23 +651,31 @@ export function GamePage() {
                 <div className="space-y-3 pt-2">
                   {result.identification?.genus.value && (
                     <p>
-                      <span className="font-semibold">Genre attendu :</span> {result.identification.genus.value}
+                      <span className="font-semibold">Genre attendu :</span>{' '}
+                      {result.identification.genus.value}
                     </p>
                   )}
 
                   {result.identification?.genus.description && (
                     <p>
-                      <span className="font-semibold">Description du genre :</span> {result.identification.genus.description}
+                      <span className="font-semibold">
+                        Description du genre :
+                      </span>{' '}
+                      {result.identification.genus.description}
                     </p>
                   )}
 
                   {!!result.identification?.genus.criteria?.length && (
                     <div>
-                      <p className="font-semibold">Critère(s) d'identification (genre) :</p>
+                      <p className="font-semibold">
+                        Critère(s) d'identification (genre) :
+                      </p>
                       <ul className="list-disc pl-6">
-                        {result.identification.genus.criteria.map((criterion) => (
-                          <li key={criterion}>{criterion}</li>
-                        ))}
+                        {result.identification.genus.criteria.map(
+                          (criterion) => (
+                            <li key={criterion}>{criterion}</li>
+                          ),
+                        )}
                       </ul>
                     </div>
                   )}
@@ -552,7 +686,10 @@ export function GamePage() {
 
           {result && (
             <div className="pt-2">
-              <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white" onClick={loadQuestion}>
+              <button
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
+                onClick={loadQuestion}
+              >
                 Question suivante
               </button>
             </div>
@@ -560,86 +697,110 @@ export function GamePage() {
         </div>
       )}
 
-      {fullscreenImage && (() => {
-        const images = question?.images ?? []
+      {fullscreenImage &&
+        (() => {
+          const images = question?.images ?? []
 
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
-            onClick={() => setFullscreenImage(null)}
-          >
+          return (
             <div
-              className="relative"
-              onClick={(event) => event.stopPropagation()}
-              onTouchStart={(event) => {
-                if (event.touches.length === 1) {
-                  fullscreenTouchStartX.current = event.touches[0].clientX
-                }
-              }}
-              onTouchEnd={(event) => {
-                if (fullscreenTouchStartX.current === null || event.changedTouches.length === 0) {
-                  return
-                }
-
-                const deltaX = event.changedTouches[0].clientX - fullscreenTouchStartX.current
-                if (Math.abs(deltaX) > 50) {
-                  if (deltaX < 0) {
-                    goToNextImage()
-                  } else {
-                    goToPreviousImage()
-                  }
-                }
-
-                fullscreenTouchStartX.current = null
-              }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+              onClick={() => setFullscreenImage(null)}
             >
-              {images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
-                    aria-label="Photo précédente"
-                    onClick={goToPreviousImage}
-                  >
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                  </button>
+              <div
+                className="relative"
+                onClick={(event) => event.stopPropagation()}
+                onTouchStart={(event) => {
+                  if (event.touches.length === 1) {
+                    fullscreenTouchStartX.current = event.touches[0].clientX
+                  }
+                }}
+                onTouchEnd={(event) => {
+                  if (
+                    fullscreenTouchStartX.current === null ||
+                    event.changedTouches.length === 0
+                  ) {
+                    return
+                  }
 
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
-                    aria-label="Photo suivante"
-                    onClick={goToNextImage}
-                  >
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                  </button>
-                </>
-              )}
+                  const deltaX =
+                    event.changedTouches[0].clientX -
+                    fullscreenTouchStartX.current
+                  if (Math.abs(deltaX) > 50) {
+                    if (deltaX < 0) {
+                      goToNextImage()
+                    } else {
+                      goToPreviousImage()
+                    }
+                  }
 
-              <button
-                type="button"
-                className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
-                onClick={() => setFullscreenImage(null)}
-                aria-label="Fermer"
+                  fullscreenTouchStartX.current = null
+                }}
               >
-                ✕
-              </button>
+                {images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
+                      aria-label="Photo précédente"
+                      onClick={goToPreviousImage}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m15 18-6-6 6-6" />
+                      </svg>
+                    </button>
 
-              <img
-                {...getResponsiveImageProps(fullscreenImage.url, {
-                  sizes: '(max-width: 768px) 95vw, 80vw',
-                })}
-                alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
-                className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
-                decoding="async"
-              />
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
+                      aria-label="Photo suivante"
+                      onClick={goToNextImage}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
+                  onClick={() => setFullscreenImage(null)}
+                  aria-label="Fermer"
+                >
+                  ✕
+                </button>
+
+                <img
+                  {...getResponsiveImageProps(fullscreenImage.url, {
+                    sizes: '(max-width: 768px) 95vw, 80vw',
+                  })}
+                  alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
+                  className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+                  decoding="async"
+                />
+              </div>
             </div>
-          </div>
-        )
-      })()}
+          )
+        })()}
     </section>
   )
 }

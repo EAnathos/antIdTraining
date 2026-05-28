@@ -7,19 +7,34 @@ export function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [currentUserPoints, setCurrentUserPoints] = useState<number | null>(null)
+  const [currentUserPoints, setCurrentUserPoints] = useState<number | null>(
+    null,
+  )
   const [selectedUsername, setSelectedUsername] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
   const fetchData = async (cancelled: { value: boolean }) => {
-    const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
-    const authApi = token ? api.create({ headers: { Authorization: `Bearer ${token}` } }) : api
+    const token =
+      typeof window !== 'undefined'
+        ? window.localStorage.getItem('antidtraining-auth-token')
+        : null
+    const authApi = token
+      ? api.create({ headers: { Authorization: `Bearer ${token}` } })
+      : api
 
     try {
-      const leaderboardPromise = api.get<LeaderboardResponse>('/stats/leaderboard', { params: { limit: 20 } })
-      const currentUserPromise = authApi.get<AuthMeResponse>('/auth/me').catch(() => null)
+      const leaderboardPromise = api.get<LeaderboardResponse>(
+        '/stats/leaderboard',
+        { params: { limit: 20 } },
+      )
+      const currentUserPromise = authApi
+        .get<AuthMeResponse>('/auth/me')
+        .catch(() => null)
 
-      const [leaderboardResponse, currentUserResponse] = await Promise.all([leaderboardPromise, currentUserPromise])
+      const [leaderboardResponse, currentUserResponse] = await Promise.all([
+        leaderboardPromise,
+        currentUserPromise,
+      ])
 
       if (cancelled.value) {
         return
@@ -29,7 +44,11 @@ export function LeaderboardPage() {
       setCurrentUserPoints(currentUserResponse?.data.points ?? null)
     } catch (err) {
       if (!cancelled.value) {
-        setError(err instanceof Error && err.message ? err.message : 'Impossible de charger le classement.')
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Impossible de charger le classement.',
+        )
         setCurrentUserPoints(null)
       }
     } finally {
@@ -71,10 +90,16 @@ export function LeaderboardPage() {
       void fetchData(cancelled)
     }
 
-    window.addEventListener('antidtraining-user-points-changed', handlePointsChanged)
+    window.addEventListener(
+      'antidtraining-user-points-changed',
+      handlePointsChanged,
+    )
 
     return () => {
-      window.removeEventListener('antidtraining-user-points-changed', handlePointsChanged)
+      window.removeEventListener(
+        'antidtraining-user-points-changed',
+        handlePointsChanged,
+      )
     }
   }, [])
 
@@ -82,17 +107,24 @@ export function LeaderboardPage() {
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Classement</h2>
       <p className="text-sm text-slate-600">
-        Les meilleurs joueurs selon leurs points. Les points proviennent des réponses correctes et des ajustements administrateur. Il vous faut 200 points pour apparaître dans le classement.
+        Les meilleurs joueurs selon leurs points. Les points proviennent des
+        réponses correctes et des ajustements administrateur. Il vous faut 200
+        points pour apparaître dans le classement.
       </p>
 
       {currentUserPoints !== null && (
         <div className="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
-          Vos points actuels : <span className="font-semibold">{currentUserPoints}</span>
+          Vos points actuels :{' '}
+          <span className="font-semibold">{currentUserPoints}</span>
         </div>
       )}
 
       {loading && <p className="text-sm text-slate-600">Chargement…</p>}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
 
       {data && (
         <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -108,8 +140,13 @@ export function LeaderboardPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {data.items.map((item, index) => (
-                <tr key={item.userId} className={index < 3 ? 'bg-amber-50/40' : ''}>
-                  <td className="px-4 py-3 font-medium text-slate-900">{index + 1}</td>
+                <tr
+                  key={item.userId}
+                  className={index < 3 ? 'bg-amber-50/40' : ''}
+                >
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {index + 1}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
@@ -122,9 +159,15 @@ export function LeaderboardPage() {
                       {item.username}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{item.gamesPlayed}</td>
-                  <td className="px-4 py-3 text-slate-700">{item.correctCount}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">{item.points}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {item.gamesPlayed}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {item.correctCount}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-900">
+                    {item.points}
+                  </td>
                 </tr>
               ))}
               {!data.items.length && (

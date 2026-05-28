@@ -32,7 +32,9 @@ describe('api client', () => {
   })
 
   it('returns undefined data for 204 responses', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, { status: 204 }),
+    )
 
     const response = await api.delete('/resource/1')
 
@@ -64,7 +66,9 @@ describe('api client', () => {
   })
 
   it('wraps network failures with status 0', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('NetworkError'))
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+      new TypeError('NetworkError'),
+    )
 
     await expect(api.get('/offline')).rejects.toMatchObject({
       message: 'Réseau indisponible ou serveur injoignable.',
@@ -126,7 +130,10 @@ describe('api client', () => {
     formData.append('name', 'queen')
 
     const adminApi = createAdminApiClient('token-123')
-    const response = await adminApi.post<{ created: boolean }>('/entries', formData)
+    const response = await adminApi.post<{ created: boolean }>(
+      '/entries',
+      formData,
+    )
 
     expect(response.data).toEqual({ created: true })
     const [, requestInit] = fetchMock.mock.calls[0]

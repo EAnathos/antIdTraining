@@ -5,15 +5,25 @@ import { getResponsiveImageProps } from '../../lib/image'
 
 type Props = {
   proposals: EntryProposal[]
-  setProposalStatus: (id: string, decision: 'ACCEPT' | 'REJECT', rejectionMessage?: string) => Promise<void>
+  setProposalStatus: (
+    id: string,
+    decision: 'ACCEPT' | 'REJECT',
+    rejectionMessage?: string,
+  ) => Promise<void>
 }
 
 export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('PENDING')
+  const [filter, setFilter] = useState<
+    'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  >('PENDING')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [preview, setPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [preview, setPreview] = useState<{
+    images: string[]
+    index: number
+    alt: string
+  } | null>(null)
 
   function resolveImageUrl(imageUrl: string) {
     if (!imageUrl) return imageUrl
@@ -51,7 +61,9 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="mb-2 text-sm font-semibold text-slate-700">Propositions d'entrées</h3>
+      <h3 className="mb-2 text-sm font-semibold text-slate-700">
+        Propositions d'entrées
+      </h3>
 
       <div className="flex gap-2">
         {(['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'] as const).map((f) => (
@@ -76,11 +88,18 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                   {p.subfamily} · {p.genus ?? '-'} · {p.species ?? '-'}
                 </p>
                 <p className="text-xs text-slate-600">
-                  {p.department} · {p.caste} · {p.observedAt ? new Date(p.observedAt).toLocaleDateString() : '-'}
+                  {p.department} · {p.caste} ·{' '}
+                  {p.observedAt
+                    ? new Date(p.observedAt).toLocaleDateString()
+                    : '-'}
                 </p>
-                <p className="text-xs text-slate-600">De: {p.user?.username ?? 'Inconnu'}</p>
+                <p className="text-xs text-slate-600">
+                  De: {p.user?.username ?? 'Inconnu'}
+                </p>
                 <p className="mt-2 text-xs text-slate-700">{p.biotope}</p>
-                <p className="text-xs text-slate-500">{new Date(p.createdAt).toLocaleString()}</p>
+                <p className="text-xs text-slate-500">
+                  {new Date(p.createdAt).toLocaleString()}
+                </p>
               </div>
 
               <div className="flex flex-col items-end gap-2">
@@ -95,7 +114,9 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 >
                   {p.status}
                 </span>
-                {p.rejectionMessage && <p className="text-xs text-red-600">{p.rejectionMessage}</p>}
+                {p.rejectionMessage && (
+                  <p className="text-xs text-red-600">{p.rejectionMessage}</p>
+                )}
                 {p.status === 'PENDING' && (
                   <div className="flex gap-2">
                     <button
@@ -125,7 +146,9 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                     className="overflow-hidden rounded border border-slate-200 bg-slate-50"
                     onClick={() =>
                       setPreview({
-                        images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                        images: p.images.map((proposalImage) =>
+                          resolveImageUrl(proposalImage.imageUrl),
+                        ),
                         index,
                         alt: `${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`,
                       })
@@ -182,7 +205,10 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
           onClick={() => setPreview(null)}
         >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="relative"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
@@ -198,13 +224,27 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 setPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                    : {
+                        ...current,
+                        index:
+                          (current.index - 1 + current.images.length) %
+                          current.images.length,
+                      },
                 )
               }
               disabled={preview.images.length <= 1}
               aria-label="Image précédente"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
@@ -216,13 +256,25 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 setPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index + 1) % current.images.length },
+                    : {
+                        ...current,
+                        index: (current.index + 1) % current.images.length,
+                      },
                 )
               }
               disabled={preview.images.length <= 1}
               aria-label="Image suivante"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>

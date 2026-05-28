@@ -1,4 +1,9 @@
-import { AdminIconButton, ArrowDownIcon, ArrowUpIcon, TrashIcon } from './AdminIconButton'
+import {
+  AdminIconButton,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  TrashIcon,
+} from './AdminIconButton'
 import type { Taxon } from '../../types/models'
 
 type LevelDetailDraft = {
@@ -35,9 +40,21 @@ type Props = {
   onContinueSwarmingRangeSelection: (month: number) => void
   onEndSwarmingRangeSelection: () => void
   onUpdateDescription: (levelKey: TaxonDetailLevelKey, value: string) => void
-  onUpdateSize: (levelKey: TaxonDetailLevelKey, casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale', value: string) => void
-  onUpdateCriterion: (levelKey: TaxonDetailLevelKey, index: number, value: string) => void
-  onMoveCriterion: (levelKey: TaxonDetailLevelKey, index: number, direction: -1 | 1) => void
+  onUpdateSize: (
+    levelKey: TaxonDetailLevelKey,
+    casteKey: 'sizeWorker' | 'sizeQueen' | 'sizeMale',
+    value: string,
+  ) => void
+  onUpdateCriterion: (
+    levelKey: TaxonDetailLevelKey,
+    index: number,
+    value: string,
+  ) => void
+  onMoveCriterion: (
+    levelKey: TaxonDetailLevelKey,
+    index: number,
+    direction: -1 | 1,
+  ) => void
   onRemoveCriterion: (levelKey: TaxonDetailLevelKey, index: number) => void
   onAddCriterion: (levelKey: TaxonDetailLevelKey) => void
 }
@@ -63,7 +80,11 @@ function renderLevelTitle(levelKey: TaxonDetailLevelKey, taxon: Taxon) {
   }
 
   if (levelKey === 'genus') {
-    return <>Genre (<em>{taxon.genus}</em>)</>
+    return (
+      <>
+        Genre (<em>{taxon.genus}</em>)
+      </>
+    )
   }
 
   if (levelKey === 'subgenus') {
@@ -71,10 +92,19 @@ function renderLevelTitle(levelKey: TaxonDetailLevelKey, taxon: Taxon) {
   }
 
   if (levelKey === 'speciesGroup') {
-    return <>Groupe d'espèce ({taxon.speciesGroup ? <em>{taxon.speciesGroup}</em> : '-'})</>
+    return (
+      <>
+        Groupe d'espèce (
+        {taxon.speciesGroup ? <em>{taxon.speciesGroup}</em> : '-'})
+      </>
+    )
   }
 
-  return <>Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)</>
+  return (
+    <>
+      Espèce (<em>{taxon.genus}</em> <em>{taxon.species}</em>)
+    </>
+  )
 }
 
 export function TaxonLevelEditor({
@@ -95,12 +125,15 @@ export function TaxonLevelEditor({
   onAddCriterion,
 }: Props) {
   const isAutoCalculatedSize = levelKey !== 'species'
-  const showAutoCalculatedSizeHint = levelKey === 'subfamily' || levelKey === 'genus'
+  const showAutoCalculatedSizeHint =
+    levelKey === 'subfamily' || levelKey === 'genus'
   const canAutoSelectSwarming = levelKey === 'species'
 
   return (
     <div className="mb-4 rounded-lg border border-slate-200 p-3">
-      <p className="font-medium text-slate-800">{renderLevelTitle(levelKey, taxon)}</p>
+      <p className="font-medium text-slate-800">
+        {renderLevelTitle(levelKey, taxon)}
+      </p>
 
       {canAutoSelectSwarming && (
         <div className="mt-3 mb-4 space-y-2">
@@ -109,7 +142,8 @@ export function TaxonLevelEditor({
             {swarming.swarmingStartMonth && swarming.swarmingEndMonth && (
               <>
                 <span>
-                  {MONTH_OPTIONS[swarming.swarmingStartMonth - 1].label} à {MONTH_OPTIONS[swarming.swarmingEndMonth - 1].label}
+                  {MONTH_OPTIONS[swarming.swarmingStartMonth - 1].label} à{' '}
+                  {MONTH_OPTIONS[swarming.swarmingEndMonth - 1].label}
                 </span>
                 <button
                   className="text-sm underline underline-offset-2"
@@ -121,7 +155,11 @@ export function TaxonLevelEditor({
               </>
             )}
           </div>
-          <div className="grid grid-cols-12 justify-items-center gap-2" role="group" aria-label="Sélection période d'essaimage">
+          <div
+            className="grid grid-cols-12 justify-items-center gap-2"
+            role="group"
+            aria-label="Sélection période d'essaimage"
+          >
             {MONTH_OPTIONS.map((month) => (
               <button
                 key={month.value}
@@ -130,7 +168,9 @@ export function TaxonLevelEditor({
                 aria-label={month.label}
                 aria-pressed={isMonthInSelectedRange(month.value)}
                 onPointerDown={() => onBeginSwarmingRangeSelection(month.value)}
-                onPointerEnter={() => onContinueSwarmingRangeSelection(month.value)}
+                onPointerEnter={() =>
+                  onContinueSwarmingRangeSelection(month.value)
+                }
                 onPointerUp={onEndSwarmingRangeSelection}
                 className={`shrink-0 rounded-full border transition ${
                   isMonthRangeEndpoint(month.value)
@@ -142,7 +182,10 @@ export function TaxonLevelEditor({
               />
             ))}
           </div>
-          <div className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500" aria-hidden>
+          <div
+            className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500"
+            aria-hidden
+          >
             {MONTH_OPTIONS.map((month) => (
               <span key={`label-${month.value}`} className="w-6 text-center">
                 {month.label.slice(0, 1)}
@@ -160,27 +203,37 @@ export function TaxonLevelEditor({
         onChange={(event) => onUpdateDescription(levelKey, event.target.value)}
       />
 
-      {(levelKey === 'subfamily' || levelKey === 'genus' || levelKey === 'species') && (
+      {(levelKey === 'subfamily' ||
+        levelKey === 'genus' ||
+        levelKey === 'species') && (
         <div className="mt-2 grid grid-cols-3 gap-2">
           <input
             className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-            placeholder={isAutoCalculatedSize ? undefined : 'Ouvrière (ex: 2-3 mm)'}
+            placeholder={
+              isAutoCalculatedSize ? undefined : 'Ouvrière (ex: 2-3 mm)'
+            }
             value={levelDraft.sizeWorker}
             readOnly={isAutoCalculatedSize}
             disabled={isAutoCalculatedSize}
             title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
             aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Ouvrière'}
-            onChange={(event) => onUpdateSize(levelKey, 'sizeWorker', event.target.value)}
+            onChange={(event) =>
+              onUpdateSize(levelKey, 'sizeWorker', event.target.value)
+            }
           />
           <input
             className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-            placeholder={isAutoCalculatedSize ? undefined : 'Reine (ex: 4-5 mm)'}
+            placeholder={
+              isAutoCalculatedSize ? undefined : 'Reine (ex: 4-5 mm)'
+            }
             value={levelDraft.sizeQueen}
             readOnly={isAutoCalculatedSize}
             disabled={isAutoCalculatedSize}
             title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
             aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Reine'}
-            onChange={(event) => onUpdateSize(levelKey, 'sizeQueen', event.target.value)}
+            onChange={(event) =>
+              onUpdateSize(levelKey, 'sizeQueen', event.target.value)
+            }
           />
           <input
             className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
@@ -190,13 +243,17 @@ export function TaxonLevelEditor({
             disabled={isAutoCalculatedSize}
             title={isAutoCalculatedSize ? 'auto-calculé' : undefined}
             aria-label={isAutoCalculatedSize ? 'auto-calculé' : 'Mâle'}
-            onChange={(event) => onUpdateSize(levelKey, 'sizeMale', event.target.value)}
+            onChange={(event) =>
+              onUpdateSize(levelKey, 'sizeMale', event.target.value)
+            }
           />
         </div>
       )}
 
       {showAutoCalculatedSizeHint && (
-        <p className="mt-2 text-xs text-slate-500">Les tailles sont auto-calculées à partir des espèces enfants.</p>
+        <p className="mt-2 text-xs text-slate-500">
+          Les tailles sont auto-calculées à partir des espèces enfants.
+        </p>
       )}
 
       <div className="mt-2 space-y-2">
@@ -206,21 +263,37 @@ export function TaxonLevelEditor({
               className="flex-1 rounded border p-2"
               placeholder="Critère"
               value={criterion}
-              onChange={(event) => onUpdateCriterion(levelKey, index, event.target.value)}
+              onChange={(event) =>
+                onUpdateCriterion(levelKey, index, event.target.value)
+              }
             />
-            <AdminIconButton title="Monter" onClick={() => onMoveCriterion(levelKey, index, -1)} icon={<ArrowUpIcon />} disabled={index === 0} />
+            <AdminIconButton
+              title="Monter"
+              onClick={() => onMoveCriterion(levelKey, index, -1)}
+              icon={<ArrowUpIcon />}
+              disabled={index === 0}
+            />
             <AdminIconButton
               title="Descendre"
               onClick={() => onMoveCriterion(levelKey, index, 1)}
               icon={<ArrowDownIcon />}
               disabled={index === levelDraft.criteria.length - 1}
             />
-            <AdminIconButton title="Supprimer" tone="danger" onClick={() => onRemoveCriterion(levelKey, index)} icon={<TrashIcon />} />
+            <AdminIconButton
+              title="Supprimer"
+              tone="danger"
+              onClick={() => onRemoveCriterion(levelKey, index)}
+              icon={<TrashIcon />}
+            />
           </div>
         ))}
       </div>
 
-      <button className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm" type="button" onClick={() => onAddCriterion(levelKey)}>
+      <button
+        className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm"
+        type="button"
+        onClick={() => onAddCriterion(levelKey)}
+      >
         + Ajouter un critère
       </button>
     </div>

@@ -30,7 +30,11 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
       setShowConfirm(false)
       window.location.reload()
     } catch (error: unknown) {
-      setResetError(error instanceof Error && error.message ? error.message : 'Erreur lors de la réinitialisation')
+      setResetError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Erreur lors de la réinitialisation',
+      )
     } finally {
       setResetLoading(false)
     }
@@ -41,13 +45,17 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
       {/* Statistiques des parties */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">Statistiques des parties</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Statistiques des parties
+          </h3>
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-700">
               Période
               <select
                 value={period}
-                onChange={(event) => setPeriod(event.target.value as GameStatsPeriod)}
+                onChange={(event) =>
+                  setPeriod(event.target.value as GameStatsPeriod)
+                }
                 className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1"
               >
                 <option value="all">Total</option>
@@ -85,7 +93,9 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
             </button>
           </div>
         )}
-        {resetError && <div className="mb-3 text-sm text-red-600">{resetError}</div>}
+        {resetError && (
+          <div className="mb-3 text-sm text-red-600">{resetError}</div>
+        )}
 
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -94,7 +104,9 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
                 <th className="px-4 py-3 font-medium">Niveau</th>
                 <th className="px-4 py-3 font-medium">Parties lancées</th>
                 <th className="px-4 py-3 font-medium">Réponses finales</th>
-                <th className="px-4 py-3 font-medium">Bonnes réponses finales</th>
+                <th className="px-4 py-3 font-medium">
+                  Bonnes réponses finales
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
@@ -102,10 +114,14 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
                 const item = statsByLevel.get(level)
                 return (
                   <tr key={level}>
-                    <td className="px-4 py-3 font-medium">{levelLabels[level]}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {levelLabels[level]}
+                    </td>
                     <td className="px-4 py-3">{item?.launchedCount ?? 0}</td>
                     <td className="px-4 py-3">{item?.finalizedCount ?? 0}</td>
-                    <td className="px-4 py-3">{item ? `${item.finalCorrectRate.toFixed(1)}%` : '0.0%'}</td>
+                    <td className="px-4 py-3">
+                      {item ? `${item.finalCorrectRate.toFixed(1)}%` : '0.0%'}
+                    </td>
                   </tr>
                 )
               })}

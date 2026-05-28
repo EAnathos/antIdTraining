@@ -3,8 +3,20 @@ import { describe, expect, it, vi } from 'vitest'
 import { UserPointsPanel } from '../../../src/components/admin/UserPointsPanel'
 
 const users = [
-  { id: 'u1', username: 'beta', role: 'USER', points: 12, createdAt: '2026-05-01T00:00:00.000Z' },
-  { id: 'u2', username: 'alpha', role: 'ADMIN', points: 20, createdAt: '2026-05-02T00:00:00.000Z' },
+  {
+    id: 'u1',
+    username: 'beta',
+    role: 'USER',
+    points: 12,
+    createdAt: '2026-05-01T00:00:00.000Z',
+  },
+  {
+    id: 'u2',
+    username: 'alpha',
+    role: 'ADMIN',
+    points: 20,
+    createdAt: '2026-05-02T00:00:00.000Z',
+  },
 ]
 
 describe('UserPointsPanel', () => {
@@ -13,7 +25,9 @@ describe('UserPointsPanel', () => {
 
     render(<UserPointsPanel users={users} setUserPoints={setUserPoints} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), { target: { value: 'alp' } })
+    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), {
+      target: { value: 'alp' },
+    })
     expect(screen.getByText('alpha')).toBeInTheDocument()
     expect(screen.queryByText('beta')).not.toBeInTheDocument()
 
@@ -30,7 +44,9 @@ describe('UserPointsPanel', () => {
   it('shows empty state when no user matches', () => {
     render(<UserPointsPanel users={users} setUserPoints={vi.fn()} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), { target: { value: 'zzz' } })
+    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), {
+      target: { value: 'zzz' },
+    })
     expect(screen.getByText('Aucun utilisateur trouvé.')).toBeInTheDocument()
   })
 })

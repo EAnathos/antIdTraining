@@ -34,13 +34,20 @@ describe('error middleware', () => {
     notFoundHandler({} as any, response as any)
 
     expect(response.status).toHaveBeenCalledWith(404)
-    expect(response.json).toHaveBeenCalledWith({ message: 'Route introuvable.' })
+    expect(response.json).toHaveBeenCalledWith({
+      message: 'Route introuvable.',
+    })
   })
 
   it('handles AppError with custom status and message', () => {
     const response = createResponseMock()
 
-    errorHandler(new AppError(403, 'Accès refusé'), { method: 'GET', originalUrl: '/x' } as any, response as any, vi.fn())
+    errorHandler(
+      new AppError(403, 'Accès refusé'),
+      { method: 'GET', originalUrl: '/x' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(403)
     expect(response.json).toHaveBeenCalledWith({ message: 'Accès refusé' })
@@ -49,25 +56,44 @@ describe('error middleware', () => {
   it('handles payload too large errors', () => {
     const response = createResponseMock()
 
-    errorHandler({ type: 'entity.too.large' }, { method: 'POST', originalUrl: '/upload' } as any, response as any, vi.fn())
+    errorHandler(
+      { type: 'entity.too.large' },
+      { method: 'POST', originalUrl: '/upload' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(413)
-    expect(response.json).toHaveBeenCalledWith({ message: 'Snapshot trop volumineux.' })
+    expect(response.json).toHaveBeenCalledWith({
+      message: 'Snapshot trop volumineux.',
+    })
   })
 
   it('handles multer file size errors', () => {
     const response = createResponseMock()
 
-    errorHandler(new multer.MulterError('LIMIT_FILE_SIZE'), { method: 'POST', originalUrl: '/zip' } as any, response as any, vi.fn())
+    errorHandler(
+      new multer.MulterError('LIMIT_FILE_SIZE'),
+      { method: 'POST', originalUrl: '/zip' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(413)
-    expect(response.json).toHaveBeenCalledWith({ message: 'Archive trop volumineuse.' })
+    expect(response.json).toHaveBeenCalledWith({
+      message: 'Archive trop volumineuse.',
+    })
   })
 
   it('handles generic multer errors', () => {
     const response = createResponseMock()
 
-    errorHandler(new multer.MulterError('LIMIT_UNEXPECTED_FILE'), { method: 'POST', originalUrl: '/zip' } as any, response as any, vi.fn())
+    errorHandler(
+      new multer.MulterError('LIMIT_UNEXPECTED_FILE'),
+      { method: 'POST', originalUrl: '/zip' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(400)
     expect(response.json).toHaveBeenCalledWith({ message: 'Requête invalide.' })
@@ -84,7 +110,12 @@ describe('error middleware', () => {
       zodError = error as ZodError
     }
 
-    errorHandler(zodError!, { method: 'POST', originalUrl: '/auth' } as any, response as any, vi.fn())
+    errorHandler(
+      zodError!,
+      { method: 'POST', originalUrl: '/auth' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(400)
     const payload = response.json.mock.calls[0][0]
@@ -94,9 +125,16 @@ describe('error middleware', () => {
 
   it('handles Prisma not-found and unique conflicts', () => {
     const notFoundResponse = createResponseMock()
-    errorHandler({ code: 'P2025' }, { method: 'GET', originalUrl: '/resource' } as any, notFoundResponse as any, vi.fn())
+    errorHandler(
+      { code: 'P2025' },
+      { method: 'GET', originalUrl: '/resource' } as any,
+      notFoundResponse as any,
+      vi.fn(),
+    )
     expect(notFoundResponse.status).toHaveBeenCalledWith(404)
-    expect(notFoundResponse.json).toHaveBeenCalledWith({ message: 'Ressource introuvable.' })
+    expect(notFoundResponse.json).toHaveBeenCalledWith({
+      message: 'Ressource introuvable.',
+    })
 
     const uniqueResponse = createResponseMock()
     errorHandler(
@@ -117,7 +155,12 @@ describe('error middleware', () => {
   it('handles unknown errors with an internal server response and errorId', () => {
     const response = createResponseMock()
 
-    errorHandler(new Error('Boom'), { method: 'GET', originalUrl: '/boom' } as any, response as any, vi.fn())
+    errorHandler(
+      new Error('Boom'),
+      { method: 'GET', originalUrl: '/boom' } as any,
+      response as any,
+      vi.fn(),
+    )
 
     expect(response.status).toHaveBeenCalledWith(500)
     const payload = response.json.mock.calls[0][0]

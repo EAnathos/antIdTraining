@@ -27,11 +27,41 @@ const taxon = {
   distribution: { departments: ['75'] },
   confusions: [],
   levelDetails: {
-    subfamily: { description: 'Sous-famille', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-    genus: { description: 'Genre', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-    subgenus: { description: 'Sous-genre', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-    speciesGroup: { description: 'Groupe', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-    species: { description: 'Espèce', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+    subfamily: {
+      description: 'Sous-famille',
+      sizeWorker: null,
+      sizeQueen: null,
+      sizeMale: null,
+      criteria: [],
+    },
+    genus: {
+      description: 'Genre',
+      sizeWorker: null,
+      sizeQueen: null,
+      sizeMale: null,
+      criteria: [],
+    },
+    subgenus: {
+      description: 'Sous-genre',
+      sizeWorker: null,
+      sizeQueen: null,
+      sizeMale: null,
+      criteria: [],
+    },
+    speciesGroup: {
+      description: 'Groupe',
+      sizeWorker: null,
+      sizeQueen: null,
+      sizeMale: null,
+      criteria: [],
+    },
+    species: {
+      description: 'Espèce',
+      sizeWorker: null,
+      sizeQueen: null,
+      sizeMale: null,
+      criteria: [],
+    },
   },
 }
 
@@ -64,7 +94,15 @@ beforeEach(() => {
             type: 'MYRMECOLOGY',
             url: '10.1234/test',
             taxons: [
-              { id: 'taxon_1', subfamily: 'Formicinae', tribe: 'Lasiini', genus: 'Formica', subgenus: 'Serviformica', speciesGroup: 'rufibarbis group', species: 'rufibarbis' },
+              {
+                id: 'taxon_1',
+                subfamily: 'Formicinae',
+                tribe: 'Lasiini',
+                genus: 'Formica',
+                subgenus: 'Serviformica',
+                speciesGroup: 'rufibarbis group',
+                species: 'rufibarbis',
+              },
             ],
           },
         ],
@@ -89,7 +127,9 @@ describe('TaxonsPage', () => {
       expect(screen.getByText('Référence liée')).toBeInTheDocument()
     })
 
-    expect(screen.getByRole('link', { name: 'Référence liée' })).toHaveAttribute('href', 'https://doi.org/10.1234/test')
+    expect(
+      screen.getByRole('link', { name: 'Référence liée' }),
+    ).toHaveAttribute('href', 'https://doi.org/10.1234/test')
   })
 
   it('loads taxons from cache when available', async () => {
@@ -118,57 +158,77 @@ describe('TaxonsPage', () => {
   })
 
   it('loads multiple pages and shows the final list state', async () => {
-    apiMocks.get.mockImplementation(async (path: string, options?: { params?: { offset?: number } }) => {
-      if (path === '/taxons' && options?.params?.offset === 0) {
-        return {
-          data: {
-            items: [taxon],
-            offset: 0,
-            limit: 20,
-            nextOffset: 1,
-            hasMore: true,
-            total: 2,
-          },
+    apiMocks.get.mockImplementation(
+      async (path: string, options?: { params?: { offset?: number } }) => {
+        if (path === '/taxons' && options?.params?.offset === 0) {
+          return {
+            data: {
+              items: [taxon],
+              offset: 0,
+              limit: 20,
+              nextOffset: 1,
+              hasMore: true,
+              total: 2,
+            },
+          }
         }
-      }
 
-      if (path === '/taxons' && options?.params?.offset === 1) {
-        return {
-          data: {
-            items: [
-              {
-                ...taxon,
-                id: 'taxon_4',
-                subfamily: 'Myrmicinae',
-                tribe: 'Myrmicini',
-                genus: 'Messor',
-                species: 'structor',
-                swarmingStartMonth: 7,
-                swarmingEndMonth: 8,
-                distribution: { departments: ['13'] },
-                levelDetails: {
-                  ...taxon.levelDetails,
-                  subfamily: { description: 'Sous-famille', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  genus: { description: 'Genre', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  species: { description: 'Espèce', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+        if (path === '/taxons' && options?.params?.offset === 1) {
+          return {
+            data: {
+              items: [
+                {
+                  ...taxon,
+                  id: 'taxon_4',
+                  subfamily: 'Myrmicinae',
+                  tribe: 'Myrmicini',
+                  genus: 'Messor',
+                  species: 'structor',
+                  swarmingStartMonth: 7,
+                  swarmingEndMonth: 8,
+                  distribution: { departments: ['13'] },
+                  levelDetails: {
+                    ...taxon.levelDetails,
+                    subfamily: {
+                      description: 'Sous-famille',
+                      sizeWorker: null,
+                      sizeQueen: null,
+                      sizeMale: null,
+                      criteria: [],
+                    },
+                    genus: {
+                      description: 'Genre',
+                      sizeWorker: null,
+                      sizeQueen: null,
+                      sizeMale: null,
+                      criteria: [],
+                    },
+                    species: {
+                      description: 'Espèce',
+                      sizeWorker: null,
+                      sizeQueen: null,
+                      sizeMale: null,
+                      criteria: [],
+                    },
+                  },
                 },
-              },
-            ],
-            offset: 1,
-            limit: 20,
-            nextOffset: 2,
-            hasMore: false,
-            total: 2,
-          },
+              ],
+              offset: 1,
+              limit: 20,
+              nextOffset: 2,
+              hasMore: false,
+              total: 2,
+            },
+          }
         }
-      }
 
-      if (path === '/references') {
-        return { data: [] }
-      }
+        if (path === '/references') {
+          return { data: [] }
+        }
 
-      throw new Error(`Unexpected call: ${path}`)
-    })
+        throw new Error(`Unexpected call: ${path}`)
+      },
+    )
 
     render(<TaxonsPage />)
 
@@ -205,9 +265,27 @@ describe('TaxonsPage', () => {
                 ],
                 levelDetails: {
                   ...taxon.levelDetails,
-                  subfamily: { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  genus: { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  species: { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                  subfamily: {
+                    description: null,
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
+                  genus: {
+                    description: null,
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
+                  species: {
+                    description: null,
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
                 },
               },
             ],
@@ -235,10 +313,16 @@ describe('TaxonsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Aucune description.')).toBeInTheDocument()
       expect(screen.getByText('Aucun critère renseigné.')).toBeInTheDocument()
-      expect(screen.getByText("Aucune période d'essaimage renseignée.")).toBeInTheDocument()
+      expect(
+        screen.getByText("Aucune période d'essaimage renseignée."),
+      ).toBeInTheDocument()
       expect(screen.getByText('Aucune référence liée.')).toBeInTheDocument()
-      expect(screen.getByText('Peut être confondu avec une autre espèce.')).toBeInTheDocument()
-      expect(screen.getByText('Aucune aire de répartition renseignée.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Peut être confondu avec une autre espèce.'),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Aucune aire de répartition renseignée.'),
+      ).toBeInTheDocument()
     })
   })
 
@@ -262,9 +346,27 @@ describe('TaxonsPage', () => {
                 distribution: { departments: ['13'] },
                 levelDetails: {
                   ...taxon.levelDetails,
-                  subfamily: { description: 'Sous-famille', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  genus: { description: 'Genre', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
-                  species: { description: 'Espèce', sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                  subfamily: {
+                    description: 'Sous-famille',
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
+                  genus: {
+                    description: 'Genre',
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
+                  species: {
+                    description: 'Espèce',
+                    sizeWorker: null,
+                    sizeQueen: null,
+                    sizeMale: null,
+                    criteria: [],
+                  },
                 },
               },
             ],
@@ -288,13 +390,17 @@ describe('TaxonsPage', () => {
 
     expect(await screen.findByText('2 entrées trouvées')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Options supplémentaires' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Options supplémentaires' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Jan' }))
     fireEvent.click(screen.getByLabelText('Ville de Paris'))
 
     expect(screen.getByText('0 entrée trouvée')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser les filtres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Réinitialiser les filtres' }),
+    )
     expect(screen.getByText('2 entrées trouvées')).toBeInTheDocument()
   })
 
@@ -338,11 +444,15 @@ describe('TaxonsPage', () => {
 
     expect(await screen.findByText('2 entrées trouvées')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Options supplémentaires' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Options supplémentaires' }),
+    )
 
     const allRadio = screen.getByRole('radio', { name: 'Toutes' })
     const invasiveRadio = screen.getByRole('radio', { name: 'Invasives' })
-    const nonInvasiveRadio = screen.getByRole('radio', { name: 'Non invasives' })
+    const nonInvasiveRadio = screen.getByRole('radio', {
+      name: 'Non invasives',
+    })
 
     fireEvent.click(invasiveRadio)
     expect(invasiveRadio).toBeChecked()
@@ -352,7 +462,9 @@ describe('TaxonsPage', () => {
     expect(nonInvasiveRadio).toBeChecked()
     expect(invasiveRadio).not.toBeChecked()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser les filtres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Réinitialiser les filtres' }),
+    )
     expect(allRadio).toBeChecked()
   })
 
@@ -363,28 +475,49 @@ describe('TaxonsPage', () => {
     fireEvent.click(screen.getByTitle('Basculer en vue arborescente'))
 
     fireEvent.click(screen.getByText('Formicinae'))
-    expect(await screen.findByText('Sous-famille : Formicinae')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Sous-famille : Formicinae'),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
     fireEvent.click(screen.getByText('Lasiini'))
-    expect(await screen.findByText('Sous-famille : Lasiini')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Sous-famille : Lasiini'),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
     fireEvent.click(screen.getByText('Formica'))
-    expect(await screen.findByText((_, element) => element?.textContent === 'Genre : Formica')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        (_, element) => element?.textContent === 'Genre : Formica',
+      ),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
     fireEvent.click(screen.getByText('Serviformica'))
-    expect(await screen.findByText((_, element) => element?.textContent === 'Sous-genre : Serviformica')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        (_, element) => element?.textContent === 'Sous-genre : Serviformica',
+      ),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
     fireEvent.click(screen.getByText('rufibarbis group'))
-    expect(await screen.findByText((_, element) => element?.textContent === "Groupe d'espèces : rufibarbis group")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        (_, element) =>
+          element?.textContent === "Groupe d'espèces : rufibarbis group",
+      ),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
     fireEvent.click(screen.getByText('rufibarbis'))
-    expect(await screen.findByText((_, element) => element?.textContent === 'Espèce : rufibarbis')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        (_, element) => element?.textContent === 'Espèce : rufibarbis',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('shows empty state when no taxons are returned', async () => {

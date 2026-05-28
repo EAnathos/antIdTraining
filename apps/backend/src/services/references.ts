@@ -17,7 +17,9 @@ export const referenceSchema = z
   .transform((value) => ({
     ...value,
     title: value.title.trim(),
-    authors: Array.from(new Set(value.authors.map((author) => author.trim()).filter(Boolean))),
+    authors: Array.from(
+      new Set(value.authors.map((author) => author.trim()).filter(Boolean)),
+    ),
     description: value.description === '' ? null : value.description,
     url: value.url === '' ? null : value.url,
     taxonIds: Array.from(new Set(value.taxonIds)),
@@ -37,7 +39,11 @@ export const referenceSchema = z
       return
     }
 
-    if (value.type === ReferenceType.MYRMECOLOGY && !isUrl && !doiRegex.test(value.url)) {
+    if (
+      value.type === ReferenceType.MYRMECOLOGY &&
+      !isUrl &&
+      !doiRegex.test(value.url)
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['url'],
@@ -57,7 +63,11 @@ const referenceInclude = {
       speciesGroup: true,
       species: true,
     },
-    orderBy: [{ subfamily: 'asc' as const }, { genus: 'asc' as const }, { species: 'asc' as const }],
+    orderBy: [
+      { subfamily: 'asc' as const },
+      { genus: 'asc' as const },
+      { species: 'asc' as const },
+    ],
   },
 }
 
@@ -88,7 +98,10 @@ export async function createReference(input: ReferenceInput) {
   return prisma.reference.create({
     data: {
       ...referenceData,
-      taxons: taxonIds.length > 0 ? { connect: taxonIds.map((id) => ({ id })) } : undefined,
+      taxons:
+        taxonIds.length > 0
+          ? { connect: taxonIds.map((id) => ({ id })) }
+          : undefined,
     },
     include: referenceInclude,
   })

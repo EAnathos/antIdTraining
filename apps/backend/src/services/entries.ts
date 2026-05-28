@@ -60,8 +60,12 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
-    const sizeFromProfile = await resolveTaxonSizeDetails({ subfamily: match.subfamily, genus: null, species: null }, input.caste)
-    const sizeValue = (input.size && input.size.trim()) || sizeFromProfile || null
+    const sizeFromProfile = await resolveTaxonSizeDetails(
+      { subfamily: match.subfamily, genus: null, species: null },
+      input.caste,
+    )
+    const sizeValue =
+      (input.size && input.size.trim()) || sizeFromProfile || null
 
     return {
       taxonId: null,
@@ -89,8 +93,12 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       return null
     }
 
-    const sizeFromProfile = await resolveTaxonSizeDetails({ subfamily: match.subfamily, genus: match.genus, species: null }, input.caste)
-    const sizeValue = (input.size && input.size.trim()) || sizeFromProfile || null
+    const sizeFromProfile = await resolveTaxonSizeDetails(
+      { subfamily: match.subfamily, genus: match.genus, species: null },
+      input.caste,
+    )
+    const sizeValue =
+      (input.size && input.size.trim()) || sizeFromProfile || null
 
     return {
       taxonId: match.id,
@@ -126,7 +134,10 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
     return null
   }
 
-  const sizeFromProfile = await resolveTaxonSizeDetails({ subfamily: match.subfamily, genus: match.genus, species: match.species }, input.caste)
+  const sizeFromProfile = await resolveTaxonSizeDetails(
+    { subfamily: match.subfamily, genus: match.genus, species: match.species },
+    input.caste,
+  )
   const sizeValue = (input.size && input.size.trim()) || sizeFromProfile || null
 
   return {

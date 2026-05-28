@@ -15,7 +15,10 @@ import { databaseRouter } from './routes/database.js'
 import { entriesRouter } from './routes/entries.js'
 import { gameRouter } from './routes/game.js'
 import { openApiDocument } from './openapi.js'
-import { adminReferencesRouter, publicReferencesRouter } from './routes/references.js'
+import {
+  adminReferencesRouter,
+  publicReferencesRouter,
+} from './routes/references.js'
 import { publicStatsRouter } from './routes/publicStats.js'
 import { statsRouter } from './routes/stats.js'
 import { adminTaxonsRouter, publicTaxonsRouter } from './routes/taxons.js'
@@ -28,7 +31,9 @@ function parseCorsOrigins(value: string | undefined) {
   // Production defaults - should be set via CORS_ORIGINS env var
   if (process.env.NODE_ENV === 'production') {
     if (!value) {
-      throw new Error('CORS_ORIGINS environment variable must be set in production')
+      throw new Error(
+        'CORS_ORIGINS environment variable must be set in production',
+      )
     }
     return value
       .split(',')
@@ -41,7 +46,7 @@ function parseCorsOrigins(value: string | undefined) {
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8080',
-    'http://127.0.0.1:8080'
+    'http://127.0.0.1:8080',
   ]
 
   const rawOrigins = value
@@ -100,15 +105,18 @@ app.use((req, res, next) => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
     const logLevel = res.statusCode >= 400 ? 'warn' : 'info'
 
-    logger[logLevel]({
-      method: req.method,
-      path: req.originalUrl,
-      status: res.statusCode,
-      durationMs: Number(durationMs.toFixed(1)),
-      userId: req.user?.userId,
-      contentLength: res.get('content-length'),
-      userAgent: req.headers['user-agent'],
-    }, 'HTTP request completed')
+    logger[logLevel](
+      {
+        method: req.method,
+        path: req.originalUrl,
+        status: res.statusCode,
+        durationMs: Number(durationMs.toFixed(1)),
+        userId: req.user?.userId,
+        contentLength: res.get('content-length'),
+        userAgent: req.headers['user-agent'],
+      },
+      'HTTP request completed',
+    )
 
     recordHttpRequest(res.statusCode)
   })
@@ -154,9 +162,19 @@ app.use('/api/stats', publicStatsRouter)
 import { adminStatsToolsRouter } from './routes/adminStatsTools.js'
 app.use('/api/admin/entries', requireAuth, requireAdmin, entriesRouter)
 app.use('/api/admin/taxons', requireAuth, requireAdmin, adminTaxonsRouter)
-app.use('/api/admin/references', requireAuth, requireAdmin, adminReferencesRouter)
+app.use(
+  '/api/admin/references',
+  requireAuth,
+  requireAdmin,
+  adminReferencesRouter,
+)
 app.use('/api/admin/stats', requireAuth, requireAdmin, statsRouter)
-app.use('/api/admin/stats-tools', requireAuth, requireAdmin, adminStatsToolsRouter)
+app.use(
+  '/api/admin/stats-tools',
+  requireAuth,
+  requireAdmin,
+  adminStatsToolsRouter,
+)
 app.use('/api/admin/database', requireAuth, requireAdmin, databaseRouter)
 app.use('/api/admin/history', requireAuth, requireAdmin, adminHistoryRouter)
 app.use('/api/admin/users', requireAuth, requireAdmin, adminUsersRouter)
@@ -166,9 +184,19 @@ import { entryProposalsRouter } from './routes/entryProposals.js'
 import { adminProposalsRouter } from './routes/adminProposals.js'
 
 app.use('/api/suggestions', suggestionsRouter)
-app.use('/api/admin/suggestions', requireAuth, requireAdmin, adminSuggestionsRouter)
+app.use(
+  '/api/admin/suggestions',
+  requireAuth,
+  requireAdmin,
+  adminSuggestionsRouter,
+)
 app.use('/api/entry-proposals', requireAuth, entryProposalsRouter)
-app.use('/api/admin/entry-proposals', requireAuth, requireAdmin, adminProposalsRouter)
+app.use(
+  '/api/admin/entry-proposals',
+  requireAuth,
+  requireAdmin,
+  adminProposalsRouter,
+)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

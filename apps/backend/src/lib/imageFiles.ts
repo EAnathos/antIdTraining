@@ -27,16 +27,21 @@ export function getResponsiveUploadFileNames(imageUrl: string) {
   const baseFileName = getUploadBaseFileName(imageUrl)
   const originalExtension = path.extname(baseFileName)
   const extension = originalExtension || '.webp'
-  const stem = originalExtension ? baseFileName.slice(0, -originalExtension.length) : baseFileName
+  const stem = originalExtension
+    ? baseFileName.slice(0, -originalExtension.length)
+    : baseFileName
 
   return {
     baseFileName,
-    variantFileNames: RESPONSIVE_IMAGE_WIDTHS.map((width) => `${stem}-${width}${extension}`),
+    variantFileNames: RESPONSIVE_IMAGE_WIDTHS.map(
+      (width) => `${stem}-${width}${extension}`,
+    ),
   }
 }
 
 export function deleteUploadFilesForImageUrl(imageUrl: string) {
-  const { baseFileName, variantFileNames } = getResponsiveUploadFileNames(imageUrl)
+  const { baseFileName, variantFileNames } =
+    getResponsiveUploadFileNames(imageUrl)
   const fileNames = [baseFileName, ...variantFileNames]
 
   for (const fileName of fileNames) {

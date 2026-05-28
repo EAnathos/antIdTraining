@@ -23,6 +23,10 @@
 - `POST /api/auth/verify-email` : validation du code reçu par e-mail et activation du compte
 - `POST /api/auth/logout`
 - `GET /api/auth/me` : profil courant, e-mail et points
+- `PATCH /api/auth/profile` : mise à jour de l’avatar et de la biographie
+- `POST /api/auth/avatar` : upload d’avatar
+- `POST /api/auth/delete-account` : suppression du compte connecté
+- `POST /api/auth/password-reset-request` : enregistrement d’une demande de réinitialisation de mot de passe
 
 Chaque connexion déclenche l’envoi d’un e-mail de notification au compte concerné.
 Une inscription n’est finalisée qu’après saisie du code de vérification reçu par e-mail.
@@ -30,7 +34,7 @@ L’envoi utilise Resend lorsque `RESEND_API_KEY` et `RESEND_FROM` sont configur
 
 ### Jeu
 
-- `GET /api/game/question`
+- `GET /api/game/question?level=easy|medium|hard` : question aléatoire, avec filtres optionnels `departments` et `swarmingMonths`
 - `POST /api/game/validate`
 
 ### Données publiques

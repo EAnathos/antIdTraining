@@ -14,10 +14,15 @@ describe('FranceMap', () => {
     const onToggleDepartment = vi.fn()
 
     render(
-      <FranceMap selectedDepartments={['75']} onToggleDepartment={onToggleDepartment} />,
+      <FranceMap
+        selectedDepartments={['75']}
+        onToggleDepartment={onToggleDepartment}
+      />,
     )
 
-    expect(screen.getByRole('group', { name: 'Carte interactive de la France' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('group', { name: 'Carte interactive de la France' }),
+    ).toBeInTheDocument()
     const parisPath = screen.getByLabelText('Ville de Paris')
     expect(parisPath).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(parisPath)
@@ -27,6 +32,8 @@ describe('FranceMap', () => {
   it('renders readonly map image', () => {
     render(<FranceMap selectedDepartments={[]} readonly />)
 
-    expect(screen.getByRole('img', { name: 'Aire de répartition' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Aire de répartition' }),
+    ).toBeInTheDocument()
   })
 })
