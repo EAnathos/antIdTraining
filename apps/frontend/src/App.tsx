@@ -23,6 +23,16 @@ const ProfilePage = lazy(() =>
     default: module.ProfilePage,
   })),
 )
+const ResetPasswordPage = lazy(() =>
+  import('./pages/ResetPasswordPage').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+)
+const ForgotPasswordPage = lazy(() =>
+  import('./pages/ForgotPasswordPage').then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+)
 const AdminDashboardPage = lazy(() =>
   import('./pages/AdminDashboardPage').then((module) => ({
     default: module.AdminDashboardPage,
@@ -61,6 +71,8 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/classement" element={<LeaderboardPage />} />
           <Route path="/connexion" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route
             path="/admin/login"

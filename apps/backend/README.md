@@ -41,13 +41,15 @@ Variables recommandées selon le contexte:
 - `REDIS_URL` : optionnel en local si Redis tourne sur `localhost:6379`, recommandé en production
 - `CORS_ORIGINS` : obligatoire en production
 - `DATA_ENCRYPTION_KEY` : recommandé en production pour chiffrer les crédits photo et emails de suggestions
-- `RESEND_API_KEY`, `RESEND_FROM` : configuration de l’envoi des e-mails de vérification et de connexion via Resend
+- `RESEND_API_KEY`, `RESEND_FROM` : configuration de l’envoi des e-mails de vérification, de connexion et de réinitialisation via Resend
+- `FRONTEND_URL` : URL publique du frontend, utilisée dans les liens de réinitialisation de mot de passe
 - `LOG_LEVEL` : niveau de logs du backend (`info` par défaut)
 
 Le backend utilise Redis pour le rate limiting. Si `REDIS_URL` n'est pas défini, il essaie par défaut `redis://localhost:6379`.
 Les données sensibles stockées par le backend sont chiffrées côté application lorsqu'une clé de chiffrement est fournie.
 Les comptes joueurs doivent d'abord valider leur adresse e-mail via le code reçu par e-mail avant de pouvoir se connecter.
 Les connexions utilisateur déclenchent aussi un e-mail de notification via l'API Resend si ces variables sont configurées.
+Les demandes de réinitialisation de mot de passe envoient un e-mail contenant un lien vers `/reset-password?token=...` du frontend configuré.
 
 ## Scripts utiles
 

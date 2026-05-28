@@ -60,6 +60,12 @@ vi.mock('../../src/services/auth.js', () => ({
   verifyRegistrationEmail: commonMocks.verifyRegistrationEmail,
 }))
 
+vi.mock('../../src/lib/mail.js', () => ({
+  sendLoginNotificationEmail: commonMocks.sendLoginNotificationEmail,
+  sendVerificationEmail: commonMocks.sendVerificationEmail,
+  sendPasswordResetEmail: commonMocks.sendPasswordResetEmail,
+}))
+
 vi.mock('../../src/services/stats.js', () => ({
   getUserPoints: commonMocks.getUserPoints,
 }))
@@ -68,6 +74,7 @@ vi.mock('../../src/prisma.js', () => ({
   prisma: {
     user: {
       findUnique: prismaMocks.user.findUnique,
+      findFirst: prismaMocks.user.findFirst,
       update: prismaMocks.user.update,
       create: prismaMocks.user.create,
       delete: prismaMocks.user.delete,
@@ -415,6 +422,8 @@ describe('authRouter', () => {
 
   it('records password reset request when allowed', async () => {
     prismaMocks.user.findUnique.mockResolvedValue({
+      email: 'player@example.com',
+      username: 'player_one',
       passwordResetRequestedAt: null,
     })
     prismaMocks.user.update.mockResolvedValue({})
@@ -429,8 +438,39 @@ describe('authRouter', () => {
     expect(json.message).toBe('Demande de réinitialisation enregistrée.')
     expect(prismaMocks.user.update).toHaveBeenCalledWith({
       where: { id: 'user_1' },
-      data: { passwordResetRequestedAt: expect.any(Date) },
+      data: {
+        passwordResetRequestedAt: expect.any(Date),
+        passwordResetToken: expect.any(String),
+        passwordResetTokenExpiresAt: expect.any(Date),
+      },
     })
+    expect(commonMocks.sendPasswordResetEmail).toHaveBeenCalledWith(
+      'player@example.com',
+      'player_one',
+      expect.any(String),
+    )
+  })
+
+  it('sends password reset request for a public email', async () => {
+    prismaMocks.user.findUnique.mockResolvedValue({
+      id: 'user_1',
+      email: 'player@example.com',
+      username: 'player_one',
+      passwordResetRequestedAt: null,
+    })
+    prismaMocks.user.update.mockResolvedValue({})
+
+    const { response, json } = await post('/api/auth/password-reset-request', {
+      email: 'player@example.com',
+    })
+
+    expect(response.status).toBe(200)
+    expect(json.message).toContain('Si un compte existe pour cette adresse')
+    expect(commonMocks.sendPasswordResetEmail).toHaveBeenCalledWith(
+      'player@example.com',
+      'player_one',
+      expect.any(String),
+    )
   })
 
   it('rejects password reset request when requested recently', async () => {
@@ -446,6 +486,56 @@ describe('authRouter', () => {
 
     expect(response.status).toBe(429)
     expect(json.message).toContain('une fois par semaine')
+  })
+
+  it('returns 400 when public password reset email is missing', async () => {
+    const { response, json } = await post('/api/auth/password-reset-request', {
+      email: '',
+    })
+
+    expect(response.status).toBe(400)
+    expect(json.message).toBe('Requête invalide.')
+  })
+
+  it('resets password when token is valid', async () => {
+    prismaMocks.user.update.mockResolvedValue({})
+    prismaMocks.user.findFirst.mockResolvedValue({
+      id: 'user_1',
+      passwordResetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    })
+
+    const { response, json } = await post('/api/auth/password-reset', {
+      token: 'valid-token',
+      password: 'newpass123',
+      confirmPassword: 'newpass123',
+    })
+
+    expect(response.status).toBe(200)
+    expect(json.message).toBe('Mot de passe réinitialisé.')
+    expect(prismaMocks.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'user_1' },
+        data: expect.objectContaining({
+          passwordHash: expect.any(String),
+          passwordResetToken: null,
+          passwordResetTokenExpiresAt: null,
+          passwordResetRequestedAt: null,
+        }),
+      }),
+    )
+  })
+
+  it('rejects password reset when token is invalid', async () => {
+    prismaMocks.user.findFirst.mockResolvedValue(null)
+
+    const { response, json } = await post('/api/auth/password-reset', {
+      token: 'invalid-token',
+      password: 'newpass123',
+      confirmPassword: 'newpass123',
+    })
+
+    expect(response.status).toBe(400)
+    expect(json.message).toContain('Token de réinitialisation invalide')
   })
 
   it('deletes account when requested', async () => {
@@ -526,13 +616,11 @@ describe('authRouter', () => {
     })
   })
 
-  it('returns 401 for password-reset-request when unauthenticated', async () => {
-    const { response, json } = await post(
-      '/api/auth/password-reset-request',
-      {},
-    )
-    expect(response.status).toBe(401)
-    expect(json).toEqual({ message: 'Non autorisé.' })
+  it('returns 400 for password-reset-request when unauthenticated without email', async () => {
+    const { response, json } = await post('/api/auth/password-reset-request', {
+    })
+    expect(response.status).toBe(400)
+    expect(json.message).toBe('Adresse e-mail requise.')
   })
 
   it('uploads avatar and updates the user profile', async () => {

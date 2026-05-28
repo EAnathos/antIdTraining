@@ -56,7 +56,8 @@ Intégration backend:
 
 - L'API backend (Express + Prisma) fournit les données principales: taxons, entrées, images, sessions joueurs, suggestions, statistiques.
 - Endpoints usuels: `/api/taxons`, `/api/entries`, `/api/auth` et endpoints d'upload d'images.
-- Pour modifier l'URL de l'API, consultez le client API dans [src/lib](src/lib).
+- Le parcours public de réinitialisation commence sur `/forgot-password`, puis le lien reçu mène vers `/reset-password?token=...`.
+- La page de réinitialisation finale du mot de passe est disponible sur `/reset-password?token=...`.
 
 ## Bonnes pratiques
 

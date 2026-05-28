@@ -67,6 +67,8 @@ model User {
   avatar       String?
   bio          String?
   passwordResetRequestedAt DateTime?
+  passwordResetToken String?
+  passwordResetTokenExpiresAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

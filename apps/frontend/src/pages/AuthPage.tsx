@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { AuthRegistrationResponse, AuthResponse } from '../types/models'
 
@@ -175,6 +175,17 @@ export function AuthPage() {
               : 'Vérifier mon e-mail'}
         </button>
       </form>
+
+      {mode === 'login' && (
+        <div className="mt-3 text-sm text-slate-600">
+          <Link
+            className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
+            to="/forgot-password"
+          >
+            Mot de passe oublié ?
+          </Link>
+        </div>
+      )}
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </section>

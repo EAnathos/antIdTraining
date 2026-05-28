@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 export const prismaMocks = {
   user: {
     findUnique: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
     update: vi.fn(),
@@ -45,6 +46,7 @@ export const commonMocks = {
   validateGameAnswerSchema: { safeParse: vi.fn() },
   sendLoginNotificationEmail: vi.fn(),
   sendVerificationEmail: vi.fn(),
+  sendPasswordResetEmail: vi.fn(),
   verifyRegistrationEmail: vi.fn(),
 }
 

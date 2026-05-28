@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAdminCookieOptions, optionalAuth } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { AppError } from '../lib/errors.js'
+import { enforceIpRateLimit } from '../lib/rateLimit.js'
 import {
   loginAdmin,
   registerUser,
@@ -13,6 +14,8 @@ import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
 import { upload } from '../middleware/upload.js'
 import crypto from 'node:crypto'
+import bcrypt from 'bcryptjs'
+import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
   resolveUploadFilePath,
   deleteUploadFilesForImageUrl,
@@ -90,6 +93,13 @@ const passwordResetSchema = z
     message: 'Les mots de passe ne correspondent pas',
     path: ['confirmPassword'],
   })
+
+const passwordResetRequestSchema = z.object({
+  email: emailSchema.optional(),
+})
+
+const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
+const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 
 export const authRouter = Router()
 
@@ -252,16 +262,59 @@ authRouter.post(
   '/password-reset-request',
   optionalAuth,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
+    const parsed = passwordResetRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      throw parsed.error
+    }
+
+    await enforceIpRateLimit(
+      'password-reset-request',
+      req.ip,
+      PASSWORD_RESET_REQUEST_WINDOW_MS,
+      PASSWORD_RESET_REQUEST_MAX_ATTEMPTS,
+      'Trop de demandes de réinitialisation depuis cette adresse IP. Réessayez plus tard.',
+    )
+
+    const isAuthenticated = Boolean(req.user)
+    const authenticatedUserId = req.user?.userId ?? null
+    const requestedEmail = parsed.data.email?.trim() ?? null
+
+    if (!isAuthenticated && !requestedEmail) {
+      throw new AppError(400, 'Adresse e-mail requise.')
+    }
+
+    if (isAuthenticated && !authenticatedUserId) {
       throw new AppError(401, 'Non autorisé.')
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      select: { passwordResetRequestedAt: true },
-    })
+    const user = isAuthenticated
+      ? await prisma.user.findUnique({
+          where: { id: authenticatedUserId! },
+          select: {
+            id: true,
+            passwordResetRequestedAt: true,
+            email: true,
+            username: true,
+          },
+        })
+      : await prisma.user.findUnique({
+          where: { email: requestedEmail! },
+          select: {
+            id: true,
+            passwordResetRequestedAt: true,
+            email: true,
+            username: true,
+          },
+        })
 
-    if (user?.passwordResetRequestedAt) {
+    if (!user) {
+      return res.status(200).json({
+        message:
+          'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+      })
+    }
+
+    if (isAuthenticated && user.passwordResetRequestedAt) {
       const timeSinceLastReset =
         Date.now() - user.passwordResetRequestedAt.getTime()
       const oneWeekMs = 7 * 24 * 60 * 60 * 1000
@@ -273,14 +326,116 @@ authRouter.post(
       }
     }
 
+    if (!isAuthenticated && user.passwordResetRequestedAt) {
+      const timeSinceLastReset =
+        Date.now() - user.passwordResetRequestedAt.getTime()
+      const oneWeekMs = 7 * 24 * 60 * 60 * 1000
+      if (timeSinceLastReset < oneWeekMs) {
+        return res.status(200).json({
+          message:
+            'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+        })
+      }
+    }
+
+    // generate a token and expiry (valid 24 hours)
+    const token = crypto.randomBytes(24).toString('hex')
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    // store token and requestedAt
     await prisma.user.update({
-      where: { id: req.user.userId },
-      data: { passwordResetRequestedAt: new Date() },
+      where: { id: authenticatedUserId ?? user.id },
+      data: {
+        passwordResetRequestedAt: new Date(),
+        passwordResetToken: token,
+        passwordResetTokenExpiresAt: expiresAt,
+      },
     })
+
+    // send email if possible
+    try {
+      if (user?.email) {
+        await sendPasswordResetEmail(
+          user.email,
+          user.username ?? user.email,
+          token,
+        )
+      }
+    } catch (error) {
+      // rollback token on failure
+      await prisma.user.update({
+        where: { id: authenticatedUserId ?? user.id },
+        data: {
+          passwordResetToken: null,
+          passwordResetTokenExpiresAt: null,
+        },
+      })
+      throw new AppError(
+        500,
+        "Impossible d'envoyer l'email de réinitialisation.",
+      )
+    }
 
     return res
       .status(200)
-      .json({ message: 'Demande de réinitialisation enregistrée.' })
+      .json({
+        message: isAuthenticated
+          ? 'Demande de réinitialisation enregistrée.'
+          : 'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+      })
+  }),
+)
+
+authRouter.post(
+  '/password-reset',
+  asyncHandler(async (req, res) => {
+    const parsed = z
+      .object({
+        token: z.string().min(6, 'Token invalide'),
+        password: passwordSchema,
+        confirmPassword: z.string(),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: 'Les mots de passe ne correspondent pas',
+        path: ['confirmPassword'],
+      })
+      .safeParse(req.body)
+
+    if (!parsed.success) {
+      throw parsed.error
+    }
+
+    const { token, password } = parsed.data
+
+    const user = await prisma.user.findFirst({
+      where: { passwordResetToken: token },
+      select: {
+        id: true,
+        passwordResetTokenExpiresAt: true,
+      },
+    })
+
+    if (
+      !user ||
+      !user.passwordResetTokenExpiresAt ||
+      user.passwordResetTokenExpiresAt.getTime() < Date.now()
+    ) {
+      throw new AppError(400, 'Token de réinitialisation invalide ou expiré.')
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpiresAt: null,
+        passwordResetRequestedAt: null,
+      },
+    })
+
+    return res.status(200).json({ message: 'Mot de passe réinitialisé.' })
   }),
 )
 
