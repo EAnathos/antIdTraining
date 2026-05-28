@@ -1,7 +1,12 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
 
-import { cuidSchema, cuidValidator, emailSchema, urlSchema } from '../../src/lib/zodUtils.js'
+import {
+  cuidSchema,
+  cuidValidator,
+  emailSchema,
+  urlSchema,
+} from '../../src/lib/zodUtils.js'
 
 describe('zod utils', () => {
   it('validates a valid cuid and rejects an invalid one', () => {
@@ -23,11 +28,17 @@ describe('zod utils', () => {
 
   it('normalizes valid email casing and validates URL', () => {
     expect(emailSchema.parse('TEST@Example.COM')).toBe('test@example.com')
-    expect(urlSchema.parse('https://example.com/path')).toBe('https://example.com/path')
+    expect(urlSchema.parse('https://example.com/path')).toBe(
+      'https://example.com/path',
+    )
   })
 
   it('rejects non-trimmed values because validation happens before trim', () => {
-    expect(() => emailSchema.parse('  TEST@Example.COM  ')).toThrow('Email invalide')
-    expect(urlSchema.parse(' https://example.com/path ')).toBe('https://example.com/path')
+    expect(() => emailSchema.parse('  TEST@Example.COM  ')).toThrow(
+      'Email invalide',
+    )
+    expect(urlSchema.parse(' https://example.com/path ')).toBe(
+      'https://example.com/path',
+    )
   })
 })

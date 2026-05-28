@@ -35,7 +35,10 @@ export function invalidateGameEntryCacheSafely(reason?: string) {
   try {
     invalidateGameEntryCache()
   } catch (error) {
-    logger.error({ err: error, reason }, 'Failed to invalidate game entry cache')
+    logger.error(
+      { err: error, reason },
+      'Failed to invalidate game entry cache',
+    )
   }
 }
 
@@ -72,7 +75,8 @@ export async function getGameEntriesCache() {
     expiresAt: Date.now() + CACHE_TTL_MS,
     entries: entries.map((entry) => ({
       ...entry,
-      photoCredit: (decryptSensitiveText(entry.photoCredit) ?? entry.photoCredit) as string,
+      photoCredit: (decryptSensitiveText(entry.photoCredit) ??
+        entry.photoCredit) as string,
       swarmingStartMonth: entry.taxon?.swarmingStartMonth ?? null,
       swarmingEndMonth: entry.taxon?.swarmingEndMonth ?? null,
     })),

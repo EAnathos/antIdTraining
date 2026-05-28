@@ -1,6 +1,9 @@
 import type { Taxon } from '../types/models'
 
-type TaxonNameParts = Pick<Taxon, 'genus' | 'subgenus' | 'species' | 'speciesGroup'>
+type TaxonNameParts = Pick<
+  Taxon,
+  'genus' | 'subgenus' | 'species' | 'speciesGroup'
+>
 
 export function formatScientificTaxonNameText(taxon: TaxonNameParts) {
   const subgenusPart = taxon.subgenus ? ` (${taxon.subgenus})` : ''

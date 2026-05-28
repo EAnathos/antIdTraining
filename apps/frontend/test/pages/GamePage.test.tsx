@@ -147,7 +147,11 @@ describe('GamePage', () => {
 
     render(<GamePage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Niveau moyen Sous-famille puis genre.' }))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Niveau moyen Sous-famille puis genre.',
+      }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Démarrer ce niveau' }))
 
     await screen.findByText('Identifier la sous-famille puis le genre')
@@ -155,7 +159,9 @@ describe('GamePage', () => {
     fireEvent.change(screen.getByLabelText('Sous-famille'), {
       target: { value: 'Formicinae' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Valider la sous-famille' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Valider la sous-famille' }),
+    )
 
     await screen.findByText('Correct : sous-famille validée')
 
@@ -220,16 +226,30 @@ describe('GamePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Démarrer ce niveau' }))
     await screen.findByText('Identifier la sous-famille')
 
-    expect(screen.getByText(/Le nombre de points gagnés ou perdus dépend du niveau de difficulté./)).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Le nombre de points gagnés ou perdus dépend du niveau de difficulté./,
+      ),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByAltText('Spécimen 1'))
-    expect(await screen.findByAltText('Spécimen agrandis 1')).toBeInTheDocument()
+    expect(
+      await screen.findByAltText('Spécimen agrandis 1'),
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Photo suivante' })[1])
-    expect(await screen.findByAltText('Spécimen agrandis 2')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Photo suivante' })[1],
+    )
+    expect(
+      await screen.findByAltText('Spécimen agrandis 2'),
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Photo précédente' })[1])
-    expect(await screen.findByAltText('Spécimen agrandis 1')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Photo précédente' })[1],
+    )
+    expect(
+      await screen.findByAltText('Spécimen agrandis 1'),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
     expect(screen.queryByAltText('Spécimen agrandis 1')).not.toBeInTheDocument()

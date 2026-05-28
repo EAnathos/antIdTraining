@@ -1,10 +1,5 @@
 const CACHE_NAME = 'ant-id-training-pwa-v2'
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/favicon.svg',
-]
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg']
 
 // Limite pour le cache utilisateur (en nombre de fichiers et taille estimée)
 const MAX_CACHE_SIZE = 50 // Maximum 50 fichiers
@@ -30,23 +25,24 @@ async function cleanupCache(cacheName) {
 async function addToCache(cacheName, url, response) {
   const cache = await caches.open(cacheName)
   const clonedResponse = response.clone()
-  
+
   // Ajoute un timestamp personnalisé dans les headers
   const newResponse = new Response(clonedResponse.body, {
     status: clonedResponse.status,
     statusText: clonedResponse.statusText,
     headers: new Headers(clonedResponse.headers),
   })
-  
+
   await cache.put(url, newResponse)
   await cleanupCache(cacheName)
 }
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches
+      .open(CACHE_NAME)
       .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()),
   )
 })
 
@@ -58,9 +54,16 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .then(() => self.clients.claim()),
   )
 })
 
@@ -93,8 +96,12 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Retour à la page en cache si hors ligne
-          return caches.match('/index.html').then((cached) => cached || new Response('Offline', { status: 503 }))
-        })
+          return caches
+            .match('/index.html')
+            .then(
+              (cached) => cached || new Response('Offline', { status: 503 }),
+            )
+        }),
     )
     return
   }
@@ -133,14 +140,15 @@ self.addEventListener('fetch', (event) => {
             return networkResponse
           })
           .catch(() => new Response('Offline', { status: 503 }))
-      })
+      }),
     )
     return
   }
 
   // Fallback : Cache-First avec Network-Fallback
   event.respondWith(
-    caches.match(request)
+    caches
+      .match(request)
       .then((cachedResponse) => cachedResponse || fetch(request))
       .then((response) => {
         if (response.ok && request.method === 'GET') {
@@ -148,6 +156,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => new Response('Offline', { status: 503 }))
+      .catch(() => new Response('Offline', { status: 503 })),
   )
 })

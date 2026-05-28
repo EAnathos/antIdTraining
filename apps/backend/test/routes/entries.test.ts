@@ -1,5 +1,13 @@
 import express from 'express'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import { prismaMocks } from '../utils/sharedMocks'
 
 const mocks = vi.hoisted(() => ({
@@ -113,7 +121,12 @@ describe('entriesRouter', () => {
     const { response, json } = await get('/api/entries?page=2&limit=20')
 
     expect(response.status).toBe(200)
-    expect(json.pagination).toMatchObject({ page: 2, limit: 20, total: 1, pages: 1 })
+    expect(json.pagination).toMatchObject({
+      page: 2,
+      limit: 20,
+      total: 1,
+      pages: 1,
+    })
     expect(json.items[0].photoCredit).toBe('enc:alice')
     expect(prismaMocks.observationEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 20, take: 20 }),
@@ -125,7 +138,7 @@ describe('entriesRouter', () => {
 
     expect(response.status).toBe(400)
     expect(json.message).toBe('Requête invalide.')
-    expect((mocks.resolveEntryTaxonSelection as any)).not.toHaveBeenCalled()
+    expect(mocks.resolveEntryTaxonSelection as any).not.toHaveBeenCalled()
   })
 
   it('creates an entry and records audit log', async () => {
@@ -235,11 +248,14 @@ describe('entriesRouter', () => {
       ])
     ;(prismaMocks as any).$transaction.mockResolvedValue(undefined)
 
-    const response = await fetch(`${baseUrl}/api/entries/entry_1/images/order`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageIds: ['img_2', 'img_1'] }),
-    })
+    const response = await fetch(
+      `${baseUrl}/api/entries/entry_1/images/order`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageIds: ['img_2', 'img_1'] }),
+      },
+    )
 
     const json = await response.json()
     expect(response.status).toBe(200)
@@ -265,7 +281,9 @@ describe('entriesRouter', () => {
     ;(prismaMocks as any).observationEntry.findUnique.mockResolvedValue({
       images: [{ imageUrl: '/uploads/entry_1.webp' }],
     })
-    ;(prismaMocks as any).observationEntry.delete.mockResolvedValue({ id: 'entry_1' })
+    ;(prismaMocks as any).observationEntry.delete.mockResolvedValue({
+      id: 'entry_1',
+    })
 
     const response = await fetch(`${baseUrl}/api/entries/entry_1`, {
       method: 'DELETE',
@@ -273,7 +291,9 @@ describe('entriesRouter', () => {
 
     expect(response.status).toBe(204)
     expect(prismaMocks.observationEntry.delete).toHaveBeenCalledTimes(1)
-    expect(mocks.deleteUploadFilesForImageUrl).toHaveBeenCalledWith('/uploads/entry_1.webp')
+    expect(mocks.deleteUploadFilesForImageUrl).toHaveBeenCalledWith(
+      '/uploads/entry_1.webp',
+    )
     expect(mocks.recordAdminAudit).toHaveBeenCalledTimes(1)
     expect(mocks.invalidateGameEntryCacheSafely).toHaveBeenCalledTimes(1)
   })

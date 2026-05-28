@@ -20,7 +20,9 @@ async function main() {
   const roleInput = process.env.ROLE_TO_CREATE?.trim().toUpperCase()
 
   if (!username || !email || !password) {
-    throw new Error('USERNAME_TO_CREATE, EMAIL_TO_CREATE et PASSWORD_TO_CREATE sont requis')
+    throw new Error(
+      'USERNAME_TO_CREATE, EMAIL_TO_CREATE et PASSWORD_TO_CREATE sont requis',
+    )
   }
 
   const role: UserRole = roleInput === 'USER' ? UserRole.USER : UserRole.ADMIN
@@ -54,7 +56,9 @@ async function main() {
     },
   })
 
-  console.log(`Utilisateur prêt: ${user.username} <${user.email}> (${user.role})`)
+  console.log(
+    `Utilisateur prêt: ${user.username} <${user.email}> (${user.role})`,
+  )
 }
 
 main()

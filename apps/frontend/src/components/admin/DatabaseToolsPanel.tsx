@@ -6,7 +6,11 @@ type Props = {
   cleanupUploads: () => Promise<void>
 }
 
-export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnapshot, cleanupUploads }: Props) {
+export function DatabaseToolsPanel({
+  exportDatabaseSnapshot,
+  importDatabaseSnapshot,
+  cleanupUploads,
+}: Props) {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [confirmReplace, setConfirmReplace] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -48,10 +52,14 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-slate-900">Export / Import base de données</h3>
+      <h3 className="text-lg font-semibold text-slate-900">
+        Export / Import base de données
+      </h3>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm text-slate-700">Télécharge une archive ZIP contenant la base et les images.</p>
+        <p className="text-sm text-slate-700">
+          Télécharge une archive ZIP contenant la base et les images.
+        </p>
         <button
           type="button"
           className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
@@ -63,9 +71,12 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       </div>
 
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-        <p className="text-sm font-medium text-amber-900">Import (remplacement complet)</p>
+        <p className="text-sm font-medium text-amber-900">
+          Import (remplacement complet)
+        </p>
         <p className="mt-1 text-sm text-amber-800">
-          Cette action supprime les données actuelles et restaure le contenu du fichier sélectionné (format ZIP).
+          Cette action supprime les données actuelles et restaure le contenu du
+          fichier sélectionné (format ZIP).
         </p>
 
         <input
@@ -96,9 +107,12 @@ export function DatabaseToolsPanel({ exportDatabaseSnapshot, importDatabaseSnaps
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm font-medium text-slate-900">Nettoyage des images</p>
+        <p className="text-sm font-medium text-slate-900">
+          Nettoyage des images
+        </p>
         <p className="mt-1 text-sm text-slate-700">
-          Supprime les fichiers non utilisés dans /uploads et recrée les variantes responsives manquantes pour les images référencées.
+          Supprime les fichiers non utilisés dans /uploads et recrée les
+          variantes responsives manquantes pour les images référencées.
         </p>
         <button
           type="button"

@@ -221,11 +221,18 @@ export function EntriesCrudPanel({
   reorderEntryImages,
 }: Props) {
   const [reordering, setReordering] = useState<Record<string, boolean>>({})
-  const [dragging, setDragging] = useState<{ entryId: string; index: number } | null>(null)
+  const [dragging, setDragging] = useState<{
+    entryId: string
+    index: number
+  } | null>(null)
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'taxon'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [previewImage, setPreviewImage] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [previewImage, setPreviewImage] = useState<{
+    images: string[]
+    index: number
+    alt: string
+  } | null>(null)
   const [filterDepartment, setFilterDepartment] = useState('')
   const [filterCaste, setFilterCaste] = useState('')
   const [filterPhotoCredit, setFilterPhotoCredit] = useState('')
@@ -266,7 +273,8 @@ export function EntriesCrudPanel({
       if (!current || current.images.length <= 1) return current
       return {
         ...current,
-        index: (current.index - 1 + current.images.length) % current.images.length,
+        index:
+          (current.index - 1 + current.images.length) % current.images.length,
       }
     })
   }
@@ -290,9 +298,12 @@ export function EntriesCrudPanel({
     if (!value || !genus) return
 
     try {
-      const { data } = await api.get<SpeciesMetadata>('/taxons/species-metadata', {
-        params: { genus, species: value },
-      })
+      const { data } = await api.get<SpeciesMetadata>(
+        '/taxons/species-metadata',
+        {
+          params: { genus, species: value },
+        },
+      )
 
       setEntryForm({
         ...baseForm,
@@ -348,9 +359,15 @@ export function EntriesCrudPanel({
     }
 
     void Promise.all([
-      api.get<string[]>('/taxons/species', { params: { genus: entryForm.genus } }),
-      api.get<string[]>('/taxons/subgenera', { params: { genus: entryForm.genus } }),
-      api.get<string[]>('/taxons/species-groups', { params: { genus: entryForm.genus } }),
+      api.get<string[]>('/taxons/species', {
+        params: { genus: entryForm.genus },
+      }),
+      api.get<string[]>('/taxons/subgenera', {
+        params: { genus: entryForm.genus },
+      }),
+      api.get<string[]>('/taxons/species-groups', {
+        params: { genus: entryForm.genus },
+      }),
     ])
       .then(([speciesRes, subgenusRes, groupRes]) => {
         if (!cancelled) {
@@ -381,31 +398,47 @@ export function EntriesCrudPanel({
 
   const filteredEntries = useMemo(() => {
     let result = [...entries]
-    
+
     // Search filter
     const searchValue = query.trim().toLowerCase()
     if (searchValue) {
       result = result.filter((entry) => {
-        const haystack = [entry.subfamily, entry.genus ?? '', entry.species ?? '', entry.taxonValue, entry.department, entry.biotope, entry.photoCredit].join(' ').toLowerCase()
+        const haystack = [
+          entry.subfamily,
+          entry.genus ?? '',
+          entry.species ?? '',
+          entry.taxonValue,
+          entry.department,
+          entry.biotope,
+          entry.photoCredit,
+        ]
+          .join(' ')
+          .toLowerCase()
         return haystack.includes(searchValue)
       })
     }
-    
+
     // Department filter
     if (filterDepartment) {
-      result = result.filter((entry) => entry.department.includes(filterDepartment))
+      result = result.filter((entry) =>
+        entry.department.includes(filterDepartment),
+      )
     }
-    
+
     // Caste filter
     if (filterCaste) {
       result = result.filter((entry) => entry.caste === filterCaste)
     }
-    
+
     // Photo credit filter
     if (filterPhotoCredit) {
-      result = result.filter((entry) => entry.photoCredit.toLowerCase().includes(filterPhotoCredit.toLowerCase()))
+      result = result.filter((entry) =>
+        entry.photoCredit
+          .toLowerCase()
+          .includes(filterPhotoCredit.toLowerCase()),
+      )
     }
-    
+
     return result
   }, [entries, query, filterDepartment, filterCaste, filterPhotoCredit])
 
@@ -419,8 +452,10 @@ export function EntriesCrudPanel({
       }
 
       // taxon sort: subfamily, genus, species
-      const ka = `${a.subfamily}\u0000${a.genus ?? ''}\u0000${a.species ?? ''}`.toLowerCase()
-      const kb = `${b.subfamily}\u0000${b.genus ?? ''}\u0000${b.species ?? ''}`.toLowerCase()
+      const ka =
+        `${a.subfamily}\u0000${a.genus ?? ''}\u0000${a.species ?? ''}`.toLowerCase()
+      const kb =
+        `${b.subfamily}\u0000${b.genus ?? ''}\u0000${b.species ?? ''}`.toLowerCase()
       if (ka < kb) return sortOrder === 'asc' ? -1 : 1
       if (ka > kb) return sortOrder === 'asc' ? 1 : -1
       return 0
@@ -454,59 +489,96 @@ export function EntriesCrudPanel({
       caste: entry.caste ?? '',
     })
     setEntryFiles(null)
-    formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    formContainerRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
   }
 
   return (
     <div className="mt-3 space-y-4">
-      <div ref={formContainerRef} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Ajout / modification</h3>
+      <div
+        ref={formContainerRef}
+        className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4"
+      >
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          Ajout / modification
+        </h3>
         <form className="space-y-4" onSubmit={submitEntry}>
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-            <h4 className="mb-3 text-sm font-semibold text-slate-700">Sélection du taxon</h4>
+            <h4 className="mb-3 text-sm font-semibold text-slate-700">
+              Sélection du taxon
+            </h4>
             <div className="grid gap-2 md:grid-cols-2">
               <select
                 className="w-full rounded border p-2"
                 value={entryForm.subfamily}
-                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
+                onChange={(e) =>
+                  patchEntryForm({
+                    subfamily: e.target.value,
+                    genus: '',
+                    species: '',
+                    subgenus: '',
+                    speciesGroup: '',
+                  })
+                }
                 required
               >
                 <option value="">Sous-famille</option>
                 {subfamilies.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="w-full rounded border p-2"
                 value={entryForm.genus}
-                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
+                onChange={(e) =>
+                  patchEntryForm({
+                    genus: e.target.value,
+                    species: '',
+                    subgenus: '',
+                    speciesGroup: '',
+                  })
+                }
                 disabled={!entryForm.subfamily}
               >
                 <option value="">Genre (optionnel)</option>
                 {generaOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="w-full rounded border p-2"
                 value={entryForm.subgenus}
-                onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
+                onChange={(e) =>
+                  patchEntryForm({ subgenus: e.target.value, species: '' })
+                }
                 disabled={!entryForm.genus}
               >
                 <option value="">Sous-genre (optionnel)</option>
                 {subgenusOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="w-full rounded border p-2"
                 value={entryForm.speciesGroup}
-                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
+                onChange={(e) =>
+                  patchEntryForm({ speciesGroup: e.target.value, species: '' })
+                }
                 disabled={!entryForm.genus}
               >
                 <option value="">Groupe d'espèce (optionnel)</option>
                 {speciesGroupOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
@@ -517,13 +589,17 @@ export function EntriesCrudPanel({
               >
                 <option value="">Espèce (optionnel)</option>
                 {speciesOptions.map((value) => (
-                  <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
+                  <option key={`${entryForm.genus}-${value}`} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="w-full rounded border p-2"
                 value={entryForm.caste}
-                onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
+                onChange={(e) =>
+                  patchEntryForm({ caste: e.target.value as EntryCaste | '' })
+                }
                 required
               >
                 <option value="">Choisir la caste</option>
@@ -535,7 +611,9 @@ export function EntriesCrudPanel({
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-            <h4 className="mb-3 text-sm font-semibold text-slate-700">Détails de l'observation</h4>
+            <h4 className="mb-3 text-sm font-semibold text-slate-700">
+              Détails de l'observation
+            </h4>
             <div className="grid gap-2 md:grid-cols-2">
               <input
                 className="w-full rounded border p-2"
@@ -543,12 +621,19 @@ export function EntriesCrudPanel({
                 placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
                 value={entryForm.department}
                 onChange={(e) => patchEntryForm({ department: e.target.value })}
-                onBlur={(e) => patchEntryForm({ department: parseDepartmentInput(e.target.value) })}
+                onBlur={(e) =>
+                  patchEntryForm({
+                    department: parseDepartmentInput(e.target.value),
+                  })
+                }
                 required
               />
               <datalist id="department-suggestions">
                 {departmentOptions.map((department) => (
-                  <option key={department.code} value={`${department.code} - ${department.name}`} />
+                  <option
+                    key={department.code}
+                    value={`${department.code} - ${department.name}`}
+                  />
                 ))}
               </datalist>
               <input
@@ -569,7 +654,9 @@ export function EntriesCrudPanel({
                 className="w-full rounded border p-2"
                 placeholder="Crédit photo"
                 value={entryForm.photoCredit}
-                onChange={(e) => patchEntryForm({ photoCredit: e.target.value })}
+                onChange={(e) =>
+                  patchEntryForm({ photoCredit: e.target.value })
+                }
                 required
               />
               <div className="space-y-1">
@@ -580,27 +667,50 @@ export function EntriesCrudPanel({
                   multiple
                   onChange={(e) => setEntryFiles(e.target.files)}
                 />
-                <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu’à 3).</p>
+                <p className="text-xs text-slate-500">
+                  Images: 8 Mo max par fichier (jusqu’à 3).
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <button 
-              className="inline-flex w-full items-center justify-center gap-2 rounded bg-slate-900 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" 
+            <button
+              className="inline-flex w-full items-center justify-center gap-2 rounded bg-slate-900 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               type="submit"
               disabled={isSubmitting}
             >
               {isSubmitting && (
-                <svg aria-hidden="true" className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <svg
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
               )}
               {selectedEntryId ? 'Modifier entrée' : 'Créer entrée'}
             </button>
             {selectedEntryId && (
-                <button className="rounded bg-slate-100 px-3 py-2 text-slate-700 disabled:opacity-60 sm:w-auto" type="button" onClick={resetEntryForm} disabled={isSubmitting}>
+              <button
+                className="rounded bg-slate-100 px-3 py-2 text-slate-700 disabled:opacity-60 sm:w-auto"
+                type="button"
+                onClick={resetEntryForm}
+                disabled={isSubmitting}
+              >
                 Annuler la modification
               </button>
             )}
@@ -608,20 +718,26 @@ export function EntriesCrudPanel({
         </form>
       </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Recherche / liste</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          Recherche / liste
+        </h3>
         <div className="space-y-3">
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
             <input
               className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-slate-100 p-2 text-slate-700 placeholder:text-slate-500"
-            placeholder="Rechercher une entrée"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher une entrée"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
             />
 
-              <label className="text-sm text-slate-700 sm:whitespace-nowrap">
+            <label className="text-sm text-slate-700 sm:whitespace-nowrap">
               Trier
-                <select className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'taxon')}>
+              <select
+                className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'taxon')}
+              >
                 <option value="date">Date</option>
                 <option value="taxon">Taxon</option>
               </select>
@@ -630,13 +746,15 @@ export function EntriesCrudPanel({
             <button
               title="Inverser l'ordre"
               className="rounded bg-slate-100 px-2 py-1 text-slate-700"
-              onClick={() => setSortOrder((s) => (s === 'asc' ? 'desc' : 'asc'))}
+              onClick={() =>
+                setSortOrder((s) => (s === 'asc' ? 'desc' : 'asc'))
+              }
               type="button"
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
           </div>
-          
+
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <select
               className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
@@ -652,7 +770,7 @@ export function EntriesCrudPanel({
                   </option>
                 ))}
             </select>
-            
+
             <select
               className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
               value={filterCaste}
@@ -663,7 +781,7 @@ export function EntriesCrudPanel({
               <option value="QUEEN">Reine</option>
               <option value="MALE">Mâle</option>
             </select>
-            
+
             <input
               className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm sm:w-auto"
               placeholder="Crédit photo"
@@ -675,9 +793,10 @@ export function EntriesCrudPanel({
 
         <div className="mt-3 mb-2 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            <strong>{sortedEntries.length}</strong> entrée{sortedEntries.length !== 1 ? 's' : ''} affichée{sortedEntries.length !== 1 ? 's' : ''}
-            {' '}
-            sur <strong>{entriesTotal}</strong>
+            <strong>{sortedEntries.length}</strong> entrée
+            {sortedEntries.length !== 1 ? 's' : ''} affichée
+            {sortedEntries.length !== 1 ? 's' : ''} sur{' '}
+            <strong>{entriesTotal}</strong>
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -692,7 +811,9 @@ export function EntriesCrudPanel({
                 }}
               >
                 {[25, 50, 100].map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
             </label>
@@ -706,12 +827,16 @@ export function EntriesCrudPanel({
               >
                 Préc.
               </button>
-              <span className="px-1 text-xs sm:text-sm">{entriesPage} / {Math.max(1, entriesPages)}</span>
+              <span className="px-1 text-xs sm:text-sm">
+                {entriesPage} / {Math.max(1, entriesPages)}
+              </span>
               <button
                 type="button"
                 className="rounded border border-slate-300 bg-white px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={entriesPage >= entriesPages}
-                onClick={() => setEntriesPage(Math.min(entriesPages, entriesPage + 1))}
+                onClick={() =>
+                  setEntriesPage(Math.min(entriesPages, entriesPage + 1))
+                }
               >
                 Suiv.
               </button>
@@ -726,11 +851,19 @@ export function EntriesCrudPanel({
               className={`rounded border p-2 sm:p-3 ${selectedEntryId === entry.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <button className="flex-1 text-left" type="button" onClick={() => loadEntryInForm(entry)}>
-                  {renderEntryTaxonLabel(entry)}{' '}
-                  - {entry.department} - {new Date(entry.observedAt).toLocaleDateString('fr-FR')}
-                  <span className="mt-1 block text-xs text-slate-600">Biotope: {entry.biotope}</span>
-                  <span className="block text-xs text-slate-600">Crédit photo: {entry.photoCredit}</span>
+                <button
+                  className="flex-1 text-left"
+                  type="button"
+                  onClick={() => loadEntryInForm(entry)}
+                >
+                  {renderEntryTaxonLabel(entry)} - {entry.department} -{' '}
+                  {new Date(entry.observedAt).toLocaleDateString('fr-FR')}
+                  <span className="mt-1 block text-xs text-slate-600">
+                    Biotope: {entry.biotope}
+                  </span>
+                  <span className="block text-xs text-slate-600">
+                    Crédit photo: {entry.photoCredit}
+                  </span>
                 </button>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <AdminIconButton
@@ -763,7 +896,9 @@ export function EntriesCrudPanel({
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={async (e) => {
                         e.preventDefault()
-                        const from = Number(e.dataTransfer.getData('text/plain'))
+                        const from = Number(
+                          e.dataTransfer.getData('text/plain'),
+                        )
                         const to = idx
                         if (Number.isNaN(from) || from === to) {
                           setDragging(null)
@@ -785,21 +920,27 @@ export function EntriesCrudPanel({
                       <img
                         src={resolveImageUrl(image.imageUrl)}
                         alt={entry.taxonValue}
-                          className={`h-16 w-16 rounded border object-cover ${reordering[entry.id] ? 'cursor-wait' : 'cursor-grab'}`}
+                        className={`h-16 w-16 rounded border object-cover ${reordering[entry.id] ? 'cursor-wait' : 'cursor-grab'}`}
                         loading="lazy"
                         decoding="async"
                         width={64}
                         height={64}
                         onClick={() =>
                           openPreview(
-                            entry.images.map((entryImage) => resolveImageUrl(entryImage.imageUrl)),
-                            entry.images.findIndex((entryImage) => entryImage.id === image.id),
+                            entry.images.map((entryImage) =>
+                              resolveImageUrl(entryImage.imageUrl),
+                            ),
+                            entry.images.findIndex(
+                              (entryImage) => entryImage.id === image.id,
+                            ),
                             entry.taxonValue,
                           )
                         }
                       />
                       {reordering[entry.id] && idx === 0 && (
-                        <span className="text-xs text-slate-500">Réordonnancement…</span>
+                        <span className="text-xs text-slate-500">
+                          Réordonnancement…
+                        </span>
                       )}
                     </div>
                   ))}
@@ -815,7 +956,10 @@ export function EntriesCrudPanel({
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-3 sm:p-4"
           onClick={() => setPreviewImage(null)}
         >
-          <div className="relative" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="relative"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
@@ -831,7 +975,16 @@ export function EntriesCrudPanel({
               disabled={previewImage.images.length <= 1}
               aria-label="Image précédente"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 sm:h-5 sm:w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
@@ -843,15 +996,27 @@ export function EntriesCrudPanel({
               disabled={previewImage.images.length <= 1}
               aria-label="Image suivante"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 sm:h-5 sm:w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>
 
             <img
-              {...getResponsiveImageProps(previewImage.images[previewImage.index], {
-                sizes: '(max-width: 768px) 90vw, 50vw',
-              })}
+              {...getResponsiveImageProps(
+                previewImage.images[previewImage.index],
+                {
+                  sizes: '(max-width: 768px) 90vw, 50vw',
+                },
+              )}
               alt={previewImage.alt}
               className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
               decoding="async"

@@ -1,6 +1,11 @@
 import { prisma } from '../prisma.js'
 
-export type TaxonLevelProfileLevel = 'SUBFAMILY' | 'GENUS' | 'SUBGENUS' | 'SPECIES_GROUP' | 'SPECIES'
+export type TaxonLevelProfileLevel =
+  | 'SUBFAMILY'
+  | 'GENUS'
+  | 'SUBGENUS'
+  | 'SPECIES_GROUP'
+  | 'SPECIES'
 
 export type CachedTaxonLevelProfile = {
   level: TaxonLevelProfileLevel
@@ -21,7 +26,11 @@ type CacheSnapshot = {
 const CACHE_TTL_MS = 60_000
 let cache: CacheSnapshot | null = null
 
-function key(level: TaxonLevelProfileLevel, value: string, genusValue: string | null) {
+function key(
+  level: TaxonLevelProfileLevel,
+  value: string,
+  genusValue: string | null,
+) {
   return `${level}:${value}:${genusValue ?? ''}`
 }
 
@@ -81,12 +90,24 @@ export async function getTaxonLevelProfile(
   return profiles.get(key(level, value, genusValue)) ?? null
 }
 
-export async function resolveTaxonWorkerSize(entry: { species?: string | null; genus?: string | null; subfamily: string }) {
+export async function resolveTaxonWorkerSize(entry: {
+  species?: string | null
+  genus?: string | null
+  subfamily: string
+}) {
   if (entry.species && entry.genus) {
-    const speciesProfile = await getTaxonLevelProfile('SPECIES', entry.species, entry.genus)
+    const speciesProfile = await getTaxonLevelProfile(
+      'SPECIES',
+      entry.species,
+      entry.genus,
+    )
     if (speciesProfile?.sizeWorker) return speciesProfile.sizeWorker
 
-    const sharedSpeciesProfile = await getTaxonLevelProfile('SPECIES', entry.species, null)
+    const sharedSpeciesProfile = await getTaxonLevelProfile(
+      'SPECIES',
+      entry.species,
+      null,
+    )
     if (sharedSpeciesProfile?.sizeWorker) return sharedSpeciesProfile.sizeWorker
   }
 
@@ -96,7 +117,11 @@ export async function resolveTaxonWorkerSize(entry: { species?: string | null; g
   }
 
   if (entry.subfamily) {
-    const subfamilyProfile = await getTaxonLevelProfile('SUBFAMILY', entry.subfamily, null)
+    const subfamilyProfile = await getTaxonLevelProfile(
+      'SUBFAMILY',
+      entry.subfamily,
+      null,
+    )
     if (subfamilyProfile?.sizeWorker) return subfamilyProfile.sizeWorker
   }
 

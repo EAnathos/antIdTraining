@@ -12,7 +12,10 @@ type RecordAdminAuditInput = {
   entityId?: string
 }
 
-export async function recordAdminAudit(req: Request, input: RecordAdminAuditInput) {
+export async function recordAdminAudit(
+  req: Request,
+  input: RecordAdminAuditInput,
+) {
   const tokenUserId = req.user?.userId ?? null
   let actorUserId: string | null = null
   let actorUsername: string | null = null

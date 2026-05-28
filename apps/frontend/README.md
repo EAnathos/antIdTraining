@@ -1,9 +1,9 @@
-
 # Frontend
 
 Interface utilisateur du projet Ant ID Training.
 
 Technologies:
+
 - React
 - Vite
 - TypeScript
@@ -12,6 +12,7 @@ Technologies:
 ## Démarrage
 
 ### Avec Docker
+
 Le frontend est démarré automatiquement via Docker Compose depuis la racine du dépôt.
 
 ### En local
@@ -43,15 +44,19 @@ Les variables backend importantes: `DATABASE_URL`, `JWT_SECRET` (voir `apps/back
 
 ## Architecture et intégration
 
-La carte des composants et les points d'intégration avec le backend se trouvent dans la documentation centrale:
+La documentation centrale qui décrit l'architecture, l'API et les données se trouve dans [docs/README.md](../../docs/README.md).
 
-- `docs/frontend-component-map.md` — carte des composants et flux
-- `docs/frontend-component-map.svg` — diagramme (placeholder)
+Références utiles:
+
+- [Architecture globale](../../docs/architecture.md)
+- [Vue d'ensemble de l'API](../../docs/api.md)
+- [Schéma de base de données](../../docs/database-schema.md)
 
 Intégration backend:
+
 - L'API backend (Express + Prisma) fournit les données principales: taxons, entrées, images, sessions joueurs, suggestions, statistiques.
 - Endpoints usuels: `/api/taxons`, `/api/entries`, `/api/auth` et endpoints d'upload d'images.
-- Pour modifier l'URL de l'API, consultez le client API dans `apps/frontend/src/lib`.
+- Pour modifier l'URL de l'API, consultez le client API dans [src/lib](src/lib).
 
 ## Bonnes pratiques
 
@@ -60,6 +65,5 @@ Intégration backend:
 
 ## Pour aller plus loin
 
-- Documentation backend: `apps/backend/README.md`
-- Documentation centrale: [README racine](../README.md)
-
+- Documentation backend: [README backend](../backend/README.md)
+- Documentation centrale: [README racine](../../README.md)

@@ -167,13 +167,24 @@ const emptyEntryForm: EntryForm = {
 }
 
 export function ContributionPage() {
-  const [isConnected, setIsConnected] = useState(() => typeof window !== 'undefined' && !!window.localStorage.getItem('antidtraining-auth-token'))
+  const [isConnected, setIsConnected] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      !!window.localStorage.getItem('antidtraining-auth-token'),
+  )
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [view, setView] = useState<'contributions' | 'entry' | 'suggestion'>('contributions')
+  const [view, setView] = useState<'contributions' | 'entry' | 'suggestion'>(
+    'contributions',
+  )
   const [proposals, setProposals] = useState<EntryProposal[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [counts, setCounts] = useState({ proposalCount: 0, proposalLimit: 20, suggestionCount: 0, suggestionLimit: 10 })
+  const [counts, setCounts] = useState({
+    proposalCount: 0,
+    proposalLimit: 20,
+    suggestionCount: 0,
+    suggestionLimit: 10,
+  })
   const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
   const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
@@ -182,13 +193,30 @@ export function ContributionPage() {
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntryForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [proposalPreview, setProposalPreview] = useState<{ images: string[]; index: number; alt: string } | null>(null)
+  const [proposalPreview, setProposalPreview] = useState<{
+    images: string[]
+    index: number
+    alt: string
+  } | null>(null)
   const suggestionFormRef = useRef<HTMLFormElement | null>(null)
 
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
-  const username = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-username') ?? '' : ''
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('antidtraining-auth-token')
+      : null
+  const username =
+    typeof window !== 'undefined'
+      ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
+      : ''
 
-  const authApi = useMemo(() => api.create({ baseURL: '/api', headers: token ? { Authorization: `Bearer ${token}` } : {} }), [token])
+  const authApi = useMemo(
+    () =>
+      api.create({
+        baseURL: '/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }),
+    [token],
+  )
 
   function resolveImageUrl(imageUrl: string) {
     if (!imageUrl) return imageUrl
@@ -213,9 +241,12 @@ export function ContributionPage() {
     if (!value || !genus) return
 
     try {
-      const { data } = await api.get<SpeciesMetadata>('/taxons/species-metadata', {
-        params: { genus, species: value },
-      })
+      const { data } = await api.get<SpeciesMetadata>(
+        '/taxons/species-metadata',
+        {
+          params: { genus, species: value },
+        },
+      )
       setEntryForm({
         ...baseForm,
         subgenus: data.subgenus ?? '',
@@ -241,7 +272,10 @@ export function ContributionPage() {
   }, [])
 
   useEffect(() => {
-    void api.get<string[]>('/taxons/subfamilies').then(({ data }) => setSubfamilies(data)).catch(() => setSubfamilies([]))
+    void api
+      .get<string[]>('/taxons/subfamilies')
+      .then(({ data }) => setSubfamilies(data))
+      .catch(() => setSubfamilies([]))
   }, [])
 
   useEffect(() => {
@@ -286,9 +320,15 @@ export function ContributionPage() {
     }
 
     void Promise.all([
-      api.get<string[]>('/taxons/species', { params: { genus: entryForm.genus } }),
-      api.get<string[]>('/taxons/subgenera', { params: { genus: entryForm.genus } }),
-      api.get<string[]>('/taxons/species-groups', { params: { genus: entryForm.genus } }),
+      api.get<string[]>('/taxons/species', {
+        params: { genus: entryForm.genus },
+      }),
+      api.get<string[]>('/taxons/subgenera', {
+        params: { genus: entryForm.genus },
+      }),
+      api.get<string[]>('/taxons/species-groups', {
+        params: { genus: entryForm.genus },
+      }),
     ])
       .then(([speciesRes, subgenusRes, groupRes]) => {
         if (!cancelled) {
@@ -310,23 +350,38 @@ export function ContributionPage() {
     }
   }, [entryForm.genus])
 
-  const load = useMemo(() => async () => {
-    if (!token) return
-    setLoading(true)
-    try {
-      const [contribRes, countsRes] = await Promise.all([
-        authApi.get<{ proposals: EntryProposal[]; suggestions: Suggestion[] }>('/entry-proposals/my-contributions'),
-        authApi.get<{ proposalCount: number; proposalLimit: number; suggestionCount: number; suggestionLimit: number }>('/entry-proposals/user-counts'),
-      ])
-      setProposals(contribRes.data.proposals)
-      setSuggestions(contribRes.data.suggestions)
-      setCounts(countsRes.data)
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Impossible de charger les contributions.')
-    } finally {
-      setLoading(false)
-    }
-  }, [authApi, token])
+  const load = useMemo(
+    () => async () => {
+      if (!token) return
+      setLoading(true)
+      try {
+        const [contribRes, countsRes] = await Promise.all([
+          authApi.get<{
+            proposals: EntryProposal[]
+            suggestions: Suggestion[]
+          }>('/entry-proposals/my-contributions'),
+          authApi.get<{
+            proposalCount: number
+            proposalLimit: number
+            suggestionCount: number
+            suggestionLimit: number
+          }>('/entry-proposals/user-counts'),
+        ])
+        setProposals(contribRes.data.proposals)
+        setSuggestions(contribRes.data.suggestions)
+        setCounts(countsRes.data)
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Impossible de charger les contributions.',
+        )
+      } finally {
+        setLoading(false)
+      }
+    },
+    [authApi, token],
+  )
 
   useEffect(() => {
     void load()
@@ -360,7 +415,11 @@ export function ContributionPage() {
       setView('contributions')
       setMessage('Suggestion envoyée.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Impossible d’envoyer la suggestion.')
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible d’envoyer la suggestion.',
+      )
     }
   }
 
@@ -371,8 +430,16 @@ export function ContributionPage() {
 
     try {
       const formData = new FormData()
-      const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
-      const taxonValue = entryForm.species ? entryForm.species.trim() : entryForm.genus ? entryForm.genus.trim() : entryForm.subfamily.trim()
+      const taxonLevel = entryForm.species
+        ? 'SPECIES'
+        : entryForm.genus
+          ? 'GENUS'
+          : 'SUBFAMILY'
+      const taxonValue = entryForm.species
+        ? entryForm.species.trim()
+        : entryForm.genus
+          ? entryForm.genus.trim()
+          : entryForm.subfamily.trim()
 
       formData.append('taxonLevel', taxonLevel)
       formData.append('taxonValue', taxonValue)
@@ -401,7 +468,11 @@ export function ContributionPage() {
       setView('contributions')
       setMessage('Proposition envoyée.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Impossible d’envoyer la proposition.')
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible d’envoyer la proposition.',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -411,7 +482,9 @@ export function ContributionPage() {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
-        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">Vous devez être connecté pour accéder à cette section.</p>
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+          Vous devez être connecté pour accéder à cette section.
+        </p>
       </section>
     )
   }
@@ -421,30 +494,70 @@ export function ContributionPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:justify-end">
-          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'contributions' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('contributions')}>Mes contributions</button>
-          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'entry' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('entry')}>Proposer une entrée</button>
-          <button className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={() => setView('suggestion')}>Suggestion</button>
+          <button
+            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'contributions' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            onClick={() => setView('contributions')}
+          >
+            Mes contributions
+          </button>
+          <button
+            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'entry' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            onClick={() => setView('entry')}
+          >
+            Proposer une entrée
+          </button>
+          <button
+            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            onClick={() => setView('suggestion')}
+          >
+            Suggestion
+          </button>
         </div>
       </div>
 
-      {message && <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">{message}</p>}
+      {message && (
+        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+          {message}
+        </p>
+      )}
 
       {view === 'contributions' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-slate-600">Entrées proposées</p><p className="text-2xl font-bold text-slate-900">{counts.proposalCount}/{counts.proposalLimit}</p></div>
-            <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-slate-600">Suggestions</p><p className="text-2xl font-bold text-slate-900">{counts.suggestionCount}/{counts.suggestionLimit}</p></div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <p className="text-slate-600">Entrées proposées</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {counts.proposalCount}/{counts.proposalLimit}
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <p className="text-slate-600">Suggestions</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {counts.suggestionCount}/{counts.suggestionLimit}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3">
             {proposals.map((p) => (
-              <div key={p.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+              <div
+                key={p.id}
+                className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
+              >
                 <div className="flex justify-between gap-3">
                   <div>
-                    <p className="font-medium">{p.subfamily} · {p.genus ?? '-'} · {p.species ?? '-'}</p>
-                    <p className="text-xs text-slate-600">{p.department} · {p.caste}</p>
+                    <p className="font-medium">
+                      {p.subfamily} · {p.genus ?? '-'} · {p.species ?? '-'}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {p.department} · {p.caste}
+                    </p>
                   </div>
-                  <span className={`rounded border px-2 py-1 text-xs ${p.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : p.status === 'ACCEPTED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{p.status}</span>
+                  <span
+                    className={`rounded border px-2 py-1 text-xs ${p.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : p.status === 'ACCEPTED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                  >
+                    {p.status}
+                  </span>
                 </div>
                 {p.images.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -455,7 +568,9 @@ export function ContributionPage() {
                         className="overflow-hidden rounded border border-slate-200 bg-slate-50"
                         onClick={() =>
                           setProposalPreview({
-                            images: p.images.map((proposalImage) => resolveImageUrl(proposalImage.imageUrl)),
+                            images: p.images.map((proposalImage) =>
+                              resolveImageUrl(proposalImage.imageUrl),
+                            ),
                             index,
                             alt: `${p.subfamily} · ${p.genus ?? '-'} · ${p.species ?? '-'}`,
                           })
@@ -476,21 +591,32 @@ export function ContributionPage() {
                 )}
                 {p.rejectionMessage && (
                   <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                    <p className="mb-1 font-semibold uppercase tracking-wide">Message de l'administration</p>
+                    <p className="mb-1 font-semibold uppercase tracking-wide">
+                      Message de l'administration
+                    </p>
                     <p className="whitespace-pre-wrap">{p.rejectionMessage}</p>
                   </div>
                 )}
               </div>
             ))}
             {suggestions.map((s) => (
-              <div key={s.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+              <div
+                key={s.id}
+                className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
+              >
                 <div className="flex justify-between gap-3">
                   <p className="whitespace-pre-wrap">{s.message}</p>
-                  <span className={`rounded border px-2 py-1 text-xs ${s.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : s.status === 'PROCESSED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{s.status}</span>
+                  <span
+                    className={`rounded border px-2 py-1 text-xs ${s.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : s.status === 'PROCESSED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                  >
+                    {s.status}
+                  </span>
                 </div>
                 {s.rejectionMessage && (
                   <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                    <p className="mb-1 font-semibold uppercase tracking-wide">Message de l'administration</p>
+                    <p className="mb-1 font-semibold uppercase tracking-wide">
+                      Message de l'administration
+                    </p>
                     <p className="whitespace-pre-wrap">{s.rejectionMessage}</p>
                   </div>
                 )}
@@ -503,50 +629,79 @@ export function ContributionPage() {
       {view === 'entry' && (
         <form className="space-y-4" onSubmit={submitProposal}>
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Sélection du taxon</h3>
+            <h3 className="mb-3 text-sm font-semibold text-slate-700">
+              Sélection du taxon
+            </h3>
             <div className="grid gap-2 md:grid-cols-2">
               <select
                 className="rounded border p-2"
                 value={entryForm.subfamily}
-                onChange={(e) => patchEntryForm({ subfamily: e.target.value, genus: '', species: '', subgenus: '', speciesGroup: '' })}
+                onChange={(e) =>
+                  patchEntryForm({
+                    subfamily: e.target.value,
+                    genus: '',
+                    species: '',
+                    subgenus: '',
+                    speciesGroup: '',
+                  })
+                }
                 required
               >
                 <option value="">Sous-famille</option>
                 {subfamilies.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="rounded border p-2"
                 value={entryForm.genus}
-                onChange={(e) => patchEntryForm({ genus: e.target.value, species: '', subgenus: '', speciesGroup: '' })}
+                onChange={(e) =>
+                  patchEntryForm({
+                    genus: e.target.value,
+                    species: '',
+                    subgenus: '',
+                    speciesGroup: '',
+                  })
+                }
                 disabled={!entryForm.subfamily}
               >
                 <option value="">Genre (optionnel)</option>
                 {generaOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="rounded border p-2"
                 value={entryForm.subgenus}
-                onChange={(e) => patchEntryForm({ subgenus: e.target.value, species: '' })}
+                onChange={(e) =>
+                  patchEntryForm({ subgenus: e.target.value, species: '' })
+                }
                 disabled={!entryForm.genus}
               >
                 <option value="">Sous-genre (optionnel)</option>
                 {subgenusOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="rounded border p-2"
                 value={entryForm.speciesGroup}
-                onChange={(e) => patchEntryForm({ speciesGroup: e.target.value, species: '' })}
+                onChange={(e) =>
+                  patchEntryForm({ speciesGroup: e.target.value, species: '' })
+                }
                 disabled={!entryForm.genus}
               >
                 <option value="">Groupe d'espèce (optionnel)</option>
                 {speciesGroupOptions.map((value) => (
-                  <option key={value} value={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
@@ -557,13 +712,17 @@ export function ContributionPage() {
               >
                 <option value="">Espèce (optionnel)</option>
                 {speciesOptions.map((value) => (
-                  <option key={`${entryForm.genus}-${value}`} value={value}>{value}</option>
+                  <option key={`${entryForm.genus}-${value}`} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               <select
                 className="rounded border p-2"
                 value={entryForm.caste}
-                onChange={(e) => patchEntryForm({ caste: e.target.value as EntryCaste | '' })}
+                onChange={(e) =>
+                  patchEntryForm({ caste: e.target.value as EntryCaste | '' })
+                }
                 required
               >
                 <option value="">Choisir la caste</option>
@@ -575,7 +734,9 @@ export function ContributionPage() {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Détails de l'observation</h3>
+            <h3 className="mb-3 text-sm font-semibold text-slate-700">
+              Détails de l'observation
+            </h3>
             <div className="grid gap-2 md:grid-cols-2">
               <input
                 className="rounded border p-2"
@@ -583,20 +744,54 @@ export function ContributionPage() {
                 placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
                 value={entryForm.department}
                 onChange={(e) => patchEntryForm({ department: e.target.value })}
-                onBlur={(e) => patchEntryForm({ department: parseDepartmentInput(e.target.value) })}
+                onBlur={(e) =>
+                  patchEntryForm({
+                    department: parseDepartmentInput(e.target.value),
+                  })
+                }
                 required
               />
               <datalist id="department-suggestions">
                 {departmentOptions.map((department) => (
-                  <option key={department.code} value={`${department.code} - ${department.name}`} />
+                  <option
+                    key={department.code}
+                    value={`${department.code} - ${department.name}`}
+                  />
                 ))}
               </datalist>
-              <input className="rounded border p-2" type="date" value={entryForm.observedAt} onChange={(e) => patchEntryForm({ observedAt: e.target.value })} required />
-              <input className="rounded border border-slate-200 p-2" placeholder="Biotope" value={entryForm.biotope} onChange={(e) => patchEntryForm({ biotope: e.target.value })} required />
-              <input className="rounded border border-slate-200 p-2" placeholder="Crédit photo" value={entryForm.photoCredit} onChange={(e) => patchEntryForm({ photoCredit: e.target.value })} />
+              <input
+                className="rounded border p-2"
+                type="date"
+                value={entryForm.observedAt}
+                onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
+                required
+              />
+              <input
+                className="rounded border border-slate-200 p-2"
+                placeholder="Biotope"
+                value={entryForm.biotope}
+                onChange={(e) => patchEntryForm({ biotope: e.target.value })}
+                required
+              />
+              <input
+                className="rounded border border-slate-200 p-2"
+                placeholder="Crédit photo"
+                value={entryForm.photoCredit}
+                onChange={(e) =>
+                  patchEntryForm({ photoCredit: e.target.value })
+                }
+              />
               <div className="space-y-1">
-                <input className="w-full rounded border border-slate-200 p-2" type="file" accept="image/*" multiple onChange={(e) => setEntryFiles(e.target.files)} />
-                <p className="text-xs text-slate-500">Images: 8 Mo max par fichier (jusqu'à 3).</p>
+                <input
+                  className="w-full rounded border border-slate-200 p-2"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setEntryFiles(e.target.files)}
+                />
+                <p className="text-xs text-slate-500">
+                  Images: 8 Mo max par fichier (jusqu'à 3).
+                </p>
               </div>
             </div>
           </div>
@@ -612,9 +807,24 @@ export function ContributionPage() {
       )}
 
       {view === 'suggestion' && (
-        <form ref={suggestionFormRef} className="space-y-3" onSubmit={submitSuggestion}>
-          <textarea name="message" className="min-h-32 w-full rounded-lg border border-slate-200 p-2" placeholder="Votre suggestion" required />
-          <button className="rounded-lg bg-slate-900 px-4 py-2 text-white" type="submit" disabled={loading}>Envoyer la suggestion</button>
+        <form
+          ref={suggestionFormRef}
+          className="space-y-3"
+          onSubmit={submitSuggestion}
+        >
+          <textarea
+            name="message"
+            className="min-h-32 w-full rounded-lg border border-slate-200 p-2"
+            placeholder="Votre suggestion"
+            required
+          />
+          <button
+            className="rounded-lg bg-slate-900 px-4 py-2 text-white"
+            type="submit"
+            disabled={loading}
+          >
+            Envoyer la suggestion
+          </button>
         </form>
       )}
 
@@ -623,7 +833,10 @@ export function ContributionPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
           onClick={() => setProposalPreview(null)}
         >
-          <div className="relative flex max-w-[95vw] flex-col items-center gap-3" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="relative flex max-w-[95vw] flex-col items-center gap-3"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
@@ -639,13 +852,27 @@ export function ContributionPage() {
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index - 1 + current.images.length) % current.images.length },
+                    : {
+                        ...current,
+                        index:
+                          (current.index - 1 + current.images.length) %
+                          current.images.length,
+                      },
                 )
               }
               disabled={proposalPreview.images.length <= 1}
               aria-label="Image précédente"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
@@ -657,21 +884,36 @@ export function ContributionPage() {
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
                     ? current
-                    : { ...current, index: (current.index + 1) % current.images.length },
+                    : {
+                        ...current,
+                        index: (current.index + 1) % current.images.length,
+                      },
                 )
               }
               disabled={proposalPreview.images.length <= 1}
               aria-label="Image suivante"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>
 
             <img
-              {...getResponsiveImageProps(proposalPreview.images[proposalPreview.index], {
-                sizes: '(max-width: 768px) 90vw, 50vw',
-              })}
+              {...getResponsiveImageProps(
+                proposalPreview.images[proposalPreview.index],
+                {
+                  sizes: '(max-width: 768px) 90vw, 50vw',
+                },
+              )}
               alt={proposalPreview.alt}
               className="max-h-[85vh] max-w-[92vw] rounded-lg border border-slate-200 bg-white object-contain"
               decoding="async"
@@ -686,4 +928,3 @@ export function ContributionPage() {
     </section>
   )
 }
-

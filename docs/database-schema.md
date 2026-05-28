@@ -187,4 +187,3 @@ erDiagram
 - `EntryProposal` : propositions de contribution utilisateur.
 - `AdminHistoryEvent` : audit des actions d’administration.
 - `Reference` et `Suggestion` : documentation et retours utilisateurs.
-

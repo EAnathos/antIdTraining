@@ -53,11 +53,14 @@ describe('AppShell', () => {
     localStorage.setItem('antidtraining-theme', 'dark')
 
     const prompt = vi.fn().mockResolvedValue(undefined)
-    const beforeInstallPrompt = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
-      preventDefault: vi.fn(),
-      prompt,
-      userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' }),
-    })
+    const beforeInstallPrompt = Object.assign(
+      new Event('beforeinstallprompt', { cancelable: true }),
+      {
+        preventDefault: vi.fn(),
+        prompt,
+        userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' }),
+      },
+    )
 
     render(
       <MemoryRouter>
@@ -73,7 +76,9 @@ describe('AppShell', () => {
 
     expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Installer l’app' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Installer l’app' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Passer en mode clair')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Installer l’app' }))

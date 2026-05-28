@@ -20,7 +20,13 @@ import {
 } from '../lib/imageFiles.js'
 
 const referenceTypeSchema = z.enum(['WEBSITE', 'MYRMECOLOGY'])
-const taxonLevelSchema = z.enum(['SUBFAMILY', 'GENUS', 'SUBGENUS', 'SPECIES_GROUP', 'SPECIES'])
+const taxonLevelSchema = z.enum([
+  'SUBFAMILY',
+  'GENUS',
+  'SUBGENUS',
+  'SPECIES_GROUP',
+  'SPECIES',
+])
 const gameDifficultySchema = z.enum(['EASY', 'MEDIUM', 'HARD'])
 
 export const databaseSnapshotSchema = z.object({
@@ -38,11 +44,28 @@ export const databaseSnapshotSchema = z.object({
           speciesGroup: z.string().nullable(),
           species: z.string(),
           invasive: z.boolean().optional().default(false),
-          swarmingStartMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
-          swarmingEndMonth: z.number().int().min(1).max(12).nullable().optional().default(null),
-          distribution: z.object({
-            departments: z.array(z.string()).optional(),
-          }).nullable().optional(),
+          swarmingStartMonth: z
+            .number()
+            .int()
+            .min(1)
+            .max(12)
+            .nullable()
+            .optional()
+            .default(null),
+          swarmingEndMonth: z
+            .number()
+            .int()
+            .min(1)
+            .max(12)
+            .nullable()
+            .optional()
+            .default(null),
+          distribution: z
+            .object({
+              departments: z.array(z.string()).optional(),
+            })
+            .nullable()
+            .optional(),
           createdAt: z.coerce.date(),
           updatedAt: z.coerce.date(),
         })
@@ -50,11 +73,16 @@ export const databaseSnapshotSchema = z.object({
           const startMonth = taxon.swarmingStartMonth ?? null
           const endMonth = taxon.swarmingEndMonth ?? null
 
-          if (startMonth !== null && endMonth !== null && startMonth > endMonth) {
+          if (
+            startMonth !== null &&
+            endMonth !== null &&
+            startMonth > endMonth
+          ) {
             context.addIssue({
               code: z.ZodIssueCode.custom,
               path: ['swarmingEndMonth'],
-              message: 'La fin de période doit être postérieure au début de période.',
+              message:
+                'La fin de période doit être postérieure au début de période.',
             })
           }
         }),
@@ -201,7 +229,9 @@ function getUploadsDirPath() {
   return path.resolve(currentDir, '../../uploads')
 }
 
-async function generateMissingResponsiveVariantsFromBaseFile(baseFileName: string) {
+async function generateMissingResponsiveVariantsFromBaseFile(
+  baseFileName: string,
+) {
   const basePath = resolveUploadFilePath(baseFileName)
   if (!fs.existsSync(basePath)) {
     return 0
@@ -238,11 +268,14 @@ async function generateMissingResponsiveVariantsFromBaseFile(baseFileName: strin
 
 export async function cleanupUploadFiles() {
   const uploadsDirectory = ensureUploadsDirOnDisk()
-  const referencedImages = await prisma.entryImage.findMany({ select: { imageUrl: true } })
+  const referencedImages = await prisma.entryImage.findMany({
+    select: { imageUrl: true },
+  })
 
   const allowedFiles = new Set<string>()
   for (const { imageUrl } of referencedImages) {
-    const { baseFileName, variantFileNames } = getResponsiveUploadFileNames(imageUrl)
+    const { baseFileName, variantFileNames } =
+      getResponsiveUploadFileNames(imageUrl)
     allowedFiles.add(baseFileName)
     for (const variantFileName of variantFileNames) {
       allowedFiles.add(variantFileName)
@@ -264,7 +297,8 @@ export async function cleanupUploadFiles() {
   let generatedVariants = 0
   for (const { imageUrl } of referencedImages) {
     const { baseFileName } = getResponsiveUploadFileNames(imageUrl)
-    generatedVariants += await generateMissingResponsiveVariantsFromBaseFile(baseFileName)
+    generatedVariants +=
+      await generateMissingResponsiveVariantsFromBaseFile(baseFileName)
   }
 
   return {
@@ -288,16 +322,26 @@ export async function getDatabaseSnapshot() {
     adminHistoryEvents,
     suggestions,
   ] = await Promise.all([
-    prisma.taxon.findMany({ orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }, { species: 'asc' }] }),
-    prisma.taxonConfusion.findMany({ orderBy: [{ taxonId: 'asc' }, { confusedTaxonId: 'asc' }] }),
-    prisma.taxonLevelProfile.findMany({ orderBy: [{ level: 'asc' }, { value: 'asc' }] }),
-    prisma.taxonLevelCriterion.findMany({ orderBy: [{ profileId: 'asc' }, { position: 'asc' }] }),
+    prisma.taxon.findMany({
+      orderBy: [{ subfamily: 'asc' }, { genus: 'asc' }, { species: 'asc' }],
+    }),
+    prisma.taxonConfusion.findMany({
+      orderBy: [{ taxonId: 'asc' }, { confusedTaxonId: 'asc' }],
+    }),
+    prisma.taxonLevelProfile.findMany({
+      orderBy: [{ level: 'asc' }, { value: 'asc' }],
+    }),
+    prisma.taxonLevelCriterion.findMany({
+      orderBy: [{ profileId: 'asc' }, { position: 'asc' }],
+    }),
     prisma.reference.findMany({
       include: { taxons: { select: { id: true } } },
       orderBy: [{ type: 'asc' }, { title: 'asc' }],
     }),
     prisma.observationEntry.findMany({ orderBy: { createdAt: 'asc' } }),
-    prisma.entryImage.findMany({ orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }] }),
+    prisma.entryImage.findMany({
+      orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }],
+    }),
     prisma.gameSession.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.user.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.adminHistoryEvent.findMany({ orderBy: { createdAt: 'asc' } }),
@@ -398,7 +442,11 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       const taxonConfusions = Array.from(
         new Map(
           snapshot.data.taxonConfusions
-            .filter((confusion) => taxonIds.has(confusion.taxonId) && taxonIds.has(confusion.confusedTaxonId))
+            .filter(
+              (confusion) =>
+                taxonIds.has(confusion.taxonId) &&
+                taxonIds.has(confusion.confusedTaxonId),
+            )
             .flatMap((confusion) => [
               [
                 `${confusion.taxonId}:${confusion.confusedTaxonId}:${confusion.detail}`,
@@ -423,11 +471,15 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     }
 
     if (snapshot.data.taxonLevelProfiles.length > 0) {
-      await tx.taxonLevelProfile.createMany({ data: snapshot.data.taxonLevelProfiles })
+      await tx.taxonLevelProfile.createMany({
+        data: snapshot.data.taxonLevelProfiles,
+      })
     }
 
     if (snapshot.data.taxonLevelCriteria.length > 0) {
-      await tx.taxonLevelCriterion.createMany({ data: snapshot.data.taxonLevelCriteria })
+      await tx.taxonLevelCriterion.createMany({
+        data: snapshot.data.taxonLevelCriteria,
+      })
     }
 
     if (snapshot.data.references.length > 0) {
@@ -436,7 +488,9 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
 
     if (snapshot.data.referenceTaxons.length > 0) {
       const taxonIds = new Set(snapshot.data.taxons.map((taxon) => taxon.id))
-      const referenceIds = new Set(snapshot.data.references.map((reference) => reference.id))
+      const referenceIds = new Set(
+        snapshot.data.references.map((reference) => reference.id),
+      )
 
       const referenceTaxonMap = new Map<string, string[]>()
       snapshot.data.referenceTaxons.forEach(({ referenceId, taxonId }) => {
@@ -463,11 +517,13 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
 
     if (snapshot.data.observationEntries.length > 0) {
       // Ensure legacy snapshots without `caste` field get a default value
-      const entriesToCreate = snapshot.data.observationEntries.map((e: any) => ({
-        ...e,
-        photoCredit: encryptSensitiveText(e.photoCredit) ?? e.photoCredit,
-        caste: (e as any).caste ?? 'WORKER',
-      }))
+      const entriesToCreate = snapshot.data.observationEntries.map(
+        (e: any) => ({
+          ...e,
+          photoCredit: encryptSensitiveText(e.photoCredit) ?? e.photoCredit,
+          caste: (e as any).caste ?? 'WORKER',
+        }),
+      )
 
       await tx.observationEntry.createMany({ data: entriesToCreate })
     }
@@ -502,8 +558,12 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       await tx.suggestion.createMany({
         data: snapshot.data.suggestions.map((suggestion) => ({
           ...suggestion,
-          name: suggestion.name ? (encryptSensitiveText(suggestion.name) ?? suggestion.name) : null,
-          email: suggestion.email ? (encryptSensitiveText(suggestion.email) ?? suggestion.email) : null,
+          name: suggestion.name
+            ? (encryptSensitiveText(suggestion.name) ?? suggestion.name)
+            : null,
+          email: suggestion.email
+            ? (encryptSensitiveText(suggestion.email) ?? suggestion.email)
+            : null,
           status: suggestion.status as any,
         })),
       })
@@ -537,7 +597,10 @@ export async function createDatabaseBundleArchive() {
   const snapshot = await getDatabaseSnapshot()
   const zip = new AdmZip()
 
-  zip.addFile('snapshot.json', Buffer.from(JSON.stringify(snapshot, null, 2), 'utf8'))
+  zip.addFile(
+    'snapshot.json',
+    Buffer.from(JSON.stringify(snapshot, null, 2), 'utf8'),
+  )
 
   const uploadsDir = ensureUploadsDirOnDisk()
   if (fs.existsSync(uploadsDir)) {
@@ -553,7 +616,9 @@ export async function createDatabaseBundleArchive() {
 function restoreUploadsFromArchive(zip: AdmZip) {
   const uploadEntries = zip
     .getEntries()
-    .filter((entry) => !entry.isDirectory && entry.entryName.startsWith('uploads/'))
+    .filter(
+      (entry) => !entry.isDirectory && entry.entryName.startsWith('uploads/'),
+    )
 
   if (uploadEntries.length === 0) {
     return 0
@@ -589,7 +654,10 @@ export async function importDatabaseBundleArchive(bundleBuffer: Buffer) {
 
   const entries = zip.getEntries().filter((entry) => !entry.isDirectory)
   const snapshotEntry =
-    entries.find((entry) => path.basename(entry.entryName).toLowerCase() === 'snapshot.json') ??
+    entries.find(
+      (entry) =>
+        path.basename(entry.entryName).toLowerCase() === 'snapshot.json',
+    ) ??
     entries.find((entry) => entry.entryName.toLowerCase().endsWith('.json'))
 
   if (!snapshotEntry) {
@@ -598,7 +666,9 @@ export async function importDatabaseBundleArchive(bundleBuffer: Buffer) {
 
   let rawSnapshot: unknown
   try {
-    rawSnapshot = JSON.parse(snapshotEntry.getData().toString('utf8')) as unknown
+    rawSnapshot = JSON.parse(
+      snapshotEntry.getData().toString('utf8'),
+    ) as unknown
   } catch {
     throw new AppError(400, 'Archive invalide : snapshot.json illisible.')
   }
@@ -614,7 +684,10 @@ export async function importDatabaseBundleArchive(bundleBuffer: Buffer) {
   try {
     imagesRestored = restoreUploadsFromArchive(zip)
   } catch {
-    throw new AppError(500, 'Base importée, mais restauration des images impossible.')
+    throw new AppError(
+      500,
+      'Base importée, mais restauration des images impossible.',
+    )
   }
 
   return {

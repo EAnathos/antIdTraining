@@ -1,5 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { getDepartmentLabel, getDepartmentMapData, type FrenchDepartmentCode, IDF_CODE, IDF_DEPARTMENTS } from '../lib/frenchDepartments'
+import {
+  getDepartmentLabel,
+  getDepartmentMapData,
+  type FrenchDepartmentCode,
+  IDF_CODE,
+  IDF_DEPARTMENTS,
+} from '../lib/frenchDepartments'
 
 type Props = {
   selectedDepartments: FrenchDepartmentCode[]
@@ -14,18 +20,30 @@ function getDepartmentStyle(isSelected: boolean, readonly: boolean) {
     return 'fill-indigo-600 stroke-indigo-800'
   }
 
-  return readonly ? 'fill-slate-100 stroke-slate-300' : 'fill-white stroke-slate-300 hover:fill-indigo-50 hover:stroke-indigo-500'
+  return readonly
+    ? 'fill-slate-100 stroke-slate-300'
+    : 'fill-white stroke-slate-300 hover:fill-indigo-50 hover:stroke-indigo-500'
 }
 
-export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, readonly = false }: Props) {
+export function FranceMap({
+  selectedDepartments,
+  onToggleDepartment = () => {},
+  readonly = false,
+}: Props) {
   const selectedSet = new Set(selectedDepartments)
   const pathRefs = useRef<Record<string, SVGPathElement | null>>({})
-  const [labelPositions, setLabelPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const [labelPositions, setLabelPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >({})
 
   useLayoutEffect(() => {
     const nextPositions: Record<string, { x: number; y: number }> = {}
 
-    for (const location of MAP_DATA.locations as Array<{ id: string; name: string; path?: string }>) {
+    for (const location of MAP_DATA.locations as Array<{
+      id: string
+      name: string
+      path?: string
+    }>) {
       if (IDF_DEPARTMENTS.includes(location.id)) {
         continue
       }
@@ -62,90 +80,111 @@ export function FranceMap({ selectedDepartments, onToggleDepartment = () => {}, 
           viewBox={MAP_DATA.viewBox}
           className="h-auto w-full"
           role={readonly ? 'img' : 'group'}
-          aria-label={readonly ? 'Aire de répartition' : 'Carte interactive de la France'}
+          aria-label={
+            readonly ? 'Aire de répartition' : 'Carte interactive de la France'
+          }
         >
-          {MAP_DATA.locations.map((location: { id: string; name: string; path?: string }) => {
-            const isSelected =
-              selectedSet.has(location.id) || (selectedSet.has(IDF_CODE) && IDF_DEPARTMENTS.includes(location.id))
-            const departmentName = getDepartmentLabel(location.id)
-            const labelOffset = location.id === '54' ? { x: -10, y: 14 } : { x: 0, y: 0 }
+          {MAP_DATA.locations.map(
+            (location: { id: string; name: string; path?: string }) => {
+              const isSelected =
+                selectedSet.has(location.id) ||
+                (selectedSet.has(IDF_CODE) &&
+                  IDF_DEPARTMENTS.includes(location.id))
+              const departmentName = getDepartmentLabel(location.id)
+              const labelOffset =
+                location.id === '54' ? { x: -10, y: 14 } : { x: 0, y: 0 }
 
-            const handleClick = () => {
-              if (IDF_DEPARTMENTS.includes(location.id)) {
-                // Pour les IDF, on toggle tous les départements IDF individuels
-                const allIDFSelected = IDF_DEPARTMENTS.every(dept => selectedSet.has(dept))
-                if (allIDFSelected) {
-                  // Si tous les IDF sont sélectionnés, on les retire tous
-                  IDF_DEPARTMENTS.forEach(dept => {
-                    if (selectedSet.has(dept)) {
-                      activateDepartment(dept)
-                    }
-                  })
+              const handleClick = () => {
+                if (IDF_DEPARTMENTS.includes(location.id)) {
+                  // Pour les IDF, on toggle tous les départements IDF individuels
+                  const allIDFSelected = IDF_DEPARTMENTS.every((dept) =>
+                    selectedSet.has(dept),
+                  )
+                  if (allIDFSelected) {
+                    // Si tous les IDF sont sélectionnés, on les retire tous
+                    IDF_DEPARTMENTS.forEach((dept) => {
+                      if (selectedSet.has(dept)) {
+                        activateDepartment(dept)
+                      }
+                    })
+                  } else {
+                    // Sinon, on les ajoute tous
+                    IDF_DEPARTMENTS.forEach((dept) => {
+                      if (!selectedSet.has(dept)) {
+                        activateDepartment(dept)
+                      }
+                    })
+                  }
                 } else {
-                  // Sinon, on les ajoute tous
-                  IDF_DEPARTMENTS.forEach(dept => {
-                    if (!selectedSet.has(dept)) {
-                      activateDepartment(dept)
-                    }
-                  })
+                  activateDepartment(location.id)
                 }
-              } else {
-                activateDepartment(location.id)
               }
-            }
 
-            return (
-              <g key={location.id}>
-                <path
-                  ref={(node) => {
-                    pathRefs.current[location.id] = node
-                  }}
-                  d={location.path}
-                  className={getDepartmentStyle(isSelected, readonly)}
-                  strokeWidth="1.25"
-                  strokeLinejoin="round"
-                  style={{ cursor: readonly ? 'default' : 'pointer', transition: 'fill 120ms ease, stroke 120ms ease' }}
-                  tabIndex={readonly ? -1 : 0}
-                  role={readonly ? undefined : 'button'}
-                  aria-label={departmentName}
-                  aria-pressed={isSelected}
-                  onClick={handleClick}
-                  onKeyDown={(event) => {
-                    if (readonly) return
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      handleClick()
-                    }
-                  }}
-                >
-                  <title>{departmentName}</title>
-                </path>
-                {!IDF_DEPARTMENTS.includes(location.id) && labelPositions[location.id] && (
-                  <text
-                    x={labelPositions[location.id].x + labelOffset.x}
-                    y={labelPositions[location.id].y + labelOffset.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fill-slate-700 text-[10px] font-semibold"
-                    style={{ pointerEvents: 'none', paintOrder: 'stroke', stroke: '#ffffff', strokeWidth: 3 }}
+              return (
+                <g key={location.id}>
+                  <path
+                    ref={(node) => {
+                      pathRefs.current[location.id] = node
+                    }}
+                    d={location.path}
+                    className={getDepartmentStyle(isSelected, readonly)}
+                    strokeWidth="1.25"
+                    strokeLinejoin="round"
+                    style={{
+                      cursor: readonly ? 'default' : 'pointer',
+                      transition: 'fill 120ms ease, stroke 120ms ease',
+                    }}
+                    tabIndex={readonly ? -1 : 0}
+                    role={readonly ? undefined : 'button'}
+                    aria-label={departmentName}
+                    aria-pressed={isSelected}
+                    onClick={handleClick}
+                    onKeyDown={(event) => {
+                      if (readonly) return
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        handleClick()
+                      }
+                    }}
                   >
-                    {location.id}
-                  </text>
-                )}
-              </g>
-            )
-          })}
+                    <title>{departmentName}</title>
+                  </path>
+                  {!IDF_DEPARTMENTS.includes(location.id) &&
+                    labelPositions[location.id] && (
+                      <text
+                        x={labelPositions[location.id].x + labelOffset.x}
+                        y={labelPositions[location.id].y + labelOffset.y}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-slate-700 text-[10px] font-semibold"
+                        style={{
+                          pointerEvents: 'none',
+                          paintOrder: 'stroke',
+                          stroke: '#ffffff',
+                          strokeWidth: 3,
+                        }}
+                      >
+                        {location.id}
+                      </text>
+                    )}
+                </g>
+              )
+            },
+          )}
 
           {!readonly && (
             <g pointerEvents="none">
-              <text x="18" y="570" className="fill-slate-500 text-[11px] font-medium">
+              <text
+                x="18"
+                y="570"
+                className="fill-slate-500 text-[11px] font-medium"
+              >
                 Cliquez sur un département pour l'ajouter ou le retirer
               </text>
             </g>
           )}
         </svg>
       </div>
-
     </div>
   )
 }

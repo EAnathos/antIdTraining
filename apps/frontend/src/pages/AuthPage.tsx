@@ -16,7 +16,12 @@ export function AuthPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [error, setError] = useState('')
 
-  function persistAuth(roleValue: 'ADMIN' | 'USER', token: string, name: string, emailValue: string | null) {
+  function persistAuth(
+    roleValue: 'ADMIN' | 'USER',
+    token: string,
+    name: string,
+    emailValue: string | null,
+  ) {
     window.localStorage.setItem('antidtraining-auth-token', token)
     window.localStorage.setItem('antidtraining-auth-role', roleValue)
     window.localStorage.setItem('antidtraining-auth-username', name)
@@ -32,14 +37,20 @@ export function AuthPage() {
 
     try {
       if (mode === 'login') {
-        const { data } = await api.post<AuthResponse>('/auth/login', { email, password })
+        const { data } = await api.post<AuthResponse>('/auth/login', {
+          email,
+          password,
+        })
         persistAuth(data.role, data.token, data.user.username, data.user.email)
         navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
         return
       }
 
       if (mode === 'register') {
-        const { data } = await api.post<AuthRegistrationResponse>('/auth/register', { username, email, password, confirmPassword })
+        const { data } = await api.post<AuthRegistrationResponse>(
+          '/auth/register',
+          { username, email, password, confirmPassword },
+        )
         setEmail(data.email)
         setVerificationCode('')
         setMode('verify')
@@ -55,14 +66,22 @@ export function AuthPage() {
       persistAuth(data.role, data.token, data.user.username, data.user.email)
       navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Identifiants invalides')
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Identifiants invalides',
+      )
     }
   }
 
   return (
     <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">Connexion</h2>
-      <p className="mt-2 text-sm text-slate-600">Vous pouvez jouer sans être connecté. Créez un compte joueur avec un nom d’utilisateur et une adresse e-mail pour suivre votre progression dans le classement.</p>
+      <p className="mt-2 text-sm text-slate-600">
+        Vous pouvez jouer sans être connecté. Créez un compte joueur avec un nom
+        d’utilisateur et une adresse e-mail pour suivre votre progression dans
+        le classement.
+      </p>
 
       <div className="mt-4 flex gap-2">
         <button
@@ -95,7 +114,7 @@ export function AuthPage() {
       )}
 
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-        {(mode === 'register') && (
+        {mode === 'register' && (
           <input
             className="w-full rounded-lg border border-slate-300 p-2"
             placeholder="Nom d'utilisateur"
@@ -145,8 +164,15 @@ export function AuthPage() {
             required
           />
         )}
-        <button className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white" type="submit">
-          {mode === 'login' ? 'Se connecter' : mode === 'register' ? 'Créer le compte' : 'Vérifier mon e-mail'}
+        <button
+          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white"
+          type="submit"
+        >
+          {mode === 'login'
+            ? 'Se connecter'
+            : mode === 'register'
+              ? 'Créer le compte'
+              : 'Vérifier mon e-mail'}
         </button>
       </form>
 

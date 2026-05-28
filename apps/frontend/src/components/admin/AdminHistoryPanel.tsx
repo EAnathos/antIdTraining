@@ -14,9 +14,12 @@ export function AdminHistoryPanel({ history }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">Historique admin</h3>
+        <h3 className="text-lg font-semibold text-slate-900">
+          Historique admin
+        </h3>
         <p className="mt-1 text-sm text-slate-600">
-          Les dernières actions réalisées dans le panneau d’administration sont affichées ici.
+          Les dernières actions réalisées dans le panneau d’administration sont
+          affichées ici.
         </p>
       </div>
 
@@ -27,13 +30,19 @@ export function AdminHistoryPanel({ history }: Props) {
       ) : (
         <ul className="space-y-3">
           {history.map((item) => (
-            <li key={item.id} className={`rounded-xl border p-4 ${toneClasses[item.tone]}`}>
+            <li
+              key={item.id}
+              className={`rounded-xl border p-4 ${toneClasses[item.tone]}`}
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="space-y-1">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-sm opacity-90">{item.detail}</p>
                 </div>
-                <time className="text-xs font-medium uppercase tracking-wide opacity-70" dateTime={item.at}>
+                <time
+                  className="text-xs font-medium uppercase tracking-wide opacity-70"
+                  dateTime={item.at}
+                >
                   {new Date(item.at).toLocaleString('fr-FR', {
                     dateStyle: 'short',
                     timeStyle: 'short',

@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
-import type { ReferenceItem, Taxon, TaxonLevelDetail, TaxonsPageResponse } from '../types/models'
+import type {
+  ReferenceItem,
+  Taxon,
+  TaxonLevelDetail,
+  TaxonsPageResponse,
+} from '../types/models'
 import { FranceMap } from '../components/FranceMap'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 function TreeIcon({ className }: { className?: string }) {
   return (
-    <svg className={className ?? 'h-5 w-5'} viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      className={className ?? 'h-5 w-5'}
+      viewBox="0 0 48 48"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path d="M26,30H42a2,2,0,0,0,2-2V20a2,2,0,0,0-2-2H26a2,2,0,0,0-2,2v2H16V14h6a2,2,0,0,0,2-2V4a2,2,0,0,0-2-2H6A2,2,0,0,0,4,4v8a2,2,0,0,0,2,2h6V40a2,2,0,0,0,2,2H24v2a2,2,0,0,0,2,2H42a2,2,0,0,0,2-2V36a2,2,0,0,0-2-2H26a2,2,0,0,0-2,2v2H16V26h8v2A2,2,0,0,0,26,30Zm2-8H40v4H28ZM8,6H20v4H8ZM28,38H40v4H28Z" />
     </svg>
   )
@@ -14,8 +24,19 @@ function TreeIcon({ className }: { className?: string }) {
 
 function TableIcon({ className }: { className?: string }) {
   return (
-    <svg className={className ?? 'h-5 w-5'} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 10V20M3 15L21 15M3 10H21M6.2 20H17.8C18.9201 20 19.4802 20 19.908 19.782C20.2843 19.5903 20.5903 19.2843 20.782 18.908C21 18.4802 21 17.9201 21 16.8V7.2C21 6.0799 21 5.51984 20.782 5.09202C20.5903 4.71569 20.2843 4.40973 19.908 4.21799C19.4802 4 18.9201 4 17.8 4H6.2C5.0799 4 4.51984 4 4.09202 4.21799C3.71569 4.40973 3.40973 4.71569 3.21799 5.09202C3 5.51984 3 6.07989 3 7.2V16.8C3 17.9201 3 18.4802 3.21799 18.908C3.40973 19.2843 3.71569 19.5903 4.09202 19.782C4.51984 20 5.07989 20 6.2 20Z" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className={className ?? 'h-5 w-5'}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 10V20M3 15L21 15M3 10H21M6.2 20H17.8C18.9201 20 19.4802 20 19.908 19.782C20.2843 19.5903 20.5903 19.2843 20.782 18.908C21 18.4802 21 17.9201 21 16.8V7.2C21 6.0799 21 5.51984 20.782 5.09202C20.5903 4.71569 20.2843 4.40973 19.908 4.21799C19.4802 4 18.9201 4 17.8 4H6.2C5.0799 4 4.51984 4 4.09202 4.21799C3.71569 4.40973 3.40973 4.71569 3.21799 5.09202C3 5.51984 3 6.07989 3 7.2V16.8C3 17.9201 3 18.4802 3.21799 18.908C3.40973 19.2843 3.71569 19.5903 4.09202 19.782C4.51984 20 5.07989 20 6.2 20Z"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -50,34 +71,59 @@ function buildTreeFromTaxons(taxons: Taxon[]): TreeNode {
     // tribe
     let tribeNode = subNode.children!.find((n) => n.name === tribe)
     if (!tribeNode) {
-      tribeNode = { id: `tribe:${sub}:${tribe}`, name: tribe, depth: 2, children: [] }
+      tribeNode = {
+        id: `tribe:${sub}:${tribe}`,
+        name: tribe,
+        depth: 2,
+        children: [],
+      }
       subNode.children!.push(tribeNode)
     }
 
     // genus
     let genusNode = tribeNode.children!.find((n) => n.name === genus)
     if (!genusNode) {
-      genusNode = { id: `gen:${sub}:${tribe}:${genus}`, name: genus, depth: 3, children: [] }
+      genusNode = {
+        id: `gen:${sub}:${tribe}:${genus}`,
+        name: genus,
+        depth: 3,
+        children: [],
+      }
       tribeNode.children!.push(genusNode)
     }
 
     // subgenus
     let subgenusNode = genusNode.children!.find((n) => n.name === subgenus)
     if (!subgenusNode) {
-      subgenusNode = { id: `subgen:${sub}:${tribe}:${genus}:${subgenus}`, name: subgenus, depth: 4, children: [] }
+      subgenusNode = {
+        id: `subgen:${sub}:${tribe}:${genus}:${subgenus}`,
+        name: subgenus,
+        depth: 4,
+        children: [],
+      }
       genusNode.children!.push(subgenusNode)
     }
 
     // species group
     let sgNode = subgenusNode.children!.find((n) => n.name === speciesGroup)
     if (!sgNode) {
-      sgNode = { id: `sg:${sub}:${tribe}:${genus}:${subgenus}:${speciesGroup}`, name: speciesGroup, depth: 5, children: [] }
+      sgNode = {
+        id: `sg:${sub}:${tribe}:${genus}:${subgenus}:${speciesGroup}`,
+        name: speciesGroup,
+        depth: 5,
+        children: [],
+      }
       subgenusNode.children!.push(sgNode)
     }
 
     // species leaf
     const speciesLabel = t.species || ''
-    const speciesNode: TreeNode = { id: `sp:${t.id}`, name: speciesLabel, depth: 6, taxon: t }
+    const speciesNode: TreeNode = {
+      id: `sp:${t.id}`,
+      name: speciesLabel,
+      depth: 6,
+      taxon: t,
+    }
     sgNode.children = sgNode.children || []
     sgNode.children.push(speciesNode)
   }
@@ -85,7 +131,13 @@ function buildTreeFromTaxons(taxons: Taxon[]): TreeNode {
   return root
 }
 
-function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: TreeNode) => void }) {
+function TreeView({
+  root,
+  onNodeClick,
+}: {
+  root: TreeNode
+  onNodeClick: (node: TreeNode) => void
+}) {
   // flatten leaves to compute layout
   const leaves: TreeNode[] = []
   function collectLeaves(node: TreeNode) {
@@ -203,12 +255,16 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
     if (!a || !b) {
       return
     }
-    const currentDistance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+    const currentDistance = Math.hypot(
+      a.clientX - b.clientX,
+      a.clientY - b.clientY,
+    )
     if (pinchStart.current.distance <= 0) {
       return
     }
 
-    const nextScale = pinchStart.current.scale * (currentDistance / pinchStart.current.distance)
+    const nextScale =
+      pinchStart.current.scale * (currentDistance / pinchStart.current.distance)
     setScale(clampScale(nextScale))
   }
 
@@ -221,11 +277,35 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-600">
-        <div>Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez la molette pour zoomer et glisser pour vous déplacer.</div>
+        <div>
+          Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez
+          la molette pour zoomer et glisser pour vous déplacer.
+        </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => zoomBy(0.85)} aria-label="Dézoomer l’arbre">−</button>
-          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => zoomBy(1.15)} aria-label="Zoomer l’arbre">+</button>
-          <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm" onClick={() => setScale(1)} aria-label="Réinitialiser le zoom">↺</button>
+          <button
+            type="button"
+            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
+            onClick={() => zoomBy(0.85)}
+            aria-label="Dézoomer l’arbre"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
+            onClick={() => zoomBy(1.15)}
+            aria-label="Zoomer l’arbre"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
+            onClick={() => setScale(1)}
+            aria-label="Réinitialiser le zoom"
+          >
+            ↺
+          </button>
         </div>
       </div>
       <div
@@ -242,13 +322,36 @@ function TreeView({ root, onNodeClick }: { root: TreeNode; onNodeClick: (node: T
         <svg width={Math.min(width, 1400)} height={height}>
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
             {lines.map((l, i) => (
-              <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#cbd5e1" strokeWidth={2} />
+              <line
+                key={i}
+                x1={l.x1}
+                y1={l.y1}
+                x2={l.x2}
+                y2={l.y2}
+                stroke="#cbd5e1"
+                strokeWidth={2}
+              />
             ))}
 
             {nodes.map(({ node, x, y }) => (
-              <g key={node.id} transform={`translate(${x},${y})`} style={{ cursor: node.taxon ? 'pointer' : 'default' }} onClick={() => onNodeClick(node)}>
-                <circle r={node.taxon ? 8 : 6} fill={node.taxon ? '#4f46e5' : '#94a3b8'} />
-                  <text x={12} y={6} fontSize={12} className="fill-current text-slate-950 dark:text-white font-medium">{node.name || ''}</text>
+              <g
+                key={node.id}
+                transform={`translate(${x},${y})`}
+                style={{ cursor: node.taxon ? 'pointer' : 'default' }}
+                onClick={() => onNodeClick(node)}
+              >
+                <circle
+                  r={node.taxon ? 8 : 6}
+                  fill={node.taxon ? '#4f46e5' : '#94a3b8'}
+                />
+                <text
+                  x={12}
+                  y={6}
+                  fontSize={12}
+                  className="fill-current text-slate-950 dark:text-white font-medium"
+                >
+                  {node.name || ''}
+                </text>
               </g>
             ))}
           </g>
@@ -294,7 +397,11 @@ function getReferenceHref(reference: ReferenceItem) {
     return null
   }
 
-  if (reference.type === 'MYRMECOLOGY' && !reference.url.startsWith('http://') && !reference.url.startsWith('https://')) {
+  if (
+    reference.type === 'MYRMECOLOGY' &&
+    !reference.url.startsWith('http://') &&
+    !reference.url.startsWith('https://')
+  ) {
     return `https://doi.org/${reference.url}`
   }
 
@@ -347,16 +454,24 @@ export function TaxonsPage() {
   const [references, setReferences] = useState<ReferenceItem[]>([])
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null)
+  const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(
+    null,
+  )
   const [isLoadingTaxons, setIsLoadingTaxons] = useState(true)
   const [isLoadingReferences, setIsLoadingReferences] = useState(true)
   const [isLoadingMoreTaxons, setIsLoadingMoreTaxons] = useState(false)
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-  const [selectedDepartments, setSelectedDepartments] = useState<FrenchDepartmentCode[]>([])
-  const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<number[]>([])
-  const [selectedInvasiveFilter, setSelectedInvasiveFilter] = useState<'all' | 'invasive' | 'non-invasive'>('all')
+  const [selectedDepartments, setSelectedDepartments] = useState<
+    FrenchDepartmentCode[]
+  >([])
+  const [selectedSwarmingMonths, setSelectedSwarmingMonths] = useState<
+    number[]
+  >([])
+  const [selectedInvasiveFilter, setSelectedInvasiveFilter] = useState<
+    'all' | 'invasive' | 'non-invasive'
+  >('all')
   const [treeMode, setTreeMode] = useState(false)
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
@@ -389,7 +504,9 @@ export function TaxonsPage() {
     }
 
     try {
-      const firstPage = await api.get<TaxonsPageResponse>('/taxons', { params: { q: debouncedQuery, offset: 0 } })
+      const firstPage = await api.get<TaxonsPageResponse>('/taxons', {
+        params: { q: debouncedQuery, offset: 0 },
+      })
       if (requestIdRef.current !== currentRequestId) {
         return
       }
@@ -405,7 +522,9 @@ export function TaxonsPage() {
       while (hasMore) {
         setIsLoadingMoreTaxons(true)
 
-        const nextPage = await api.get<TaxonsPageResponse>('/taxons', { params: { q: debouncedQuery, offset } })
+        const nextPage = await api.get<TaxonsPageResponse>('/taxons', {
+          params: { q: debouncedQuery, offset },
+        })
         if (requestIdRef.current !== currentRequestId) {
           return
         }
@@ -478,7 +597,12 @@ export function TaxonsPage() {
     }
   }, [loadAllTaxons])
 
-  async function openSelectedDetail(taxon: Taxon, level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species', value: string, detail: TaxonLevelDetail) {
+  async function openSelectedDetail(
+    taxon: Taxon,
+    level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species',
+    value: string,
+    detail: TaxonLevelDetail,
+  ) {
     setSelectedDetail({ taxon, level, value, detail })
   }
 
@@ -500,7 +624,9 @@ export function TaxonsPage() {
       return []
     }
 
-    return references.filter((reference) => reference.taxons.some((taxon) => taxon.id === selectedDetail.taxon.id))
+    return references.filter((reference) =>
+      reference.taxons.some((taxon) => taxon.id === selectedDetail.taxon.id),
+    )
   }, [references, selectedDetail])
 
   const filteredTaxons = useMemo(() => {
@@ -508,19 +634,28 @@ export function TaxonsPage() {
 
     if (selectedDepartments.length > 0) {
       filtered = filtered.filter((taxon) => {
-        const distribution = (taxon.distribution?.departments ?? []) as unknown[]
-        const codes = distribution.filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+        const distribution = (taxon.distribution?.departments ??
+          []) as unknown[]
+        const codes = distribution.filter(
+          (c) => typeof c === 'string',
+        ) as FrenchDepartmentCode[]
         return codes.some((code) => selectedDepartments.includes(code))
       })
     }
 
     if (selectedSwarmingMonths.length > 0) {
       filtered = filtered.filter((taxon) => {
-        if (taxon.swarmingStartMonth === null || taxon.swarmingEndMonth === null) return false
+        if (
+          taxon.swarmingStartMonth === null ||
+          taxon.swarmingEndMonth === null
+        )
+          return false
         const start = taxon.swarmingStartMonth
         const end = taxon.swarmingEndMonth
         return selectedSwarmingMonths.some((month) =>
-          start <= end ? month >= start && month <= end : month >= start || month <= end,
+          start <= end
+            ? month >= start && month <= end
+            : month >= start || month <= end,
         )
       })
     }
@@ -532,20 +667,36 @@ export function TaxonsPage() {
     }
 
     return filtered
-  }, [taxons, selectedDepartments, selectedSwarmingMonths, selectedInvasiveFilter])
-  const activeFiltersCount = selectedDepartments.length + selectedSwarmingMonths.length + (selectedInvasiveFilter === 'all' ? 0 : 1)
-  const visibleStartIndex = Math.max(Math.floor(tableScrollTop / rowHeight) - overscan, 0)
+  }, [
+    taxons,
+    selectedDepartments,
+    selectedSwarmingMonths,
+    selectedInvasiveFilter,
+  ])
+  const activeFiltersCount =
+    selectedDepartments.length +
+    selectedSwarmingMonths.length +
+    (selectedInvasiveFilter === 'all' ? 0 : 1)
+  const visibleStartIndex = Math.max(
+    Math.floor(tableScrollTop / rowHeight) - overscan,
+    0,
+  )
   const visibleEndIndex = Math.min(
     filteredTaxons.length,
     Math.ceil((tableScrollTop + tableViewportHeight) / rowHeight) + overscan,
   )
   const visibleTaxons = filteredTaxons.slice(visibleStartIndex, visibleEndIndex)
   const topSpacerHeight = visibleStartIndex * rowHeight
-  const bottomSpacerHeight = Math.max((taxons.length - visibleEndIndex) * rowHeight, 0)
+  const bottomSpacerHeight = Math.max(
+    (taxons.length - visibleEndIndex) * rowHeight,
+    0,
+  )
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Taxons enregistrés</h2>
+      <h2 className="text-xl font-semibold text-slate-900">
+        Taxons enregistrés
+      </h2>
       <div className="mt-3 flex flex-wrap gap-2">
         <input
           className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
@@ -559,7 +710,9 @@ export function TaxonsPage() {
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
             className="relative ml-2 mt-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2"
           >
-            <span>{showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}</span>
+            <span>
+              {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
+            </span>
             {activeFiltersCount > 0 && (
               <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-600 text-white text-xs">
                 {activeFiltersCount}
@@ -570,7 +723,11 @@ export function TaxonsPage() {
           <button
             type="button"
             onClick={() => setTreeMode((v) => !v)}
-            title={treeMode ? 'Basculer en vue tableau' : 'Basculer en vue arborescente'}
+            title={
+              treeMode
+                ? 'Basculer en vue tableau'
+                : 'Basculer en vue arborescente'
+            }
             className="ml-2 rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50"
           >
             {treeMode ? <TableIcon /> : <TreeIcon />}
@@ -582,7 +739,9 @@ export function TaxonsPage() {
         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Période d'essaimage</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Période d'essaimage
+              </label>
               <div className="flex flex-wrap gap-2">
                 {monthLabels.map((month, index) => (
                   <button
@@ -591,7 +750,9 @@ export function TaxonsPage() {
                     onClick={() => {
                       const monthNum = index + 1
                       setSelectedSwarmingMonths((prev) =>
-                        prev.includes(monthNum) ? prev.filter((m) => m !== monthNum) : [...prev, monthNum]
+                        prev.includes(monthNum)
+                          ? prev.filter((m) => m !== monthNum)
+                          : [...prev, monthNum],
                       )
                     }}
                     className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -607,27 +768,51 @@ export function TaxonsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Localisation</label>
-              <FranceMap selectedDepartments={selectedDepartments} onToggleDepartment={(code) => {
-                setSelectedDepartments((prev) =>
-                  prev.includes(code) ? prev.filter((d) => d !== code) : [...prev, code]
-                )
-              }} />
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Localisation
+              </label>
+              <FranceMap
+                selectedDepartments={selectedDepartments}
+                onToggleDepartment={(code) => {
+                  setSelectedDepartments((prev) =>
+                    prev.includes(code)
+                      ? prev.filter((d) => d !== code)
+                      : [...prev, code],
+                  )
+                }}
+              />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Invasivité</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Invasivité
+              </label>
               <div className="flex gap-3">
                 <label className="inline-flex items-center gap-2">
-                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'all'} onChange={() => setSelectedInvasiveFilter('all')} />
+                  <input
+                    type="radio"
+                    name="invasive"
+                    checked={selectedInvasiveFilter === 'all'}
+                    onChange={() => setSelectedInvasiveFilter('all')}
+                  />
                   <span>Toutes</span>
                 </label>
                 <label className="inline-flex items-center gap-2">
-                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'invasive'} onChange={() => setSelectedInvasiveFilter('invasive')} />
+                  <input
+                    type="radio"
+                    name="invasive"
+                    checked={selectedInvasiveFilter === 'invasive'}
+                    onChange={() => setSelectedInvasiveFilter('invasive')}
+                  />
                   <span>Invasives</span>
                 </label>
                 <label className="inline-flex items-center gap-2">
-                  <input type="radio" name="invasive" checked={selectedInvasiveFilter === 'non-invasive'} onChange={() => setSelectedInvasiveFilter('non-invasive')} />
+                  <input
+                    type="radio"
+                    name="invasive"
+                    checked={selectedInvasiveFilter === 'non-invasive'}
+                    onChange={() => setSelectedInvasiveFilter('non-invasive')}
+                  />
                   <span>Non invasives</span>
                 </label>
               </div>
@@ -650,7 +835,8 @@ export function TaxonsPage() {
         </div>
       )}
       <p className="mt-3 text-sm text-slate-600">
-        {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''} trouvée{filteredTaxons.length > 1 ? 's' : ''}
+        {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''}{' '}
+        trouvée{filteredTaxons.length > 1 ? 's' : ''}
       </p>
 
       {loadError && <p className="mt-2 text-sm text-red-600">{loadError}</p>}
@@ -658,7 +844,10 @@ export function TaxonsPage() {
       {isLoadingTaxons && (
         <div className="mt-4 space-y-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={`taxons-skeleton-${index}`} className="h-10 animate-pulse rounded-lg bg-slate-100" />
+            <div
+              key={`taxons-skeleton-${index}`}
+              className="h-10 animate-pulse rounded-lg bg-slate-100"
+            />
           ))}
         </div>
       )}
@@ -686,28 +875,60 @@ export function TaxonsPage() {
                   if (!rep) return
 
                   if (node.depth === 1) {
-                    openSelectedDetail(rep, 'subfamily', node.name, rep.levelDetails.subfamily)
+                    openSelectedDetail(
+                      rep,
+                      'subfamily',
+                      node.name,
+                      rep.levelDetails.subfamily,
+                    )
                   } else if (node.depth === 2) {
                     // Tribe: map to subfamily detail (no tribe-level detail available)
-                    openSelectedDetail(rep, 'subfamily', node.name, rep.levelDetails.subfamily)
+                    openSelectedDetail(
+                      rep,
+                      'subfamily',
+                      node.name,
+                      rep.levelDetails.subfamily,
+                    )
                   } else if (node.depth === 3) {
-                    openSelectedDetail(rep, 'genus', node.name, rep.levelDetails.genus)
+                    openSelectedDetail(
+                      rep,
+                      'genus',
+                      node.name,
+                      rep.levelDetails.genus,
+                    )
                   } else if (node.depth === 4) {
                     openSelectedDetail(
                       rep,
                       'subgenus',
                       node.name,
-                      rep.levelDetails.subgenus ?? { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                      rep.levelDetails.subgenus ?? {
+                        description: null,
+                        sizeWorker: null,
+                        sizeQueen: null,
+                        sizeMale: null,
+                        criteria: [],
+                      },
                     )
                   } else if (node.depth === 5) {
                     openSelectedDetail(
                       rep,
                       'speciesGroup',
                       node.name,
-                      rep.levelDetails.speciesGroup ?? { description: null, sizeWorker: null, sizeQueen: null, sizeMale: null, criteria: [] },
+                      rep.levelDetails.speciesGroup ?? {
+                        description: null,
+                        sizeWorker: null,
+                        sizeQueen: null,
+                        sizeMale: null,
+                        criteria: [],
+                      },
                     )
                   } else {
-                    openSelectedDetail(rep, 'species', rep.species, rep.levelDetails.species)
+                    openSelectedDetail(
+                      rep,
+                      'species',
+                      rep.species,
+                      rep.levelDetails.species,
+                    )
                   }
                 }}
               />
@@ -716,23 +937,34 @@ export function TaxonsPage() {
             <div
               ref={tableContainerRef}
               className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
-              onScroll={(event) => setTableScrollTop(event.currentTarget.scrollTop)}
+              onScroll={(event) =>
+                setTableScrollTop(event.currentTarget.scrollTop)
+              }
             >
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-700">
-                    <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
+                    <th className="sticky top-0 z-10 bg-white p-2">
+                      Sous-famille
+                    </th>
                     <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
                     <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
-                    <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
-                    <th className="sticky top-0 z-10 bg-white p-2">Groupe d'espèce</th>
+                    <th className="sticky top-0 z-10 bg-white p-2">
+                      Sous-genre
+                    </th>
+                    <th className="sticky top-0 z-10 bg-white p-2">
+                      Groupe d'espèce
+                    </th>
                     <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topSpacerHeight > 0 && (
                     <tr>
-                      <td colSpan={6} style={{ height: `${topSpacerHeight}px` }} />
+                      <td
+                        colSpan={6}
+                        style={{ height: `${topSpacerHeight}px` }}
+                      />
                     </tr>
                   )}
                   {visibleTaxons.map((taxon) => {
@@ -743,7 +975,10 @@ export function TaxonsPage() {
 
                     return (
                       <tr key={taxon.id} className="border-b border-slate-100">
-                        <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.subfamily}>
+                        <td
+                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={taxon.subfamily}
+                        >
                           <button
                             className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                             type="button"
@@ -759,8 +994,16 @@ export function TaxonsPage() {
                             {taxon.subfamily}
                           </button>
                         </td>
-                        <td className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.tribe ?? '-'}>{taxon.tribe ?? '-'}</td>
-                        <td className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.genus}>
+                        <td
+                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={taxon.tribe ?? '-'}
+                        >
+                          {taxon.tribe ?? '-'}
+                        </td>
+                        <td
+                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={taxon.genus}
+                        >
                           <button
                             className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                             type="button"
@@ -776,7 +1019,10 @@ export function TaxonsPage() {
                             <em>{taxon.genus}</em>
                           </button>
                         </td>
-                        <td className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={subgenus ? `(${subgenus})` : '-'}>
+                        <td
+                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={subgenus ? `(${subgenus})` : '-'}
+                        >
                           {subgenus && subgenusDetail ? (
                             <button
                               className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
@@ -792,11 +1038,16 @@ export function TaxonsPage() {
                             >
                               ({subgenus})
                             </button>
+                          ) : subgenus ? (
+                            `(${subgenus})`
                           ) : (
-                            subgenus ? `(${subgenus})` : '-'
+                            '-'
                           )}
                         </td>
-                        <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={speciesGroup ?? '-'}>
+                        <td
+                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={speciesGroup ?? '-'}
+                        >
                           {speciesGroup && speciesGroupDetail ? (
                             <button
                               className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
@@ -813,10 +1064,13 @@ export function TaxonsPage() {
                               {speciesGroup}
                             </button>
                           ) : (
-                            speciesGroup ?? '-'
+                            (speciesGroup ?? '-')
                           )}
                         </td>
-                        <td className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden" title={taxon.species}>
+                        <td
+                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={taxon.species}
+                        >
                           <button
                             className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                             type="button"
@@ -837,12 +1091,18 @@ export function TaxonsPage() {
                   })}
                   {bottomSpacerHeight > 0 && (
                     <tr>
-                      <td colSpan={6} style={{ height: `${bottomSpacerHeight}px` }} />
+                      <td
+                        colSpan={6}
+                        style={{ height: `${bottomSpacerHeight}px` }}
+                      />
                     </tr>
                   )}
                   {taxons.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-slate-500">
+                      <td
+                        colSpan={6}
+                        className="p-4 text-center text-slate-500"
+                      >
                         Aucun taxon trouvé.
                       </td>
                     </tr>
@@ -857,39 +1117,87 @@ export function TaxonsPage() {
       {isLoadingMoreTaxons && (
         <div className="mt-3 space-y-2">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={`taxons-loading-more-${index}`} className="h-8 animate-pulse rounded-lg bg-slate-100" />
+            <div
+              key={`taxons-loading-more-${index}`}
+              className="h-8 animate-pulse rounded-lg bg-slate-100"
+            />
           ))}
         </div>
       )}
-      {!isLoadingTaxons && !isLoadingMoreTaxons && !hasMoreTaxons && taxons.length > 0 && (
-        <p className="mt-3 text-center text-xs text-slate-500">Fin de la liste.</p>
-      )}
+      {!isLoadingTaxons &&
+        !isLoadingMoreTaxons &&
+        !hasMoreTaxons &&
+        taxons.length > 0 && (
+          <p className="mt-3 text-center text-xs text-slate-500">
+            Fin de la liste.
+          </p>
+        )}
 
       {selectedDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setSelectedDetail(null)}>
-          <div className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          onClick={() => setSelectedDetail(null)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="mb-3 flex items-center justify-between">
               <p className="font-medium text-slate-900">
-                {selectedDetail.level === 'subfamily' ? 'Sous-famille' : selectedDetail.level === 'genus' ? 'Genre' : selectedDetail.level === 'subgenus' ? 'Sous-genre' : selectedDetail.level === 'speciesGroup' ? `Groupe d'espèces` : 'Espèce'} : {selectedDetail.level === 'subfamily' ? selectedDetail.value : <em>{selectedDetail.value}</em>}
+                {selectedDetail.level === 'subfamily'
+                  ? 'Sous-famille'
+                  : selectedDetail.level === 'genus'
+                    ? 'Genre'
+                    : selectedDetail.level === 'subgenus'
+                      ? 'Sous-genre'
+                      : selectedDetail.level === 'speciesGroup'
+                        ? `Groupe d'espèces`
+                        : 'Espèce'}{' '}
+                :{' '}
+                {selectedDetail.level === 'subfamily' ? (
+                  selectedDetail.value
+                ) : (
+                  <em>{selectedDetail.value}</em>
+                )}
               </p>
-              <button className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700" type="button" onClick={() => setSelectedDetail(null)}>
+              <button
+                className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                type="button"
+                onClick={() => setSelectedDetail(null)}
+              >
                 Fermer
               </button>
             </div>
 
-            <p className="mt-2 font-medium text-slate-800">Description</p>
-            <p className="mt-1 text-slate-700">{selectedDetail.detail.description ?? 'Aucune description.'}</p>
+            <p className="mt-2 font-medium text-slate-900">Description</p>
+            <p className="mt-1 text-slate-700">
+              {selectedDetail.detail.description ?? 'Aucune description.'}
+            </p>
 
-            <p className="mt-3 font-medium text-slate-800">Caractéristiques</p>
-            {selectedDetail.detail.criteria.length > 0 || selectedDetail.detail.sizeWorker || selectedDetail.detail.sizeQueen || selectedDetail.detail.sizeMale ? (
+            <p className="mt-3 font-medium text-slate-900">Caractéristiques</p>
+            {selectedDetail.detail.criteria.length > 0 ||
+            selectedDetail.detail.sizeWorker ||
+            selectedDetail.detail.sizeQueen ||
+            selectedDetail.detail.sizeMale ? (
               <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                {(selectedDetail.detail.sizeWorker || selectedDetail.detail.sizeQueen || selectedDetail.detail.sizeMale) && (
+                {(selectedDetail.detail.sizeWorker ||
+                  selectedDetail.detail.sizeQueen ||
+                  selectedDetail.detail.sizeMale) && (
                   <li>
-                    Tailles : {[
-                      selectedDetail.detail.sizeWorker ? `Ouvrière ${selectedDetail.detail.sizeWorker}` : null,
-                      selectedDetail.detail.sizeQueen ? `Reine ${selectedDetail.detail.sizeQueen}` : null,
-                      selectedDetail.detail.sizeMale ? `Mâle ${selectedDetail.detail.sizeMale}` : null,
-                    ].filter(Boolean).join(' / ')}
+                    Tailles :{' '}
+                    {[
+                      selectedDetail.detail.sizeWorker
+                        ? `Ouvrière ${selectedDetail.detail.sizeWorker}`
+                        : null,
+                      selectedDetail.detail.sizeQueen
+                        ? `Reine ${selectedDetail.detail.sizeQueen}`
+                        : null,
+                      selectedDetail.detail.sizeMale
+                        ? `Mâle ${selectedDetail.detail.sizeMale}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' / ')}
                   </li>
                 )}
                 {selectedDetail.detail.criteria.map((criterion) => (
@@ -902,23 +1210,33 @@ export function TaxonsPage() {
 
             {selectedDetail.level === 'species' && (
               <>
-                <p className="mt-3 font-medium text-slate-800">Période d'essaimage</p>
-                {selectedDetail.taxon.swarmingStartMonth && selectedDetail.taxon.swarmingEndMonth ? (() => {
-                  const startMonth = selectedDetail.taxon.swarmingStartMonth
-                  const endMonth = selectedDetail.taxon.swarmingEndMonth
-                  return (
-                    <p className="mt-2 text-slate-700">
-                      {monthLabels[startMonth - 1]} à {monthLabels[endMonth - 1]}
-                    </p>
-                  )
-                })() : (
-                  <p className="mt-2 text-slate-700">Aucune période d'essaimage renseignée.</p>
+                <p className="mt-3 font-medium text-slate-900">
+                  Période d'essaimage
+                </p>
+                {selectedDetail.taxon.swarmingStartMonth &&
+                selectedDetail.taxon.swarmingEndMonth ? (
+                  (() => {
+                    const startMonth = selectedDetail.taxon.swarmingStartMonth
+                    const endMonth = selectedDetail.taxon.swarmingEndMonth
+                    return (
+                      <p className="mt-2 text-slate-700">
+                        {monthLabels[startMonth - 1]} à{' '}
+                        {monthLabels[endMonth - 1]}
+                      </p>
+                    )
+                  })()
+                ) : (
+                  <p className="mt-2 text-slate-700">
+                    Aucune période d'essaimage renseignée.
+                  </p>
                 )}
               </>
             )}
 
-            <p className="mt-3 font-medium text-slate-800">Références liées</p>
-            {isLoadingReferences && <p className="mt-1 text-slate-700">Chargement des références…</p>}
+            <p className="mt-3 font-medium text-slate-900">Références liées</p>
+            {isLoadingReferences && (
+              <p className="mt-1 text-slate-700">Chargement des références…</p>
+            )}
             {linkedReferences.length > 0 ? (
               <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
                 {linkedReferences.map((reference) => {
@@ -926,7 +1244,12 @@ export function TaxonsPage() {
                   return (
                     <li key={reference.id}>
                       {href ? (
-                        <a className="text-indigo-700 underline" href={href} target="_blank" rel="noreferrer">
+                        <a
+                          className="text-indigo-700 underline"
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           {reference.title}
                         </a>
                       ) : (
@@ -942,14 +1265,22 @@ export function TaxonsPage() {
 
             {selectedDetail.taxon.confusions.length > 0 && (
               <>
-                <p className="mt-3 font-medium text-slate-800">Confusions possibles</p>
+                <p className="mt-3 font-medium text-slate-900">
+                  Confusions possibles
+                </p>
                 <ul className="mt-1 space-y-2 text-slate-700">
                   {selectedDetail.taxon.confusions.map((confusion) => (
-                    <li key={confusion.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    <li
+                      key={confusion.id}
+                      className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                    >
                       <p className="font-semibold">
-                        Avec <em>{confusion.confusedTaxon.genus}</em> <em>{confusion.confusedTaxon.species}</em>
+                        Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
+                        <em>{confusion.confusedTaxon.species}</em>
                       </p>
-                      <p className="mt-1 whitespace-pre-wrap">{confusion.detail}</p>
+                      <p className="mt-1 whitespace-pre-wrap">
+                        {confusion.detail}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -958,14 +1289,23 @@ export function TaxonsPage() {
 
             {selectedDetail.level === 'species' && (
               <>
-                <p className="mt-3 font-medium text-slate-800">Aire de répartition</p>
+                <p className="mt-3 font-medium text-slate-900">
+                  Aire de répartition
+                </p>
                 <div className="mt-1">
                   {(() => {
-                      const raw = (selectedDetail.taxon.distribution?.departments ?? []) as unknown[]
-                    const codes = raw.filter((c) => typeof c === 'string') as FrenchDepartmentCode[]
+                    const raw = (selectedDetail.taxon.distribution
+                      ?.departments ?? []) as unknown[]
+                    const codes = raw.filter(
+                      (c) => typeof c === 'string',
+                    ) as FrenchDepartmentCode[]
 
                     if (codes.length === 0) {
-                      return <p className="mt-1 text-slate-700">Aucune aire de répartition renseignée.</p>
+                      return (
+                        <p className="mt-1 text-slate-700">
+                          Aucune aire de répartition renseignée.
+                        </p>
+                      )
                     }
 
                     return <FranceMap selectedDepartments={codes} readonly />
@@ -976,7 +1316,6 @@ export function TaxonsPage() {
           </div>
         </div>
       )}
-
     </section>
   )
 }

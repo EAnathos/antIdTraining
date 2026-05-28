@@ -32,7 +32,10 @@ describe('AuthPage', () => {
     expect(screen.getByPlaceholderText('Adresse e-mail')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Mot de passe')).toBeInTheDocument()
     const buttons = screen.getAllByText((content, element) => {
-      return element?.tagName.toLowerCase() === 'button' && content === 'Se connecter'
+      return (
+        element?.tagName.toLowerCase() === 'button' &&
+        content === 'Se connecter'
+      )
     })
     expect(buttons.length).toBeGreaterThanOrEqual(1)
   })
@@ -44,16 +47,18 @@ describe('AuthPage', () => {
     fireEvent.click(registerTab)
 
     expect(screen.getByText('Créer le compte')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Nom d\'utilisateur')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Nom d'utilisateur")).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Adresse e-mail')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Confirmer le mot de passe')).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('Confirmer le mot de passe'),
+    ).toBeInTheDocument()
 
     const loginTab = screen.getByText('Se connecter')
     fireEvent.click(loginTab)
 
-    const connectButtons = screen.getAllByText('Se connecter').filter(
-      (element) => element.tagName === 'BUTTON'
-    )
+    const connectButtons = screen
+      .getAllByText('Se connecter')
+      .filter((element) => element.tagName === 'BUTTON')
     expect(connectButtons.length).toBeGreaterThan(0)
   })
 
@@ -69,7 +74,12 @@ describe('AuthPage', () => {
         data: {
           role: 'USER',
           token: 'test_token_456',
-          user: { id: 'user_1', username: 'newuser', email: 'newuser@example.com', role: 'USER' },
+          user: {
+            id: 'user_1',
+            username: 'newuser',
+            email: 'newuser@example.com',
+            role: 'USER',
+          },
         },
       })
 
@@ -77,7 +87,7 @@ describe('AuthPage', () => {
 
     fireEvent.click(screen.getByText('Créer un compte'))
 
-    fireEvent.change(screen.getByPlaceholderText('Nom d\'utilisateur'), {
+    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), {
       target: { value: 'newuser' },
     })
     fireEvent.change(screen.getByPlaceholderText('Adresse e-mail'), {
@@ -101,8 +111,12 @@ describe('AuthPage', () => {
       })
     })
 
-    expect(screen.getByText(/Un code de vérification a été envoyé/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Code de vérification')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Un code de vérification a été envoyé/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('Code de vérification'),
+    ).toBeInTheDocument()
 
     fireEvent.change(screen.getByPlaceholderText('Code de vérification'), {
       target: { value: '123456' },
@@ -117,7 +131,9 @@ describe('AuthPage', () => {
     })
 
     expect(localStorage.getItem('antidtraining-auth-username')).toBe('newuser')
-    expect(localStorage.getItem('antidtraining-auth-email')).toBe('newuser@example.com')
+    expect(localStorage.getItem('antidtraining-auth-email')).toBe(
+      'newuser@example.com',
+    )
   })
 
   it('submits login form with e-mail', async () => {
@@ -125,7 +141,12 @@ describe('AuthPage', () => {
       data: {
         role: 'USER',
         token: 'test_token_123',
-        user: { id: 'user_2', username: 'player', email: 'player@example.com', role: 'USER' },
+        user: {
+          id: 'user_2',
+          username: 'player',
+          email: 'player@example.com',
+          role: 'USER',
+        },
       },
     })
 
@@ -139,7 +160,9 @@ describe('AuthPage', () => {
     })
 
     fireEvent.click(
-      screen.getAllByRole('button', { name: 'Se connecter' }).find((button) => button.type === 'submit')!,
+      screen
+        .getAllByRole('button', { name: 'Se connecter' })
+        .find((button) => button.type === 'submit')!,
     )
 
     await waitFor(() => {
@@ -157,7 +180,7 @@ describe('AuthPage', () => {
 
     fireEvent.click(screen.getByText('Créer un compte'))
 
-    fireEvent.change(screen.getByPlaceholderText('Nom d\'utilisateur'), {
+    fireEvent.change(screen.getByPlaceholderText("Nom d'utilisateur"), {
       target: { value: 'existinguser' },
     })
     fireEvent.change(screen.getByPlaceholderText('Adresse e-mail'), {

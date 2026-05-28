@@ -1,15 +1,57 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api, apiBaseUrl, createAdminApiClient } from '../lib/api'
-import type { AdminHistoryItem, AdminUserPointsItem, Entry, EntryPageResponse, EntryProposal, GameLevelStats, GameStatsPeriod, ReferenceItem, Suggestion, Taxon, TaxonsPageResponse } from '../types/models'
+import type {
+  AdminHistoryItem,
+  AdminUserPointsItem,
+  Entry,
+  EntryPageResponse,
+  EntryProposal,
+  GameLevelStats,
+  GameStatsPeriod,
+  ReferenceItem,
+  Suggestion,
+  Taxon,
+  TaxonsPageResponse,
+} from '../types/models'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
 
 type LevelDetailsDraft = {
-  subfamily: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
-  genus: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
-  subgenus: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
-  speciesGroup: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
-  species: { description: string; sizeWorker: string; sizeQueen: string; sizeMale: string; criteria: string[] }
+  subfamily: {
+    description: string
+    sizeWorker: string
+    sizeQueen: string
+    sizeMale: string
+    criteria: string[]
+  }
+  genus: {
+    description: string
+    sizeWorker: string
+    sizeQueen: string
+    sizeMale: string
+    criteria: string[]
+  }
+  subgenus: {
+    description: string
+    sizeWorker: string
+    sizeQueen: string
+    sizeMale: string
+    criteria: string[]
+  }
+  speciesGroup: {
+    description: string
+    sizeWorker: string
+    sizeQueen: string
+    sizeMale: string
+    criteria: string[]
+  }
+  species: {
+    description: string
+    sizeWorker: string
+    sizeQueen: string
+    sizeMale: string
+    criteria: string[]
+  }
 }
 
 type TaxonConfusionDraft = {
@@ -66,7 +108,10 @@ function clearPublicTaxonsCache() {
   }
 }
 
-export function useAdminData(token: string | null, onUnauthorized?: () => void) {
+export function useAdminData(
+  token: string | null,
+  onUnauthorized?: () => void,
+) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
@@ -90,7 +135,15 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     speciesGroup: string
     species: string
     distribution: FrenchDepartmentCode[]
-  }>({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
+  }>({
+    subfamily: '',
+    tribe: '',
+    genus: '',
+    subgenus: '',
+    speciesGroup: '',
+    species: '',
+    distribution: [],
+  })
   const [selectedTaxonId, setSelectedTaxonId] = useState('')
 
   const [referenceForm, setReferenceForm] = useState({
@@ -103,21 +156,42 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   })
   const [selectedReferenceId, setSelectedReferenceId] = useState('')
 
-  const [entryForm, setEntryForm] = useState<EntryForm>({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
+  const [entryForm, setEntryForm] = useState<EntryForm>({
+    subfamily: '',
+    genus: '',
+    subgenus: '',
+    species: '',
+    speciesGroup: '',
+    department: '',
+    observedAt: '',
+    biotope: '',
+    photoCredit: '',
+    caste: '',
+  })
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [selectedEntryId, setSelectedEntryId] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [proposals, setProposals] = useState<EntryProposal[]>([])
 
-  const adminApi = useMemo(() => createAdminApiClient(token, onUnauthorized), [token, onUnauthorized])
-
+  const adminApi = useMemo(
+    () => createAdminApiClient(token, onUnauthorized),
+    [token, onUnauthorized],
+  )
 
   function isUnauthorizedError(error: unknown) {
-    return typeof error === 'object' && error !== null && 'status' in error && (error as { status?: number }).status === 401
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      (error as { status?: number }).status === 401
+    )
   }
 
   function resolveAdminErrorMessage(error: unknown, fallbackMessage: string) {
-    const status = typeof error === 'object' && error !== null && 'status' in error ? (error as { status?: number }).status : undefined
+    const status =
+      typeof error === 'object' && error !== null && 'status' in error
+        ? (error as { status?: number }).status
+        : undefined
 
     if (status === 401) {
       return 'Session administrateur expirée. Merci de vous reconnecter.'
@@ -143,15 +217,14 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           .filter(Boolean)
 
     return Array.from(
-      new Set(
-        values
-          .map((value) => value.trim())
-          .filter(Boolean),
-      ),
+      new Set(values.map((value) => value.trim()).filter(Boolean)),
     )
   }
 
-  function serializeLevelDetail(detail: LevelDetailsDraft[keyof LevelDetailsDraft], includeSizes: boolean): LevelDetailPayload {
+  function serializeLevelDetail(
+    detail: LevelDetailsDraft[keyof LevelDetailsDraft],
+    includeSizes: boolean,
+  ): LevelDetailPayload {
     return {
       description: detail.description.trim() || null,
       sizeWorker: includeSizes ? detail.sizeWorker.trim() || null : null,
@@ -187,7 +260,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       let hasMore = true
 
       while (hasMore) {
-        const { data } = await api.get<TaxonsPageResponse>('/taxons', { params: { offset } })
+        const { data } = await api.get<TaxonsPageResponse>('/taxons', {
+          params: { offset },
+        })
         allItems.push(...data.items)
         hasMore = data.hasMore
         offset = data.nextOffset
@@ -200,15 +275,32 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return allItems
     }
 
-    const [taxonRes, subfamilyRes, refRes, entryRes, statsRes, entryStatsRes, usersRes, suggestionsRes, proposalsRes] = await Promise.all([
+    const [
+      taxonRes,
+      subfamilyRes,
+      refRes,
+      entryRes,
+      statsRes,
+      entryStatsRes,
+      usersRes,
+      suggestionsRes,
+      proposalsRes,
+    ] = await Promise.all([
       listAllTaxons(),
       api.get<string[]>('/taxons/subfamilies'),
       api.get<ReferenceItem[]>('/references'),
-      adminApi.get<EntryPageResponse>('/entries', { params: { page: entriesPage, limit: entriesLimit } }),
-      adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>('/stats/game', {
+      adminApi.get<EntryPageResponse>('/entries', {
+        params: { page: entriesPage, limit: entriesLimit },
+      }),
+      adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>(
+        '/stats/game',
+        {
+          params: { period: statsPeriod },
+        },
+      ),
+      adminApi.get<unknown>('/stats/entries', {
         params: { period: statsPeriod },
       }),
-      adminApi.get<unknown>('/stats/entries', { params: { period: statsPeriod } }),
       adminApi.get<AdminUserPointsItem[]>('/users'),
       adminApi.get<Suggestion[]>('/suggestions'),
       adminApi.get<EntryProposal[]>('/entry-proposals'),
@@ -229,7 +321,11 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setProposals(proposalsRes.data)
   }, [adminApi, entriesLimit, entriesPage, statsPeriod])
 
-  async function runAdminAction(action: () => Promise<void>, successMessage: string, failureMessage: string) {
+  async function runAdminAction(
+    action: () => Promise<void>,
+    successMessage: string,
+    failureMessage: string,
+  ) {
     setMessage('')
     try {
       await action()
@@ -247,22 +343,30 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
   }
 
   async function setUserPoints(id: string, points: number) {
-    await runAdminAction(async () => {
-      await adminApi.put(`/users/${id}/points`, { points })
-      const { data } = await adminApi.get<AdminUserPointsItem[]>('/users')
-      setUsers(data)
-      // Dispatch event to notify LeaderboardPage to refresh
-      window.dispatchEvent(new Event('antidtraining-user-points-changed'))
-    }, 'Points utilisateur mis à jour.', 'Impossible de mettre à jour les points utilisateur.')
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/users/${id}/points`, { points })
+        const { data } = await adminApi.get<AdminUserPointsItem[]>('/users')
+        setUsers(data)
+        // Dispatch event to notify LeaderboardPage to refresh
+        window.dispatchEvent(new Event('antidtraining-user-points-changed'))
+      },
+      'Points utilisateur mis à jour.',
+      'Impossible de mettre à jour les points utilisateur.',
+    )
   }
 
   useEffect(() => {
     void loadAdminData().catch((error) => {
       if (isUnauthorizedError(error)) {
-        setMessage(resolveAdminErrorMessage(error, 'Impossible de charger les données.'))
+        setMessage(
+          resolveAdminErrorMessage(error, 'Impossible de charger les données.'),
+        )
         return
       }
-      setMessage(resolveAdminErrorMessage(error, 'Impossible de charger les données.'))
+      setMessage(
+        resolveAdminErrorMessage(error, 'Impossible de charger les données.'),
+      )
     })
   }, [loadAdminData])
 
@@ -278,7 +382,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
           subgenus: found.subgenus ?? '',
           speciesGroup: found.speciesGroup ?? '',
           species: found.species,
-          distribution: (found.distribution?.departments ?? []).filter((c) => typeof c === 'string') as FrenchDepartmentCode[],
+          distribution: (found.distribution?.departments ?? []).filter(
+            (c) => typeof c === 'string',
+          ) as FrenchDepartmentCode[],
         })
       }
     }
@@ -324,45 +430,71 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
 
   async function createTaxon(event: FormEvent) {
     event.preventDefault()
-    await runAdminAction(async () => {
-      await adminApi.post('/taxons', {
-        subfamily: taxonForm.subfamily.trim(),
-        tribe: taxonForm.tribe.trim() || null,
-        genus: taxonForm.genus.trim(),
-        subgenus: taxonForm.subgenus.trim() || null,
-        speciesGroup: taxonForm.speciesGroup.trim() || null,
-        species: taxonForm.species.trim(),
-        distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
-      })
-      setTaxonForm({ subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] })
-      clearPublicTaxonsCache()
-    }, 'Taxon créé.', 'Impossible de créer le taxon.')
+    await runAdminAction(
+      async () => {
+        await adminApi.post('/taxons', {
+          subfamily: taxonForm.subfamily.trim(),
+          tribe: taxonForm.tribe.trim() || null,
+          genus: taxonForm.genus.trim(),
+          subgenus: taxonForm.subgenus.trim() || null,
+          speciesGroup: taxonForm.speciesGroup.trim() || null,
+          species: taxonForm.species.trim(),
+          distribution:
+            taxonForm.distribution.length > 0
+              ? { departments: taxonForm.distribution }
+              : null,
+        })
+        setTaxonForm({
+          subfamily: '',
+          tribe: '',
+          genus: '',
+          subgenus: '',
+          speciesGroup: '',
+          species: '',
+          distribution: [],
+        })
+        clearPublicTaxonsCache()
+      },
+      'Taxon créé.',
+      'Impossible de créer le taxon.',
+    )
   }
 
   async function updateTaxon(event: FormEvent) {
     event.preventDefault()
     if (!selectedTaxonId) return
     const found = taxons.find((taxon) => taxon.id === selectedTaxonId)
-    await runAdminAction(async () => {
-      await adminApi.put(`/taxons/${selectedTaxonId}`, {
-        subfamily: taxonForm.subfamily.trim(),
-        tribe: taxonForm.tribe.trim() || null,
-        genus: taxonForm.genus.trim(),
-        subgenus: taxonForm.subgenus.trim() || null,
-        speciesGroup: taxonForm.speciesGroup.trim() || null,
-        species: taxonForm.species.trim(),
-        invasive: found?.invasive ?? false,
-        distribution: taxonForm.distribution.length > 0 ? { departments: taxonForm.distribution } : null,
-      })
-      clearPublicTaxonsCache()
-    }, 'Taxon modifié.', 'Impossible de modifier le taxon.')
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/taxons/${selectedTaxonId}`, {
+          subfamily: taxonForm.subfamily.trim(),
+          tribe: taxonForm.tribe.trim() || null,
+          genus: taxonForm.genus.trim(),
+          subgenus: taxonForm.subgenus.trim() || null,
+          speciesGroup: taxonForm.speciesGroup.trim() || null,
+          species: taxonForm.species.trim(),
+          invasive: found?.invasive ?? false,
+          distribution:
+            taxonForm.distribution.length > 0
+              ? { departments: taxonForm.distribution }
+              : null,
+        })
+        clearPublicTaxonsCache()
+      },
+      'Taxon modifié.',
+      'Impossible de modifier le taxon.',
+    )
   }
 
   async function deleteTaxon(id: string) {
-    await runAdminAction(async () => {
-      await adminApi.delete(`/taxons/${id}`)
-      clearPublicTaxonsCache()
-    }, 'Taxon supprimé.', 'Impossible de supprimer le taxon.')
+    await runAdminAction(
+      async () => {
+        await adminApi.delete(`/taxons/${id}`)
+        clearPublicTaxonsCache()
+      },
+      'Taxon supprimé.',
+      'Impossible de supprimer le taxon.',
+    )
   }
 
   async function saveTaxonLevelDetails(
@@ -376,64 +508,92 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     const found = taxons.find((taxon) => taxon.id === taxonId)
     if (!found) return
 
-    await runAdminAction(async () => {
-        const { subfamily, tribe, genus, subgenus, speciesGroup, species } = found
+    await runAdminAction(
+      async () => {
+        const { subfamily, tribe, genus, subgenus, speciesGroup, species } =
+          found
 
-      await adminApi.put(`/taxons/${taxonId}`, {
+        await adminApi.put(`/taxons/${taxonId}`, {
           subfamily,
           tribe,
           genus,
           subgenus,
           speciesGroup,
           species,
-        invasive,
-        swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
-        swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
-        distribution: distribution.length > 0 ? { departments: distribution } : null,
+          invasive,
+          swarmingStartMonth: swarmingPeriod.swarmingStartMonth,
+          swarmingEndMonth: swarmingPeriod.swarmingEndMonth,
+          distribution:
+            distribution.length > 0 ? { departments: distribution } : null,
           levelDetails: buildLevelDetailsPayload(levelDetails),
           confusions: buildConfusionsPayload(confusions),
-      })
-      clearPublicTaxonsCache()
-    }, 'Critères et descriptions mis à jour.', 'Impossible de mettre à jour les critères.')
+        })
+        clearPublicTaxonsCache()
+      },
+      'Critères et descriptions mis à jour.',
+      'Impossible de mettre à jour les critères.',
+    )
   }
 
   async function createReference(event: FormEvent) {
     event.preventDefault()
-    await runAdminAction(async () => {
-      await adminApi.post('/references', {
-        title: referenceForm.title,
-        authors: parseAuthors(referenceForm.authors),
-        description: referenceForm.description || null,
-        type: referenceForm.type,
-        url: referenceForm.url || null,
-        taxonIds: referenceForm.taxonIds,
-      })
-      setReferenceForm({ title: '', authors: '', description: '', type: 'WEBSITE', url: '', taxonIds: [] })
-    }, 'Référence créée.', 'Impossible de créer la référence.')
+    await runAdminAction(
+      async () => {
+        await adminApi.post('/references', {
+          title: referenceForm.title,
+          authors: parseAuthors(referenceForm.authors),
+          description: referenceForm.description || null,
+          type: referenceForm.type,
+          url: referenceForm.url || null,
+          taxonIds: referenceForm.taxonIds,
+        })
+        setReferenceForm({
+          title: '',
+          authors: '',
+          description: '',
+          type: 'WEBSITE',
+          url: '',
+          taxonIds: [],
+        })
+      },
+      'Référence créée.',
+      'Impossible de créer la référence.',
+    )
   }
 
   async function updateReference(event: FormEvent) {
     event.preventDefault()
     if (!selectedReferenceId) return
-    await runAdminAction(async () => {
-      await adminApi.put(`/references/${selectedReferenceId}`, {
-        title: referenceForm.title,
-        authors: parseAuthors(referenceForm.authors),
-        description: referenceForm.description || null,
-        type: referenceForm.type,
-        url: referenceForm.url || null,
-        taxonIds: referenceForm.taxonIds,
-      })
-    }, 'Référence modifiée.', 'Impossible de modifier la référence.')
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/references/${selectedReferenceId}`, {
+          title: referenceForm.title,
+          authors: parseAuthors(referenceForm.authors),
+          description: referenceForm.description || null,
+          type: referenceForm.type,
+          url: referenceForm.url || null,
+          taxonIds: referenceForm.taxonIds,
+        })
+      },
+      'Référence modifiée.',
+      'Impossible de modifier la référence.',
+    )
   }
 
   async function deleteReference(id: string) {
-    await runAdminAction(async () => {
-      await adminApi.delete(`/references/${id}`)
-    }, 'Référence supprimée.', 'Impossible de supprimer la référence.')
+    await runAdminAction(
+      async () => {
+        await adminApi.delete(`/references/${id}`)
+      },
+      'Référence supprimée.',
+      'Impossible de supprimer la référence.',
+    )
   }
 
-  async function saveReferenceAuthorsAndTaxons(authors: string[], taxonIds: string[]) {
+  async function saveReferenceAuthorsAndTaxons(
+    authors: string[],
+    taxonIds: string[],
+  ) {
     if (!selectedReferenceId) {
       setReferenceForm({
         ...referenceForm,
@@ -463,13 +623,20 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de modifier la référence.')
+      const resolvedMessage = resolveAdminErrorMessage(
+        error,
+        'Impossible de modifier la référence.',
+      )
       setMessage(resolvedMessage)
       return false
     }
   }
 
-  async function saveReferenceAuthorsAndTaxonsById(referenceId: string, authors: string[], taxonIds: string[]) {
+  async function saveReferenceAuthorsAndTaxonsById(
+    referenceId: string,
+    authors: string[],
+    taxonIds: string[],
+  ) {
     const target = references.find((reference) => reference.id === referenceId)
     if (!target) {
       setMessage('Référence introuvable.')
@@ -491,7 +658,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('Référence modifiée.')
       return true
     } catch (error) {
-      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de modifier la référence.')
+      const resolvedMessage = resolveAdminErrorMessage(
+        error,
+        'Impossible de modifier la référence.',
+      )
       setMessage(resolvedMessage)
       return false
     }
@@ -505,7 +675,9 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         return
       }
 
-      const oversizedFile = Array.from(entryFiles).find((file) => file.size > MAX_ENTRY_IMAGE_SIZE_BYTES)
+      const oversizedFile = Array.from(entryFiles).find(
+        (file) => file.size > MAX_ENTRY_IMAGE_SIZE_BYTES,
+      )
       if (oversizedFile) {
         setMessage(`Le fichier "${oversizedFile.name}" dépasse 8 Mo.`)
         return
@@ -517,8 +689,13 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('La caste est requise.')
       return
     }
-    const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
-    const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
+    const taxonLevel = entryForm.species
+      ? 'SPECIES'
+      : entryForm.genus
+        ? 'GENUS'
+        : 'SUBFAMILY'
+    const taxonValue =
+      entryForm.species || entryForm.genus || entryForm.subfamily
     formData.append('taxonLevel', taxonLevel)
     formData.append('taxonValue', taxonValue)
     formData.append('taxonGenus', entryForm.genus || '')
@@ -535,7 +712,18 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     setMessage('')
     try {
       await adminApi.post('/entries', formData)
-      setEntryForm({ subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' })
+      setEntryForm({
+        subfamily: '',
+        genus: '',
+        subgenus: '',
+        species: '',
+        speciesGroup: '',
+        department: '',
+        observedAt: '',
+        biotope: '',
+        photoCredit: '',
+        caste: '',
+      })
       setEntryFiles(null)
       await loadAdminData()
       setMessage('Entrée créée.')
@@ -546,7 +734,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
         return
       }
 
-      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de créer l’entrée.')
+      const resolvedMessage = resolveAdminErrorMessage(
+        error,
+        'Impossible de créer l’entrée.',
+      )
       setMessage(resolvedMessage)
     }
   }
@@ -558,49 +749,69 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('La caste est requise.')
       return
     }
-    await runAdminAction(async () => {
-      const taxonLevel = entryForm.species ? 'SPECIES' : entryForm.genus ? 'GENUS' : 'SUBFAMILY'
-      const taxonValue = entryForm.species || entryForm.genus || entryForm.subfamily
-      await adminApi.put(`/entries/${selectedEntryId}`, {
-        taxonLevel,
-        taxonValue,
-        taxonGenus: entryForm.genus || '',
-        subgenus: entryForm.subgenus || '',
-        speciesGroup: entryForm.speciesGroup || '',
-        caste: entryForm.caste,
-        department: entryForm.department,
-        observedAt: entryForm.observedAt,
-        biotope: entryForm.biotope,
-        photoCredit: entryForm.photoCredit,
-      })
-      setSelectedEntryId('')
-      setEntryFiles(null)
-    }, 'Entrée modifiée.', 'Impossible de modifier l’entrée.')
+    await runAdminAction(
+      async () => {
+        const taxonLevel = entryForm.species
+          ? 'SPECIES'
+          : entryForm.genus
+            ? 'GENUS'
+            : 'SUBFAMILY'
+        const taxonValue =
+          entryForm.species || entryForm.genus || entryForm.subfamily
+        await adminApi.put(`/entries/${selectedEntryId}`, {
+          taxonLevel,
+          taxonValue,
+          taxonGenus: entryForm.genus || '',
+          subgenus: entryForm.subgenus || '',
+          speciesGroup: entryForm.speciesGroup || '',
+          caste: entryForm.caste,
+          department: entryForm.department,
+          observedAt: entryForm.observedAt,
+          biotope: entryForm.biotope,
+          photoCredit: entryForm.photoCredit,
+        })
+        setSelectedEntryId('')
+        setEntryFiles(null)
+      },
+      'Entrée modifiée.',
+      'Impossible de modifier l’entrée.',
+    )
   }
 
   async function deleteEntry(id: string) {
-    await runAdminAction(async () => {
-      await adminApi.delete(`/entries/${id}`)
-      if (selectedEntryId === id) {
-        setSelectedEntryId('')
-        setEntryFiles(null)
-      }
-    }, 'Entrée supprimée.', 'Impossible de supprimer l’entrée.')
+    await runAdminAction(
+      async () => {
+        await adminApi.delete(`/entries/${id}`)
+        if (selectedEntryId === id) {
+          setSelectedEntryId('')
+          setEntryFiles(null)
+        }
+      },
+      'Entrée supprimée.',
+      'Impossible de supprimer l’entrée.',
+    )
   }
 
   async function reorderEntryImages(entryId: string, imageIds: string[]) {
-    await runAdminAction(async () => {
-      await adminApi.put(`/entries/${entryId}/images/order`, { imageIds })
-    }, 'Ordre des images mis à jour.', 'Impossible de réordonner les images.')
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/entries/${entryId}/images/order`, { imageIds })
+      },
+      'Ordre des images mis à jour.',
+      'Impossible de réordonner les images.',
+    )
   }
 
   async function exportDatabaseSnapshot() {
     setMessage('')
     try {
-      const response = await fetch(`${apiBaseUrl}/admin/database/export/bundle`, {
-        method: 'GET',
-        credentials: 'include',
-      })
+      const response = await fetch(
+        `${apiBaseUrl}/admin/database/export/bundle`,
+        {
+          method: 'GET',
+          credentials: 'include',
+        },
+      )
 
       if (!response.ok) {
         let message = `HTTP ${response.status}`
@@ -618,7 +829,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      const dateTag = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+$/, '')
+      const dateTag = new Date()
+        .toISOString()
+        .replace(/[:]/g, '-')
+        .replace(/\..+$/, '')
       link.href = url
       link.download = `ant-id-training-bundle-${dateTag}.zip`
       document.body.appendChild(link)
@@ -628,7 +842,10 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       setMessage('Export de la base et des images terminé.')
       await loadAdminData()
     } catch (error) {
-      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible d’exporter la base.')
+      const resolvedMessage = resolveAdminErrorMessage(
+        error,
+        'Impossible d’exporter la base.',
+      )
       setMessage(resolvedMessage)
     }
   }
@@ -640,14 +857,23 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       try {
         const formData = new FormData()
         formData.append('bundle', file)
-        const { data } = await adminApi.post<{ imagesRestored?: number }>('/database/import/bundle', formData)
+        const { data } = await adminApi.post<{ imagesRestored?: number }>(
+          '/database/import/bundle',
+          formData,
+        )
         await loadAdminData()
         clearPublicTaxonsCache()
 
-        const restoredCount = typeof data?.imagesRestored === 'number' ? data.imagesRestored : 0
-        setMessage(`Base et images importées (${restoredCount} image${restoredCount > 1 ? 's' : ''} restaurée${restoredCount > 1 ? 's' : ''}).`)
+        const restoredCount =
+          typeof data?.imagesRestored === 'number' ? data.imagesRestored : 0
+        setMessage(
+          `Base et images importées (${restoredCount} image${restoredCount > 1 ? 's' : ''} restaurée${restoredCount > 1 ? 's' : ''}).`,
+        )
       } catch (error) {
-        const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible d’importer l’archive.')
+        const resolvedMessage = resolveAdminErrorMessage(
+          error,
+          'Impossible d’importer l’archive.',
+        )
         setMessage(resolvedMessage)
       }
       return
@@ -657,7 +883,11 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
     try {
       const content = await file.text()
       const parsed = JSON.parse(content) as unknown
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
         setMessage('Le fichier JSON doit contenir un objet.')
         return
       }
@@ -668,68 +898,130 @@ export function useAdminData(token: string | null, onUnauthorized?: () => void) 
       return
     }
 
-    await runAdminAction(async () => {
-      await adminApi.post('/database/import', payload)
-      clearPublicTaxonsCache()
-    }, 'Base importée.', 'Impossible d’importer la base.')
+    await runAdminAction(
+      async () => {
+        await adminApi.post('/database/import', payload)
+        clearPublicTaxonsCache()
+      },
+      'Base importée.',
+      'Impossible d’importer la base.',
+    )
   }
 
   async function cleanupUploads() {
     setMessage('')
     try {
-      const { data } = await adminApi.post<{ deletedFiles: number; generatedVariants: number; referencedImages: number }>('/database/cleanup/uploads')
-      const deletedLabel = data.deletedFiles > 1 ? 'fichiers supprimés' : 'fichier supprimé'
-      const generatedLabel = data.generatedVariants > 1 ? 'variantes générées' : 'variante générée'
-      setMessage(`Nettoyage terminé (${data.deletedFiles} ${deletedLabel}, ${data.generatedVariants} ${generatedLabel} pour ${data.referencedImages} image${data.referencedImages > 1 ? 's' : ''} référencée${data.referencedImages > 1 ? 's' : ''}).`)
+      const { data } = await adminApi.post<{
+        deletedFiles: number
+        generatedVariants: number
+        referencedImages: number
+      }>('/database/cleanup/uploads')
+      const deletedLabel =
+        data.deletedFiles > 1 ? 'fichiers supprimés' : 'fichier supprimé'
+      const generatedLabel =
+        data.generatedVariants > 1 ? 'variantes générées' : 'variante générée'
+      setMessage(
+        `Nettoyage terminé (${data.deletedFiles} ${deletedLabel}, ${data.generatedVariants} ${generatedLabel} pour ${data.referencedImages} image${data.referencedImages > 1 ? 's' : ''} référencée${data.referencedImages > 1 ? 's' : ''}).`,
+      )
       await loadAdminData()
     } catch (error) {
-      const resolvedMessage = resolveAdminErrorMessage(error, 'Impossible de nettoyer les images.')
+      const resolvedMessage = resolveAdminErrorMessage(
+        error,
+        'Impossible de nettoyer les images.',
+      )
       setMessage(resolvedMessage)
     }
   }
 
-  async function setSuggestionStatus(id: string, status: 'PENDING' | 'PROCESSED' | 'REJECTED', rejectionMessage?: string) {
-    await runAdminAction(async () => {
-      await adminApi.put(`/suggestions/${id}`, { status, rejectionMessage })
-    }, 'Suggestion mise à jour.', 'Impossible de mettre à jour la suggestion.')
+  async function setSuggestionStatus(
+    id: string,
+    status: 'PENDING' | 'PROCESSED' | 'REJECTED',
+    rejectionMessage?: string,
+  ) {
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/suggestions/${id}`, { status, rejectionMessage })
+      },
+      'Suggestion mise à jour.',
+      'Impossible de mettre à jour la suggestion.',
+    )
   }
 
   async function deleteSuggestion(id: string) {
-    await runAdminAction(async () => {
-      await adminApi.delete(`/suggestions/${id}`)
-    }, 'Suggestion supprimée.', 'Impossible de supprimer la suggestion.')
+    await runAdminAction(
+      async () => {
+        await adminApi.delete(`/suggestions/${id}`)
+      },
+      'Suggestion supprimée.',
+      'Impossible de supprimer la suggestion.',
+    )
   }
 
-  async function setProposalStatus(id: string, decision: 'ACCEPT' | 'REJECT', rejectionMessage?: string) {
-    await runAdminAction(async () => {
-      await adminApi.put(`/entry-proposals/${id}`, { decision, rejectionMessage })
-    }, 'Proposition mise à jour.', 'Impossible de mettre à jour la proposition.')
+  async function setProposalStatus(
+    id: string,
+    decision: 'ACCEPT' | 'REJECT',
+    rejectionMessage?: string,
+  ) {
+    await runAdminAction(
+      async () => {
+        await adminApi.put(`/entry-proposals/${id}`, {
+          decision,
+          rejectionMessage,
+        })
+      },
+      'Proposition mise à jour.',
+      'Impossible de mettre à jour la proposition.',
+    )
   }
 
   async function deleteProposal(id: string) {
-    await runAdminAction(async () => {
-      await adminApi.delete(`/entry-proposals/${id}`)
-    }, 'Proposition supprimée.', 'Impossible de supprimer la proposition.')
+    await runAdminAction(
+      async () => {
+        await adminApi.delete(`/entry-proposals/${id}`)
+      },
+      'Proposition supprimée.',
+      'Impossible de supprimer la proposition.',
+    )
   }
 
-  async function updateSuggestionRejectionMessage(id: string, rejectionMessage: string) {
-    await runAdminAction(async () => {
-      const current = suggestions.find((s) => s.id === id)
-      if (!current) {
-        throw new Error('Suggestion introuvable.')
-      }
-      await adminApi.put(`/suggestions/${id}`, { status: current.status, rejectionMessage })
-    }, 'Message mis à jour.', 'Impossible de mettre à jour le message.')
+  async function updateSuggestionRejectionMessage(
+    id: string,
+    rejectionMessage: string,
+  ) {
+    await runAdminAction(
+      async () => {
+        const current = suggestions.find((s) => s.id === id)
+        if (!current) {
+          throw new Error('Suggestion introuvable.')
+        }
+        await adminApi.put(`/suggestions/${id}`, {
+          status: current.status,
+          rejectionMessage,
+        })
+      },
+      'Message mis à jour.',
+      'Impossible de mettre à jour le message.',
+    )
   }
 
-  async function updateProposalRejectionMessage(id: string, rejectionMessage: string) {
-    await runAdminAction(async () => {
-      const current = proposals.find((p) => p.id === id)
-      if (!current) {
-        throw new Error('Proposition introuvable.')
-      }
-      await adminApi.put(`/entry-proposals/${id}`, { decision: current.status === 'ACCEPTED' ? 'ACCEPT' : 'REJECT', rejectionMessage })
-    }, 'Message mis à jour.', 'Impossible de mettre à jour le message.')
+  async function updateProposalRejectionMessage(
+    id: string,
+    rejectionMessage: string,
+  ) {
+    await runAdminAction(
+      async () => {
+        const current = proposals.find((p) => p.id === id)
+        if (!current) {
+          throw new Error('Proposition introuvable.')
+        }
+        await adminApi.put(`/entry-proposals/${id}`, {
+          decision: current.status === 'ACCEPTED' ? 'ACCEPT' : 'REJECT',
+          rejectionMessage,
+        })
+      },
+      'Message mis à jour.',
+      'Impossible de mettre à jour le message.',
+    )
   }
 
   return {

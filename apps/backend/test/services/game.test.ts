@@ -1,13 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { prismaMocks, commonMocks, resetSharedMocks } from '../utils/sharedMocks'
+import {
+  prismaMocks,
+  commonMocks,
+  resetSharedMocks,
+} from '../utils/sharedMocks'
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
-vi.mock('../../src/lib/taxonCatalog.js', () => ({ getTaxonCatalog: commonMocks.getTaxonCatalog }))
+vi.mock('../../src/lib/taxonCatalog.js', () => ({
+  getTaxonCatalog: commonMocks.getTaxonCatalog,
+}))
 vi.mock('../../src/lib/taxonLevelProfileCache.js', () => ({
   getTaxonLevelProfile: commonMocks.getTaxonLevelProfile,
   resolveTaxonWorkerSize: commonMocks.resolveTaxonWorkerSize,
 }))
-vi.mock('../../src/lib/gameEntryCache.js', () => ({ getGameEntriesCache: commonMocks.getGameEntriesCache }))
+vi.mock('../../src/lib/gameEntryCache.js', () => ({
+  getGameEntriesCache: commonMocks.getGameEntriesCache,
+}))
 
 import { getGameQuestion, validateGameAnswer } from '../../src/services/game.js'
 
@@ -73,10 +81,14 @@ describe('game service', () => {
     commonMocks.getGameEntriesCache.mockResolvedValue([baseEntry])
 
     await expect(
-      getGameQuestion('easy', null, { departments: ['13'], swarmingMonths: [1] }),
+      getGameQuestion('easy', null, {
+        departments: ['13'],
+        swarmingMonths: [1],
+      }),
     ).rejects.toMatchObject({
       status: 404,
-      message: 'Aucune entrée disponible pour le niveau easy avec les filtres sélectionnés.',
+      message:
+        'Aucune entrée disponible pour le niveau easy avec les filtres sélectionnés.',
     })
   })
 

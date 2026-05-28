@@ -8,7 +8,11 @@ type UserProfileModalProps = {
   onClose: () => void
 }
 
-export function UserProfileModal({ username, isOpen, onClose }: UserProfileModalProps) {
+export function UserProfileModal({
+  username,
+  isOpen,
+  onClose,
+}: UserProfileModalProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,7 +29,11 @@ export function UserProfileModal({ username, isOpen, onClose }: UserProfileModal
         setProfile(response.data)
       })
       .catch((err) => {
-        setError(err instanceof Error && err.message ? err.message : 'Impossible de charger le profil.')
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Impossible de charger le profil.',
+        )
       })
       .finally(() => {
         setLoading(false)
@@ -56,9 +64,7 @@ export function UserProfileModal({ username, isOpen, onClose }: UserProfileModal
         </div>
 
         {loading && (
-          <div className="text-center py-8 text-slate-600">
-            Chargement…
-          </div>
+          <div className="text-center py-8 text-slate-600">Chargement…</div>
         )}
 
         {error && (
@@ -78,16 +84,18 @@ export function UserProfileModal({ username, isOpen, onClose }: UserProfileModal
                 />
               )}
               <div>
-                <h3 className="font-semibold text-slate-900">{profile.username}</h3>
-                <p className="text-sm font-medium text-slate-700">{profile.points} points</p>
+                <h3 className="font-semibold text-slate-900">
+                  {profile.username}
+                </h3>
+                <p className="text-sm font-medium text-slate-700">
+                  {profile.points} points
+                </p>
               </div>
             </div>
 
             {profile.bio && (
               <div>
-                <p className="text-sm text-slate-700">
-                  {profile.bio}
-                </p>
+                <p className="text-sm text-slate-700">{profile.bio}</p>
               </div>
             )}
 

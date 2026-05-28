@@ -8,7 +8,10 @@ import { enforceIpRateLimit, resetIpRateLimit } from '../lib/rateLimit.js'
 import { UserRole } from '@prisma/client'
 import { emailSchema } from '../lib/zodUtils.js'
 import { logger } from '../lib/logger.js'
-import { sendLoginNotificationEmail, sendVerificationEmail } from '../lib/mail.js'
+import {
+  sendLoginNotificationEmail,
+  sendVerificationEmail,
+} from '../lib/mail.js'
 
 const REGISTRATION_WINDOW_MS = 24 * 60 * 60 * 1000
 const REGISTRATION_MAX_ATTEMPTS = 5
@@ -17,7 +20,12 @@ const LOGIN_MAX_ATTEMPTS = 5
 const VERIFICATION_WINDOW_MS = 15 * 60 * 1000
 const VERIFICATION_MAX_ATTEMPTS = 10
 
-function buildUserSummary(user: { id: string; username: string; email: string | null; role: UserRole }) {
+function buildUserSummary(user: {
+  id: string
+  username: string
+  email: string | null
+  role: UserRole
+}) {
   return {
     id: user.id,
     username: user.username,
@@ -34,7 +42,11 @@ function hashVerificationCode(code: string) {
   return createHash('sha256').update(code).digest('hex')
 }
 
-export async function loginAdmin(email: string, password: string, ip?: string | null) {
+export async function loginAdmin(
+  email: string,
+  password: string,
+  ip?: string | null,
+) {
   const normalizedEmail = emailSchema.parse(email)
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
@@ -72,18 +84,30 @@ export async function loginAdmin(email: string, password: string, ip?: string | 
   }
 
   if (!user.emailVerifiedAt) {
-    throw new AppError(403, 'Veuillez valider votre adresse e-mail avant de vous connecter.')
+    throw new AppError(
+      403,
+      'Veuillez valider votre adresse e-mail avant de vous connecter.',
+    )
   }
 
   await resetIpRateLimit('login', ip)
 
-  const token = jwt.sign({ userId: user.id, role: user.role }, config.jwtSecret, {
-    expiresIn: '12h',
-  })
+  const token = jwt.sign(
+    { userId: user.id, role: user.role },
+    config.jwtSecret,
+    {
+      expiresIn: '12h',
+    },
+  )
 
   if (user.email && (config.sendLoginNotificationEmails ?? true)) {
-    void Promise.resolve(sendLoginNotificationEmail(user.email, user.username)).catch((error) => {
-      logger.warn({ err: error, userId: user.id, email: user.email }, 'Impossible d’envoyer le mail de connexion')
+    void Promise.resolve(
+      sendLoginNotificationEmail(user.email, user.username),
+    ).catch((error) => {
+      logger.warn(
+        { err: error, userId: user.id, email: user.email },
+        'Impossible d’envoyer le mail de connexion',
+      )
     })
   }
 
@@ -94,7 +118,12 @@ export async function loginAdmin(email: string, password: string, ip?: string | 
   }
 }
 
-export async function registerUser(username: string, email: string, password: string, ip?: string | null) {
+export async function registerUser(
+  username: string,
+  email: string,
+  password: string,
+  ip?: string | null,
+) {
   await enforceIpRateLimit(
     'registration',
     ip,
@@ -109,14 +138,18 @@ export async function registerUser(username: string, email: string, password: st
   }
 
   const normalizedEmail = emailSchema.parse(email)
-  const existingEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+  const existingEmail = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  })
   if (existingEmail) {
     throw new AppError(409, 'Cette adresse e-mail est déjà utilisée.')
   }
 
   const verificationCode = generateVerificationCode()
   const verificationCodeHash = hashVerificationCode(verificationCode)
-  const verificationCodeExpiresAt = new Date(Date.now() + VERIFICATION_WINDOW_MS)
+  const verificationCodeExpiresAt = new Date(
+    Date.now() + VERIFICATION_WINDOW_MS,
+  )
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
     data: {
@@ -137,7 +170,11 @@ export async function registerUser(username: string, email: string, password: st
   })
 
   try {
-    await sendVerificationEmail(user.email ?? normalizedEmail, user.username, verificationCode)
+    await sendVerificationEmail(
+      user.email ?? normalizedEmail,
+      user.username,
+      verificationCode,
+    )
   } catch (error) {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined)
     throw error
@@ -151,7 +188,11 @@ export async function registerUser(username: string, email: string, password: st
   }
 }
 
-export async function verifyRegistrationEmail(email: string, code: string, ip?: string | null) {
+export async function verifyRegistrationEmail(
+  email: string,
+  code: string,
+  ip?: string | null,
+) {
   await enforceIpRateLimit(
     'email-verification',
     ip,
@@ -175,7 +216,13 @@ export async function verifyRegistrationEmail(email: string, code: string, ip?: 
     },
   })
 
-  if (!user || !user.email || user.emailVerifiedAt || !user.emailVerificationCodeHash || !user.emailVerificationCodeExpiresAt) {
+  if (
+    !user ||
+    !user.email ||
+    user.emailVerifiedAt ||
+    !user.emailVerificationCodeHash ||
+    !user.emailVerificationCodeExpiresAt
+  ) {
     throw new AppError(400, 'Code de vérification invalide ou expiré.')
   }
 
@@ -204,9 +251,13 @@ export async function verifyRegistrationEmail(email: string, code: string, ip?: 
 
   await resetIpRateLimit('email-verification', ip)
 
-  const token = jwt.sign({ userId: updatedUser.id, role: updatedUser.role }, config.jwtSecret, {
-    expiresIn: '12h',
-  })
+  const token = jwt.sign(
+    { userId: updatedUser.id, role: updatedUser.role },
+    config.jwtSecret,
+    {
+      expiresIn: '12h',
+    },
+  )
 
   return {
     token,

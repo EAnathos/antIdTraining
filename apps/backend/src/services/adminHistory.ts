@@ -12,7 +12,9 @@ type CreateAdminHistoryEventInput = {
   entityId?: string | null
 }
 
-export async function createAdminHistoryEvent(input: CreateAdminHistoryEventInput) {
+export async function createAdminHistoryEvent(
+  input: CreateAdminHistoryEventInput,
+) {
   return prisma.adminHistoryEvent.create({
     data: {
       action: input.action,

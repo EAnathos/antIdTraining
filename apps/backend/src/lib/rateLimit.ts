@@ -31,7 +31,10 @@ export async function enforceIpRateLimit(
   }
 }
 
-export async function resetIpRateLimit(namespace: string, ipInput: string | null | undefined) {
+export async function resetIpRateLimit(
+  namespace: string,
+  ipInput: string | null | undefined,
+) {
   if (!ipInput) {
     return
   }

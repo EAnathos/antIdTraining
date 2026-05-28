@@ -29,7 +29,15 @@ describe('ReferencesPage', () => {
           type: 'WEBSITE',
           url: 'https://example.com',
           taxons: [
-            { id: 't1', subfamily: 'Formicinae', tribe: null, genus: 'Formica', subgenus: null, speciesGroup: null, species: 'rufibarbis' },
+            {
+              id: 't1',
+              subfamily: 'Formicinae',
+              tribe: null,
+              genus: 'Formica',
+              subgenus: null,
+              speciesGroup: null,
+              species: 'rufibarbis',
+            },
           ],
         },
         {
@@ -48,8 +56,12 @@ describe('ReferencesPage', () => {
 
     expect(await screen.findByText('Atlas')).toBeInTheDocument()
     expect(screen.getByText('DOI ref')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Voir taxons liés (1)' }))
-    expect(screen.getByText(/Formicinae > Formica > rufibarbis/)).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Voir taxons liés (1)' }),
+    )
+    expect(
+      screen.getByText(/Formicinae > Formica > rufibarbis/),
+    ).toBeInTheDocument()
   })
 
   it('shows error state on load failure', async () => {
@@ -58,7 +70,9 @@ describe('ReferencesPage', () => {
     render(<ReferencesPage />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Chargement des références impossible.').length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByText('Chargement des références impossible.').length,
+      ).toBeGreaterThan(0)
     })
   })
 })

@@ -3,7 +3,8 @@ export const openApiDocument = {
   info: {
     title: 'Ant ID Training API',
     version: '1.0.0',
-    description: "API backend pour l'application d'entraînement à l'identification",
+    description:
+      "API backend pour l'application d'entraînement à l'identification",
   },
   servers: [{ url: '/api' }],
   tags: [
@@ -91,7 +92,8 @@ export const openApiDocument = {
           confusions: [
             {
               confusedTaxonId: 'ckz...',
-              detail: 'Espèce très proche morphologiquement, mais le clypeus est différent.',
+              detail:
+                'Espèce très proche morphologiquement, mais le clypeus est différent.',
             },
           ],
         },
@@ -196,7 +198,14 @@ export const openApiDocument = {
       },
       LeaderboardItem: {
         type: 'object',
-        required: ['userId', 'username', 'gamesPlayed', 'correctCount', 'wrongCount', 'points'],
+        required: [
+          'userId',
+          'username',
+          'gamesPlayed',
+          'correctCount',
+          'wrongCount',
+          'points',
+        ],
         properties: {
           userId: { type: 'string' },
           username: { type: 'string' },
@@ -243,7 +252,13 @@ export const openApiDocument = {
       },
       GameLevelStats: {
         type: 'object',
-        required: ['level', 'launchedCount', 'finalizedCount', 'finalCorrectCount', 'finalCorrectRate'],
+        required: [
+          'level',
+          'launchedCount',
+          'finalizedCount',
+          'finalCorrectCount',
+          'finalCorrectRate',
+        ],
         properties: {
           level: { type: 'string', enum: ['easy', 'medium', 'hard'] },
           launchedCount: { type: 'integer', minimum: 0 },
@@ -337,7 +352,10 @@ export const openApiDocument = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Veuillez valider votre adresse e-mail avant de vous connecter.' },
+                example: {
+                  message:
+                    'Veuillez valider votre adresse e-mail avant de vous connecter.',
+                },
               },
             },
           },
@@ -442,7 +460,9 @@ export const openApiDocument = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorMessage' },
-                example: { message: 'Code de vérification invalide ou expiré.' },
+                example: {
+                  message: 'Code de vérification invalide ou expiré.',
+                },
               },
             },
           },
@@ -506,7 +526,10 @@ export const openApiDocument = {
                       level: 'easy',
                       entryId: 'cmx123',
                       sessionId: 'cmxSessEasy1',
-                      images: ['/uploads/1712485342000-photo.jpg', '/uploads/1712485342001-photo.jpg'],
+                      images: [
+                        '/uploads/1712485342000-photo.jpg',
+                        '/uploads/1712485342001-photo.jpg',
+                      ],
                       prompt: 'Identifier la sous-famille',
                       details: {
                         department: '53 - Mayenne',
@@ -514,7 +537,13 @@ export const openApiDocument = {
                         biotope: 'Lisière forestière',
                         photoCredit: 'Jean Dupont',
                       },
-                      choices: ['Myrmicinae', 'Formicinae', 'Ponerinae', 'Dolichoderinae', 'Leptanillinae'],
+                      choices: [
+                        'Myrmicinae',
+                        'Formicinae',
+                        'Ponerinae',
+                        'Dolichoderinae',
+                        'Leptanillinae',
+                      ],
                       answer: { subfamily: 'Myrmicinae' },
                     },
                   },
@@ -544,7 +573,8 @@ export const openApiDocument = {
                       entryId: 'cmx125',
                       sessionId: 'cmxSessHard1',
                       images: ['/uploads/1712485342002-photo.jpg'],
-                      prompt: "Identifier la sous-famille, le genre et l'espèce",
+                      prompt:
+                        "Identifier la sous-famille, le genre et l'espèce",
                       details: {
                         department: '34 - Hérault',
                         observedAt: '2026-04-07T09:00:00.000Z',
@@ -556,7 +586,11 @@ export const openApiDocument = {
                         genus: ['Pheidole', 'Messor', 'Camponotus'],
                         species: ['pallidula', 'megacephala', 'barbara'],
                       },
-                      answer: { subfamily: 'Myrmicinae', genus: 'Pheidole', species: 'pallidula' },
+                      answer: {
+                        subfamily: 'Myrmicinae',
+                        genus: 'Pheidole',
+                        species: 'pallidula',
+                      },
                     },
                   },
                 },
@@ -608,7 +642,8 @@ export const openApiDocument = {
                       correct: true,
                       identification: {
                         subfamily: 'Myrmicinae',
-                        description: 'Sous-famille caractérisée par un pédoncule en deux segments.',
+                        description:
+                          'Sous-famille caractérisée par un pédoncule en deux segments.',
                         criteria: ['Pétiole + postpétiole distincts'],
                       },
                     },
@@ -619,7 +654,8 @@ export const openApiDocument = {
                       reason: 'Sous-famille incorrecte',
                       identification: {
                         subfamily: 'Myrmicinae',
-                        description: 'Sous-famille caractérisée par un pédoncule en deux segments.',
+                        description:
+                          'Sous-famille caractérisée par un pédoncule en deux segments.',
                         criteria: ['Pétiole + postpétiole distincts'],
                       },
                     },
@@ -669,7 +705,12 @@ export const openApiDocument = {
                   type: 'array',
                   items: { type: 'string' },
                 },
-                example: ['Dolichoderinae', 'Formicinae', 'Myrmicinae', 'Ponerinae'],
+                example: [
+                  'Dolichoderinae',
+                  'Formicinae',
+                  'Myrmicinae',
+                  'Ponerinae',
+                ],
               },
             },
           },
@@ -755,7 +796,11 @@ export const openApiDocument = {
         tags: ['Taxons'],
         summary: 'Liste les taxons',
         parameters: [
-          { in: 'query', name: 'level', schema: { type: 'string', enum: ['subfamily', 'genus', 'species'] } },
+          {
+            in: 'query',
+            name: 'level',
+            schema: { type: 'string', enum: ['subfamily', 'genus', 'species'] },
+          },
           { in: 'query', name: 'q', schema: { type: 'string' } },
         ],
         responses: {
@@ -848,7 +893,14 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Met à jour un taxon',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -865,7 +917,14 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Supprime un taxon',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         responses: {
           204: { description: 'Taxon supprimé.' },
         },
@@ -900,7 +959,14 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Met à jour une référence',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -917,7 +983,14 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Supprime une référence',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         responses: {
           204: { description: 'Référence supprimée.' },
         },
@@ -942,11 +1015,25 @@ export const openApiDocument = {
             'multipart/form-data': {
               schema: {
                 type: 'object',
-                required: ['taxonLevel', 'taxonValue', 'department', 'observedAt', 'biotope', 'photoCredit'],
+                required: [
+                  'taxonLevel',
+                  'taxonValue',
+                  'department',
+                  'observedAt',
+                  'biotope',
+                  'photoCredit',
+                ],
                 properties: {
-                  taxonLevel: { type: 'string', enum: ['SUBFAMILY', 'GENUS', 'SPECIES'] },
+                  taxonLevel: {
+                    type: 'string',
+                    enum: ['SUBFAMILY', 'GENUS', 'SPECIES'],
+                  },
                   taxonValue: { type: 'string' },
-                  taxonGenus: { type: 'string', nullable: true, description: 'Optionnel; recommandé si taxonLevel=SPECIES' },
+                  taxonGenus: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Optionnel; recommandé si taxonLevel=SPECIES',
+                  },
                   department: { type: 'string' },
                   observedAt: { type: 'string', format: 'date' },
                   biotope: { type: 'string' },
@@ -992,7 +1079,12 @@ export const openApiDocument = {
                   observedAt: '2026-04-07T00:00:00.000Z',
                   biotope: 'Garrigue',
                   photoCredit: 'myrmeco_user',
-                  images: [{ id: 'cmxImg1', imageUrl: '/uploads/1712485342002-photo.jpg' }],
+                  images: [
+                    {
+                      id: 'cmxImg1',
+                      imageUrl: '/uploads/1712485342002-photo.jpg',
+                    },
+                  ],
                 },
               },
             },
@@ -1005,18 +1097,39 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Met à jour une entrée',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['taxonLevel', 'taxonValue', 'department', 'observedAt', 'biotope', 'photoCredit'],
+                required: [
+                  'taxonLevel',
+                  'taxonValue',
+                  'department',
+                  'observedAt',
+                  'biotope',
+                  'photoCredit',
+                ],
                 properties: {
-                  taxonLevel: { type: 'string', enum: ['SUBFAMILY', 'GENUS', 'SPECIES'] },
+                  taxonLevel: {
+                    type: 'string',
+                    enum: ['SUBFAMILY', 'GENUS', 'SPECIES'],
+                  },
                   taxonValue: { type: 'string' },
-                  taxonGenus: { type: 'string', nullable: true, description: 'Optionnel; recommandé si taxonLevel=SPECIES' },
+                  taxonGenus: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Optionnel; recommandé si taxonLevel=SPECIES',
+                  },
                   department: { type: 'string' },
                   observedAt: { type: 'string', format: 'date' },
                   biotope: { type: 'string' },
@@ -1043,7 +1156,14 @@ export const openApiDocument = {
         tags: ['Admin'],
         summary: 'Supprime une entrée',
         security: [{ bearerAuth: [] }],
-        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            in: 'path',
+            name: 'id',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
         responses: {
           204: { description: 'Entrée supprimée.' },
         },

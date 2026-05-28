@@ -6,7 +6,13 @@ html {
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
   background-color: #f8fafc;
   color: #0f172a;
 }
@@ -40,9 +46,9 @@ html[data-theme='dark'] .bg-slate-50 {
   background-color: #0f172a !important;
 }
 
-html[data-theme='dark'] input[type="number"],
-html[data-theme='dark'] input[type="text"],
-html[data-theme='dark'] input[type="search"] {
+html[data-theme='dark'] input[type='number'],
+html[data-theme='dark'] input[type='text'],
+html[data-theme='dark'] input[type='search'] {
   background-color: #0f172a !important;
   color: #e2e8f0 !important;
   border-color: #475569 !important;
@@ -152,19 +158,14 @@ html[data-theme='dark'] .admin-icon-button[data-tone='danger']:hover {
   background-color: rgba(153, 27, 27, 0.55) !important;
 }
 
-html[data-theme='dark'] .admin-nav-button-inactive {
-  background-color: #1e293b !important;
-  border: 1px solid #c084fc !important;
-  color: #f5d0fe !important;
+html[data-theme='dark'] .admin-nav-button {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
 }
 
-html[data-theme='dark'] .admin-nav-button-inactive:hover {
-  background-color: #334155 !important;
-}
-
-html[data-theme='dark'] .admin-nav-button-active {
-  background-color: #f59e0b !important;
-  color: #111827 !important;
+html[data-theme='dark'] .admin-nav-button:hover {
+  background-color: #fde68a !important;
 }
 
 /* User Points Table - Light Mode */

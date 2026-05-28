@@ -5,7 +5,10 @@ import type { AuthMeResponse } from '../types/models'
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('antidtraining-auth-token') : null
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('antidtraining-auth-token')
+      : null
   const [profile, setProfile] = useState<AuthMeResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,7 +27,9 @@ export function ProfilePage() {
       return
     }
 
-    const authApi = api.create({ headers: { Authorization: `Bearer ${token}` } })
+    const authApi = api.create({
+      headers: { Authorization: `Bearer ${token}` },
+    })
     authApi
       .get<AuthMeResponse>('/auth/me')
       .then((response) => {
@@ -33,7 +38,11 @@ export function ProfilePage() {
         setBio(response.data.bio || '')
       })
       .catch((err) => {
-        setError(err instanceof Error && err.message ? err.message : 'Impossible de charger le profil.')
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Impossible de charger le profil.',
+        )
       })
       .finally(() => {
         setLoading(false)
@@ -47,7 +56,9 @@ export function ProfilePage() {
     setSuccessMessage('')
 
     try {
-      const authApi = api.create({ headers: { Authorization: `Bearer ${token}` } })
+      const authApi = api.create({
+        headers: { Authorization: `Bearer ${token}` },
+      })
       const updated = await authApi.patch<AuthMeResponse>('/auth/profile', {
         avatar: avatar || null,
         bio: bio || null,
@@ -57,20 +68,28 @@ export function ProfilePage() {
       setSuccessMessage('Profil mis à jour avec succès.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Erreur lors de la mise à jour du profil.')
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Erreur lors de la mise à jour du profil.',
+      )
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarFileChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
     const file = e.target.files?.[0]
     if (!file || !token) return
     setAvatarUploading(true)
     setError('')
 
     try {
-      const authApi = api.create({ headers: { Authorization: `Bearer ${token}` } })
+      const authApi = api.create({
+        headers: { Authorization: `Bearer ${token}` },
+      })
       const form = new FormData()
       form.append('avatar', file)
       await authApi.post('/auth/avatar', form)
@@ -80,7 +99,11 @@ export function ProfilePage() {
       setSuccessMessage('Avatar mis à jour.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Erreur lors de l’upload de l’avatar.')
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Erreur lors de l’upload de l’avatar.',
+      )
     } finally {
       setAvatarUploading(false)
     }
@@ -92,12 +115,20 @@ export function ProfilePage() {
     setError('')
 
     try {
-      const authApi = api.create({ headers: { Authorization: `Bearer ${token}` } })
+      const authApi = api.create({
+        headers: { Authorization: `Bearer ${token}` },
+      })
       await authApi.post('/auth/password-reset-request')
-      setSuccessMessage('Demande de réinitialisation enregistrée. Vous pouvez en faire une nouvelle dans 7 jours.')
+      setSuccessMessage(
+        'Demande de réinitialisation enregistrée. Vous pouvez en faire une nouvelle dans 7 jours.',
+      )
       setTimeout(() => setSuccessMessage(''), 5000)
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Erreur lors de la demande de réinitialisation.')
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Erreur lors de la demande de réinitialisation.',
+      )
     } finally {
       setPasswordResetLoading(false)
     }
@@ -107,7 +138,9 @@ export function ProfilePage() {
     if (!token || !deleteConfirm) return
 
     try {
-      const authApi = api.create({ headers: { Authorization: `Bearer ${token}` } })
+      const authApi = api.create({
+        headers: { Authorization: `Bearer ${token}` },
+      })
       await authApi.post('/auth/delete-account')
       window.localStorage.removeItem('antidtraining-auth-token')
       window.localStorage.removeItem('antidtraining-auth-role')
@@ -116,7 +149,11 @@ export function ProfilePage() {
       window.dispatchEvent(new Event('antidtraining-auth-changed'))
       navigate('/connexion', { replace: true })
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'Erreur lors de la suppression du compte.')
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Erreur lors de la suppression du compte.',
+      )
     }
   }
 
@@ -147,7 +184,11 @@ export function ProfilePage() {
       <section className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">Profil</h2>
         <p className="mt-3 text-sm text-red-600">{error}</p>
-        <button className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100" type="button" onClick={() => void handleLogout()}>
+        <button
+          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+          type="button"
+          onClick={() => void handleLogout()}
+        >
           Se déconnecter
         </button>
       </section>
@@ -158,19 +199,37 @@ export function ProfilePage() {
     <section className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
       <h2 className="text-xl font-semibold text-slate-900">Profil</h2>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{error}</div>}
-      {successMessage && <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 border border-green-200">{successMessage}</div>}
+      {error && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+          {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 border border-green-200">
+          {successMessage}
+        </div>
+      )}
 
       {/* Avatar and Bio Section */}
       <div className="p-4 bg-slate-50 rounded-lg">
         <div className="flex items-start gap-4">
           {profile?.avatar && (
-            <img src={profile.avatar} alt={profile.username || 'Avatar'} className="w-20 h-20 rounded-full object-cover" />
+            <img
+              src={profile.avatar}
+              alt={profile.username || 'Avatar'}
+              className="w-20 h-20 rounded-full object-cover"
+            />
           )}
           <div className="flex-1">
-            <h3 className="font-semibold text-slate-900">{profile?.username}</h3>
-            <p className="text-sm text-slate-600 mt-1">{profile?.bio || 'Pas de biographie'}</p>
-            <p className="text-sm font-medium text-slate-700 mt-2">{profile?.points ?? 0} points</p>
+            <h3 className="font-semibold text-slate-900">
+              {profile?.username}
+            </h3>
+            <p className="text-sm text-slate-600 mt-1">
+              {profile?.bio || 'Pas de biographie'}
+            </p>
+            <p className="text-sm font-medium text-slate-700 mt-2">
+              {profile?.points ?? 0} points
+            </p>
           </div>
           {!editMode && (
             <button
@@ -183,15 +242,26 @@ export function ProfilePage() {
           )}
         </div>
 
-          {editMode && (
+        {editMode && (
           <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Avatar (fichier)</label>
-              <input type="file" accept="image/*" onChange={(e) => void handleAvatarFileChange(e)} className="w-full text-sm" />
-              {avatarUploading && <p className="text-xs text-slate-500 mt-2">Upload en cours…</p>}
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Avatar (fichier)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => void handleAvatarFileChange(e)}
+                className="w-full text-sm"
+              />
+              {avatarUploading && (
+                <p className="text-xs text-slate-500 mt-2">Upload en cours…</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Biographie</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Biographie
+              </label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -199,7 +269,9 @@ export function ProfilePage() {
                 maxLength={500}
                 className="w-full rounded-lg border border-slate-300 p-2 text-sm resize-none h-20"
               />
-              <p className="text-xs text-slate-500 mt-1">{bio.length}/500 caractères</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {bio.length}/500 caractères
+              </p>
             </div>
             <div className="flex gap-2">
               <button
@@ -244,7 +316,9 @@ export function ProfilePage() {
             onClick={() => void handlePasswordResetRequest()}
             disabled={passwordResetLoading}
           >
-            {passwordResetLoading ? 'Traitement…' : 'Réinitialiser le mot de passe'}
+            {passwordResetLoading
+              ? 'Traitement…'
+              : 'Réinitialiser le mot de passe'}
           </button>
           <button
             className="block w-full text-left rounded-lg px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-950 text-sm transition dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800 dark:text-red-100"
@@ -255,7 +329,9 @@ export function ProfilePage() {
           </button>
           {deleteConfirm && (
             <div className="rounded-lg bg-red-100 p-3 border border-red-300 dark:bg-red-950 dark:border-red-800">
-              <p className="text-sm text-red-950 font-medium mb-2 dark:text-red-100">Confirmer la suppression ?</p>
+              <p className="text-sm text-red-950 font-medium mb-2 dark:text-red-100">
+                Confirmer la suppression ?
+              </p>
               <div className="flex gap-2">
                 <button
                   className="flex-1 rounded-lg px-3 py-2 bg-red-700 text-white hover:bg-red-800 text-sm font-medium dark:bg-red-500 dark:hover:bg-red-400"

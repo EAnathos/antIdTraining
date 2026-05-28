@@ -117,7 +117,9 @@ export type GameQuestion = {
     biotope: string
     photoCredit: string
   }
-  choices: string[] | { subfamily: string[]; genus?: string[]; species?: string[] }
+  choices:
+    | string[]
+    | { subfamily: string[]; genus?: string[]; species?: string[] }
   answer: { subfamily?: string; genus?: string; species?: string }
 }
 
@@ -234,4 +236,12 @@ export type UserProfile = {
   points: number
 }
 
-export type AdminSection = 'taxons' | 'references' | 'entries' | 'stats' | 'database' | 'suggestions' | 'points' | 'history'
+export type AdminSection =
+  | 'taxons'
+  | 'references'
+  | 'entries'
+  | 'stats'
+  | 'database'
+  | 'suggestions'
+  | 'points'
+  | 'history'
