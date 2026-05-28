@@ -18,6 +18,7 @@ export function ProfilePage() {
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [passwordResetConfirm, setPasswordResetConfirm] = useState(false)
   const [passwordResetLoading, setPasswordResetLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -119,6 +120,7 @@ export function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       await authApi.post('/auth/password-reset-request')
+      setPasswordResetConfirm(false)
       setSuccessMessage(
         'Demande de réinitialisation enregistrée. Vous pouvez en faire une nouvelle dans 7 jours.',
       )
@@ -313,13 +315,36 @@ export function ProfilePage() {
           <button
             className="block w-full text-left rounded-lg px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 text-sm transition dark:bg-amber-950 dark:hover:bg-amber-900 dark:border-amber-800 dark:text-amber-100"
             type="button"
-            onClick={() => void handlePasswordResetRequest()}
+            onClick={() => setPasswordResetConfirm(!passwordResetConfirm)}
             disabled={passwordResetLoading}
           >
-            {passwordResetLoading
-              ? 'Traitement…'
-              : 'Réinitialiser le mot de passe'}
+            Réinitialiser le mot de passe
           </button>
+          {passwordResetConfirm && (
+            <div className="rounded-lg bg-amber-100 p-3 border border-amber-300 dark:bg-amber-950 dark:border-amber-800">
+              <p className="text-sm text-amber-950 font-medium mb-2 dark:text-amber-100">
+                Cette action est possible une seule fois par semaine.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 rounded-lg px-3 py-2 bg-amber-700 text-white hover:bg-amber-800 text-sm font-medium dark:bg-amber-500 dark:hover:bg-amber-400"
+                  type="button"
+                  onClick={() => void handlePasswordResetRequest()}
+                  disabled={passwordResetLoading}
+                >
+                  {passwordResetLoading ? 'Traitement…' : 'Valider'}
+                </button>
+                <button
+                  className="flex-1 rounded-lg px-3 py-2 bg-slate-200 text-slate-900 hover:bg-slate-300 text-sm dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                  type="button"
+                  onClick={() => setPasswordResetConfirm(false)}
+                  disabled={passwordResetLoading}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
           <button
             className="block w-full text-left rounded-lg px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-950 text-sm transition dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800 dark:text-red-100"
             type="button"

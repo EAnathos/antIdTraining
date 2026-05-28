@@ -139,18 +139,26 @@ export function AuthPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            pattern={mode === 'register' ? '.*[^A-Za-z0-9\\s].*' : undefined}
             required
           />
         )}
         {mode === 'register' && (
-          <input
-            className="w-full rounded-lg border border-slate-300 p-2"
-            placeholder="Confirmer le mot de passe"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+          <>
+            <input
+              className="w-full rounded-lg border border-slate-300 p-2"
+              placeholder="Confirmer le mot de passe"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              pattern=".*[^A-Za-z0-9\\s].*"
+              required
+            />
+            <p className="text-xs text-slate-500">
+              Le mot de passe doit contenir au moins 8 caractères et un
+              caractère spécial.
+            </p>
+          </>
         )}
         {mode === 'verify' && (
           <input

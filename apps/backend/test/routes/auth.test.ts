@@ -60,6 +60,11 @@ vi.mock('../../src/services/auth.js', () => ({
   verifyRegistrationEmail: commonMocks.verifyRegistrationEmail,
 }))
 
+vi.mock('../../src/lib/rateLimit.js', () => ({
+  enforceIpRateLimit: commonMocks.enforceIpRateLimit,
+  resetIpRateLimit: commonMocks.resetIpRateLimit,
+}))
+
 vi.mock('../../src/lib/mail.js', () => ({
   sendLoginNotificationEmail: commonMocks.sendLoginNotificationEmail,
   sendVerificationEmail: commonMocks.sendVerificationEmail,
@@ -250,7 +255,7 @@ describe('authRouter', () => {
     const { response, json } = await post('/api/auth/register', {
       username: 'new_user',
       email: 'new_user@example.com',
-      password: 'password123',
+      password: 'password123!',
       confirmPassword: 'different123',
     })
 
@@ -259,6 +264,20 @@ describe('authRouter', () => {
     expect(json.errors.confirmPassword?.[0]).toBe(
       'Les mots de passe ne correspondent pas',
     )
+    expect((commonMocks as any).registerUser).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 on register payload without special character in password', async () => {
+    const { response, json } = await post('/api/auth/register', {
+      username: 'new_user',
+      email: 'new_user@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+    })
+
+    expect(response.status).toBe(400)
+    expect(json.message).toBe('Requête invalide.')
+    expect(json.errors.password?.[0]).toContain('caractère spécial')
     expect((commonMocks as any).registerUser).not.toHaveBeenCalled()
   })
 
@@ -271,8 +290,8 @@ describe('authRouter', () => {
     const { response, json } = await post('/api/auth/register', {
       username: 'new_user',
       email: 'new_user@example.com',
-      password: 'password123',
-      confirmPassword: 'password123',
+      password: 'password123!',
+      confirmPassword: 'password123!',
     })
 
     expect(response.status).toBe(201)
@@ -466,6 +485,7 @@ describe('authRouter', () => {
 
     expect(response.status).toBe(200)
     expect(json.message).toContain('Si un compte existe pour cette adresse')
+    expect(json.message).toContain('dans la semaine')
     expect(commonMocks.sendPasswordResetEmail).toHaveBeenCalledWith(
       'player@example.com',
       'player_one',
@@ -506,8 +526,8 @@ describe('authRouter', () => {
 
     const { response, json } = await post('/api/auth/password-reset', {
       token: 'valid-token',
-      password: 'newpass123',
-      confirmPassword: 'newpass123',
+      password: 'newpass123!',
+      confirmPassword: 'newpass123!',
     })
 
     expect(response.status).toBe(200)
@@ -530,8 +550,8 @@ describe('authRouter', () => {
 
     const { response, json } = await post('/api/auth/password-reset', {
       token: 'invalid-token',
-      password: 'newpass123',
-      confirmPassword: 'newpass123',
+      password: 'newpass123!',
+      confirmPassword: 'newpass123!',
     })
 
     expect(response.status).toBe(400)
@@ -617,8 +637,10 @@ describe('authRouter', () => {
   })
 
   it('returns 400 for password-reset-request when unauthenticated without email', async () => {
-    const { response, json } = await post('/api/auth/password-reset-request', {
-    })
+    const { response, json } = await post(
+      '/api/auth/password-reset-request',
+      {},
+    )
     expect(response.status).toBe(400)
     expect(json.message).toBe('Adresse e-mail requise.')
   })

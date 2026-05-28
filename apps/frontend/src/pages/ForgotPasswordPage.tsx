@@ -42,7 +42,8 @@ export function ForgotPasswordPage() {
         Mot de passe oublié
       </h2>
       <p className="mt-2 text-sm text-slate-600">
-        Saisissez votre adresse e-mail pour recevoir un lien de réinitialisation.
+        Saisissez votre adresse e-mail pour recevoir un lien de
+        réinitialisation.
       </p>
 
       <form className="mt-4 space-y-3" onSubmit={onSubmit}>

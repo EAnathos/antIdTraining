@@ -94,10 +94,10 @@ describe('AuthPage', () => {
       target: { value: 'newuser@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), {
-      target: { value: 'newpass123' },
+      target: { value: 'newpass123!' },
     })
     fireEvent.change(screen.getByPlaceholderText('Confirmer le mot de passe'), {
-      target: { value: 'newpass123' },
+      target: { value: 'newpass123!' },
     })
 
     fireEvent.click(screen.getByText('Créer le compte'))
@@ -106,8 +106,8 @@ describe('AuthPage', () => {
       expect(apiMocks.post).toHaveBeenCalledWith('/auth/register', {
         username: 'newuser',
         email: 'newuser@example.com',
-        password: 'newpass123',
-        confirmPassword: 'newpass123',
+        password: 'newpass123!',
+        confirmPassword: 'newpass123!',
       })
     })
 
@@ -187,10 +187,10 @@ describe('AuthPage', () => {
       target: { value: 'existinguser@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), {
-      target: { value: 'password' },
+      target: { value: 'password!' },
     })
     fireEvent.change(screen.getByPlaceholderText('Confirmer le mot de passe'), {
-      target: { value: 'password' },
+      target: { value: 'password!' },
     })
 
     fireEvent.click(screen.getByText('Créer le compte'))

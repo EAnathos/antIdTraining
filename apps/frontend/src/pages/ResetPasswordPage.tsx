@@ -81,6 +81,7 @@ export function ResetPasswordPage() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          pattern=".*[^A-Za-z0-9\s].*"
           minLength={8}
           required
         />
@@ -90,9 +91,14 @@ export function ResetPasswordPage() {
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          pattern=".*[^A-Za-z0-9\s].*"
           minLength={8}
           required
         />
+        <p className="text-xs text-slate-500">
+          Le mot de passe doit contenir au moins 8 caractères et un caractère
+          spécial.
+        </p>
         <button
           className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
           type="submit"

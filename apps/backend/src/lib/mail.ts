@@ -122,7 +122,7 @@ export async function sendPasswordResetEmail(
     )
   }
 
-  const resetUrl = `${config.frontendUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(
+  const resetUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/reset-password?token=${encodeURIComponent(
     token,
   )}`
 

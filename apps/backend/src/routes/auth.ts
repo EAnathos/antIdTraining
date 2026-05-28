@@ -34,14 +34,19 @@ const usernameSchema = z
     "Le nom d'utilisateur doit contenir uniquement des caractères alphanumériques, tirets ou underscores",
   )
 
-const passwordSchema = z
+const loginPasswordSchema = z
   .string()
   .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
   .max(256, 'Le mot de passe est trop long')
 
+const passwordSchema = loginPasswordSchema.regex(
+  /[^A-Za-z0-9\s]/,
+  'Le mot de passe doit contenir au moins un caractère spécial',
+)
+
 const loginSchema = z.object({
   email: emailSchema,
-  password: passwordSchema,
+  password: loginPasswordSchema,
 })
 
 const registerSchema = z
@@ -100,6 +105,8 @@ const passwordResetRequestSchema = z.object({
 
 const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
 const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
+const publicPasswordResetMessage =
+  'Si un compte existe pour cette adresse et qu’aucune autre demande n’a été faite dans la semaine, un e-mail de réinitialisation a été envoyé.'
 
 export const authRouter = Router()
 
@@ -309,8 +316,7 @@ authRouter.post(
 
     if (!user) {
       return res.status(200).json({
-        message:
-          'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+        message: publicPasswordResetMessage,
       })
     }
 
@@ -332,8 +338,7 @@ authRouter.post(
       const oneWeekMs = 7 * 24 * 60 * 60 * 1000
       if (timeSinceLastReset < oneWeekMs) {
         return res.status(200).json({
-          message:
-            'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+          message: publicPasswordResetMessage,
         })
       }
     }
@@ -376,13 +381,11 @@ authRouter.post(
       )
     }
 
-    return res
-      .status(200)
-      .json({
-        message: isAuthenticated
-          ? 'Demande de réinitialisation enregistrée.'
-          : 'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
-      })
+    return res.status(200).json({
+      message: isAuthenticated
+        ? 'Demande de réinitialisation enregistrée.'
+        : publicPasswordResetMessage,
+    })
   }),
 )
 

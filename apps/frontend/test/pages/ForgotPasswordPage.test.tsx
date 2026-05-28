@@ -23,7 +23,7 @@ describe('ForgotPasswordPage', () => {
     apiMocks.post.mockResolvedValue({
       data: {
         message:
-          'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+          'Si un compte existe pour cette adresse et qu’aucune autre demande n’a été faite dans la semaine, un e-mail de réinitialisation a été envoyé.',
       },
     })
 
@@ -47,7 +47,7 @@ describe('ForgotPasswordPage', () => {
 
     expect(
       screen.getByText(
-        'Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.',
+        'Si un compte existe pour cette adresse et qu’aucune autre demande n’a été faite dans la semaine, un e-mail de réinitialisation a été envoyé.',
       ),
     ).toBeTruthy()
   })

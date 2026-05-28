@@ -36,10 +36,10 @@ describe('ResetPasswordPage', () => {
     renderWithRouter()
 
     fireEvent.change(screen.getByPlaceholderText('Nouveau mot de passe'), {
-      target: { value: 'newpass123' },
+      target: { value: 'newpass123!' },
     })
     fireEvent.change(screen.getByPlaceholderText('Confirmer le mot de passe'), {
-      target: { value: 'newpass123' },
+      target: { value: 'newpass123!' },
     })
     fireEvent.click(
       screen.getByRole('button', { name: 'Réinitialiser le mot de passe' }),
@@ -48,8 +48,8 @@ describe('ResetPasswordPage', () => {
     await waitFor(() => {
       expect(apiMocks.post).toHaveBeenCalledWith('/auth/password-reset', {
         token: 'test-token',
-        password: 'newpass123',
-        confirmPassword: 'newpass123',
+        password: 'newpass123!',
+        confirmPassword: 'newpass123!',
       })
     })
 
