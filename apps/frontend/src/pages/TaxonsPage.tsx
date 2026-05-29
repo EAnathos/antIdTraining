@@ -942,20 +942,14 @@ export function TaxonsPage() {
               }
             >
               <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-700">
-                    <th className="sticky top-0 z-10 bg-white p-2">
-                      Sous-famille
-                    </th>
-                    <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
-                    <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
-                    <th className="sticky top-0 z-10 bg-white p-2">
-                      Sous-genre
-                    </th>
-                    <th className="sticky top-0 z-10 bg-white p-2">
-                      Groupe d'espèce
-                    </th>
-                    <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
+                <thead className="table-head-row">
+                  <tr className="table-head-row">
+                    <th className="table-head-sticky">Sous-famille</th>
+                    <th className="table-head-sticky">Tribu</th>
+                    <th className="table-head-sticky">Genre</th>
+                    <th className="table-head-sticky">Sous-genre</th>
+                    <th className="table-head-sticky">Groupe d'espèce</th>
+                    <th className="table-head-sticky">Espèce</th>
                   </tr>
                 </thead>
                 <tbody>

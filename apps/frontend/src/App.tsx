@@ -57,7 +57,7 @@ function App() {
     <AppShell>
       <Suspense
         fallback={
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+          <div className="surface-panel surface-panel--compact text-sm text-[color:var(--app-text-muted)]">
             Chargement de la page…
           </div>
         }

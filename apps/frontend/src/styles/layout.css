@@ -1,0 +1,253 @@
+@layer components {
+  .app-shell {
+    position: relative;
+    z-index: 0;
+    width: min(100%, 84rem);
+    margin: 0 auto;
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .app-shell--wide {
+    width: min(100%, 90rem);
+  }
+
+  .app-header,
+  .app-footer,
+  .surface-panel,
+  .surface-panel--solid,
+  .surface-panel--muted,
+  .surface-panel--compact {
+    border: 1px solid var(--app-border);
+    background: var(--app-surface);
+    box-shadow: var(--app-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .app-header,
+  .app-footer {
+    border-radius: var(--app-radius-2xl);
+  }
+
+  .app-header {
+    position: sticky;
+    top: 1rem;
+    z-index: 20;
+    padding: 1rem 1.15rem;
+  }
+
+  .app-header__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .app-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .app-brand__eyebrow {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--app-text-soft);
+  }
+
+  .app-brand__title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2vw, 2rem);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .app-brand__subtitle {
+    margin: 0;
+    max-width: 46rem;
+    color: var(--app-text-muted);
+    font-size: 0.96rem;
+    line-height: 1.5;
+  }
+
+  .app-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .app-nav__group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .app-nav__group--push-right {
+    margin-left: auto;
+  }
+
+  .app-content {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .app-footer {
+    margin-top: 0.25rem;
+    padding: 1.2rem;
+    text-align: center;
+  }
+
+  .app-footer__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .app-footer__inner--inline {
+    flex-direction: row;
+  }
+
+  .app-footer__content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: auto;
+    margin-bottom: 0;
+  }
+
+  .app-footer__content--inline {
+    font-size: 0.85rem;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow-x: auto;
+  }
+
+  .app-footer__separator {
+    color: var(--app-text-soft);
+    user-select: none;
+  }
+
+  .app-footer__link {
+    font-size: 0.85rem;
+    color: var(--app-primary);
+    text-decoration: none;
+    transition: opacity 200ms ease;
+  }
+
+  .app-footer__link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+
+  .app-footer__link--external::after {
+    content: ' ↗';
+  }
+
+  .app-footer__bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: center;
+  }
+
+  .app-footer__copyright {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--app-text-soft);
+  }
+
+  .page-shell {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .page-shell--centered {
+    place-items: center;
+  }
+
+  .page-shell__hero {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .page-shell__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--app-text-soft);
+  }
+
+  .page-shell__title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.6vw, 2.35rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .page-shell__description {
+    margin: 0;
+    max-width: 54rem;
+    color: var(--app-text-muted);
+    line-height: 1.6;
+  }
+
+  .page-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .page-grid--two-col {
+    grid-template-columns: 1fr minmax(14rem, 18rem);
+  }
+
+  .page-grid--two-col > * {
+    min-width: 0;
+  }
+
+  @media (max-width: 1024px) {
+    .app-shell {
+      padding: 1rem;
+    }
+
+    .app-header {
+      position: static;
+    }
+
+    .page-grid--two-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .app-shell {
+      padding: 0.75rem;
+    }
+
+    .app-header,
+    .app-footer,
+    .surface-panel,
+    .surface-panel--solid,
+    .surface-panel--muted,
+    .surface-panel--compact {
+      border-radius: 1rem;
+    }
+
+    .app-footer__inner--inline {
+      gap: 0.5rem;
+    }
+  }
+}

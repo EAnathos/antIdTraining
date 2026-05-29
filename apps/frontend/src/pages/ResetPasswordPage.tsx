@@ -59,24 +59,27 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
-        Réinitialiser le mot de passe
-      </h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Choisissez un nouveau mot de passe pour sécuriser votre compte.
-      </p>
+    <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-5 p-6">
+      <div className="space-y-2">
+        <span className="ui-chip ui-chip--accent">Sécurité</span>
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
+          Réinitialiser le mot de passe
+        </h2>
+        <p className="text-sm leading-6 text-[color:var(--app-text-muted)]">
+          Choisissez un nouveau mot de passe pour sécuriser votre compte.
+        </p>
+      </div>
 
       {!token && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="ui-alert ui-alert--warning">
           Le lien semble invalide. Retournez à la connexion pour demander un
           nouveau lien.
         </div>
       )}
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="space-y-3" onSubmit={onSubmit}>
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Nouveau mot de passe"
           type="password"
           value={password}
@@ -86,7 +89,7 @@ export function ResetPasswordPage() {
           required
         />
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Confirmer le mot de passe"
           type="password"
           value={confirmPassword}
@@ -95,12 +98,12 @@ export function ResetPasswordPage() {
           minLength={8}
           required
         />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs leading-5 text-[color:var(--app-text-soft)]">
           Le mot de passe doit contenir au moins 8 caractères et un caractère
           spécial.
         </p>
         <button
-          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+          className="ui-button ui-button--primary w-full disabled:opacity-60"
           type="submit"
           disabled={loading || !token}
         >
@@ -108,12 +111,16 @@ export function ResetPasswordPage() {
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      {success && <p className="mt-3 text-sm text-green-600">{success}</p>}
+      {error && (
+        <p className="text-sm text-[color:var(--app-danger)]">{error}</p>
+      )}
+      {success && (
+        <p className="text-sm text-[color:var(--app-success)]">{success}</p>
+      )}
 
-      <div className="mt-4 text-sm text-slate-600">
+      <div className="text-sm text-[color:var(--app-text-muted)]">
         <Link
-          className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
+          className="font-semibold text-[color:var(--app-primary)] underline decoration-[color:var(--app-primary)] underline-offset-2 hover:opacity-85"
           to="/connexion"
         >
           Retour à la connexion

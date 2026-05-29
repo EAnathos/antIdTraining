@@ -595,20 +595,7 @@ export function TaxonsCrudPanel({
         <h3 className="mb-3 text-sm font-semibold text-slate-700">
           Ajout / modification
         </h3>
-        <form className="grid gap-2 md:grid-cols-6" onSubmit={submitTaxon}>
-          <input
-            className="rounded border p-2"
-            placeholder="Sous-famille"
-            value={taxonForm.subfamily}
-            onChange={(e) => handleTaxonChange('subfamily', e.target.value)}
-            required
-          />
-          <input
-            className="rounded border p-2"
-            placeholder="Tribu"
-            value={taxonForm.tribe}
-            onChange={(e) => handleTaxonChange('tribe', e.target.value)}
-          />
+        <form onSubmit={submitTaxon} className="grid gap-3">
           <input
             className="rounded border p-2"
             placeholder="Genre"
@@ -637,15 +624,12 @@ export function TaxonsCrudPanel({
           />
 
           <div className="md:col-span-6 flex flex-wrap gap-2">
-            <button
-              className="rounded bg-slate-900 px-3 py-2 text-white"
-              type="submit"
-            >
+            <button className="ui-action ui-action--primary" type="submit">
               {selectedTaxonId ? 'Modifier taxon' : 'Créer taxon'}
             </button>
             {selectedTaxonId && (
               <button
-                className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                className="ui-action ui-action--muted"
                 type="button"
                 onClick={resetTaxonForm}
               >
@@ -676,18 +660,16 @@ export function TaxonsCrudPanel({
 
         <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200">
           <table className="w-full min-w-full table-fixed text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-700">
-                <th className="sticky top-0 z-10 bg-white p-2">Sous-famille</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Tribu</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Genre</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Sous-genre</th>
-                <th className="sticky top-0 z-10 bg-white p-2">
-                  Groupe d'espèce
-                </th>
-                <th className="sticky top-0 z-10 bg-white p-2">Espèce</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Détails</th>
-                <th className="sticky top-0 z-10 bg-white p-2">Actions</th>
+            <thead className="table-head-row">
+              <tr className="table-head-row">
+                <th className="table-head-sticky">Sous-famille</th>
+                <th className="table-head-sticky">Tribu</th>
+                <th className="table-head-sticky">Genre</th>
+                <th className="table-head-sticky">Sous-genre</th>
+                <th className="table-head-sticky">Groupe d'espèce</th>
+                <th className="table-head-sticky">Espèce</th>
+                <th className="table-head-sticky">Détails</th>
+                <th className="table-head-sticky">Actions</th>
               </tr>
             </thead>
             <tbody>

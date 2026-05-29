@@ -48,7 +48,9 @@ vi.mock('../../src/components/admin/AdminHistoryPanel', () => ({
   ),
 }))
 
-vi.mock('../../src/lib/api', () => ({ api: { post: vi.fn().mockResolvedValue({}) } }))
+vi.mock('../../src/lib/api', () => ({
+  api: { post: vi.fn().mockResolvedValue({}) },
+}))
 
 import { AdminDashboardPage } from '../../src/pages/AdminDashboardPage'
 
@@ -168,25 +170,33 @@ describe('AdminDashboardPage', () => {
   })
 
   it('renders error-styled message when message contains error keywords', () => {
-    useAdminDataMock.mockReturnValueOnce({ message: 'Impossible de charger les données', taxons: [] })
+    useAdminDataMock.mockReturnValueOnce({
+      message: 'Impossible de charger les données',
+      taxons: [],
+    })
     renderPage()
 
     const messageEl = screen.getByText(/Impossible de charger/)
-    expect(messageEl).toHaveClass('bg-red-50')
+    expect(messageEl).toHaveClass('ui-alert--danger')
   })
 
   it('renders success-styled message when message is positive', () => {
-    useAdminDataMock.mockReturnValueOnce({ message: 'Opération réussie', taxons: [] })
+    useAdminDataMock.mockReturnValueOnce({
+      message: 'Opération réussie',
+      taxons: [],
+    })
     renderPage()
 
     const messageEl = screen.getByText(/Opération réussie/)
-    expect(messageEl).toHaveClass('bg-emerald-50')
+    expect(messageEl).toHaveClass('ui-alert--success')
   })
 
   it('renders section buttons', () => {
     renderPage()
     expect(screen.getByRole('button', { name: 'Taxons' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Références' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Références' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Entrées' })).toBeInTheDocument()
   })
 
@@ -199,7 +209,15 @@ describe('AdminDashboardPage', () => {
         message: '',
         taxons: [],
         // minimal data required by the component
-        taxonForm: { subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] },
+        taxonForm: {
+          subfamily: '',
+          tribe: '',
+          genus: '',
+          subgenus: '',
+          speciesGroup: '',
+          species: '',
+          distribution: [],
+        },
         setTaxonForm: vi.fn(),
         selectedTaxonId: '',
         setSelectedTaxonId: vi.fn(),
@@ -208,7 +226,14 @@ describe('AdminDashboardPage', () => {
         deleteTaxon: vi.fn(),
         saveTaxonLevelDetails: vi.fn(),
         references: [],
-        referenceForm: { title: '', authors: '', description: '', type: 'WEBSITE', url: '', taxonIds: [] },
+        referenceForm: {
+          title: '',
+          authors: '',
+          description: '',
+          type: 'WEBSITE',
+          url: '',
+          taxonIds: [],
+        },
         setReferenceForm: vi.fn(),
         selectedReferenceId: '',
         setSelectedReferenceId: vi.fn(),
@@ -228,7 +253,18 @@ describe('AdminDashboardPage', () => {
         gameStats: [],
         statsPeriod: 'all',
         setStatsPeriod: vi.fn(),
-        entryForm: { subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' },
+        entryForm: {
+          subfamily: '',
+          genus: '',
+          subgenus: '',
+          species: '',
+          speciesGroup: '',
+          department: '',
+          observedAt: '',
+          biotope: '',
+          photoCredit: '',
+          caste: '',
+        },
         setEntryForm: vi.fn(),
         entryFiles: null,
         setEntryFiles: vi.fn(),

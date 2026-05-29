@@ -99,12 +99,18 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
 
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-slate-600">
-              <tr>
-                <th className="px-4 py-3 font-medium">Niveau</th>
-                <th className="px-4 py-3 font-medium">Parties lancées</th>
-                <th className="px-4 py-3 font-medium">Réponses finales</th>
-                <th className="px-4 py-3 font-medium">
+            <thead className="table-head-row">
+              <tr className="table-head-row">
+                <th className="table-head-sticky px-4 py-3 font-medium">
+                  Niveau
+                </th>
+                <th className="table-head-sticky px-4 py-3 font-medium">
+                  Parties lancées
+                </th>
+                <th className="table-head-sticky px-4 py-3 font-medium">
+                  Réponses finales
+                </th>
+                <th className="table-head-sticky px-4 py-3 font-medium">
                   Bonnes réponses finales
                 </th>
               </tr>

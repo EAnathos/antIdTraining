@@ -37,18 +37,21 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
-        Mot de passe oublié
-      </h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Saisissez votre adresse e-mail pour recevoir un lien de
-        réinitialisation.
-      </p>
+    <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-5 p-6">
+      <div className="space-y-2">
+        <span className="ui-chip ui-chip--accent">Récupération</span>
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
+          Mot de passe oublié
+        </h2>
+        <p className="text-sm leading-6 text-[color:var(--app-text-muted)]">
+          Saisissez votre adresse e-mail pour recevoir un lien de
+          réinitialisation.
+        </p>
+      </div>
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="space-y-3" onSubmit={onSubmit}>
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Adresse e-mail"
           type="email"
           value={email}
@@ -56,7 +59,7 @@ export function ForgotPasswordPage() {
           required
         />
         <button
-          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+          className="ui-button ui-button--primary w-full disabled:opacity-60"
           type="submit"
           disabled={loading}
         >
@@ -64,12 +67,16 @@ export function ForgotPasswordPage() {
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      {success && <p className="mt-3 text-sm text-green-600">{success}</p>}
+      {error && (
+        <p className="text-sm text-[color:var(--app-danger)]">{error}</p>
+      )}
+      {success && (
+        <p className="text-sm text-[color:var(--app-success)]">{success}</p>
+      )}
 
-      <div className="mt-4 text-sm text-slate-600">
+      <div className="text-sm text-[color:var(--app-text-muted)]">
         <Link
-          className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
+          className="font-semibold text-[color:var(--app-primary)] underline decoration-[color:var(--app-primary)] underline-offset-2 hover:opacity-85"
           to="/connexion"
         >
           Retour à la connexion

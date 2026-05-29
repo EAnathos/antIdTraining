@@ -184,7 +184,13 @@ authRouter.get(
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
     const points = await getUserPoints(req.user.userId)
 
@@ -195,6 +201,7 @@ authRouter.get(
       email: user?.email ?? null,
       avatar: user?.avatar ?? null,
       bio: user?.bio ?? null,
+      createdAt: user?.createdAt?.toISOString() ?? null,
       points,
     })
   }),
@@ -234,7 +241,13 @@ authRouter.patch(
     const user = await prisma.user.update({
       where: { id: req.user.userId },
       data: updateData,
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
     const points = await getUserPoints(req.user.userId)
 
@@ -245,6 +258,7 @@ authRouter.patch(
       email: user.email,
       avatar: user.avatar,
       bio: user.bio,
+      createdAt: user.createdAt.toISOString(),
       points,
     })
   }),
@@ -541,7 +555,13 @@ authRouter.post(
       const updated = await prisma.user.update({
         where: { id: req.user.userId },
         data: { avatar: imageUrl },
-        select: { username: true, email: true, avatar: true, bio: true },
+        select: {
+          username: true,
+          email: true,
+          avatar: true,
+          bio: true,
+          createdAt: true,
+        },
       })
 
       return res.json({
@@ -549,6 +569,7 @@ authRouter.post(
         email: updated.email,
         avatar: updated.avatar,
         bio: updated.bio,
+        createdAt: updated.createdAt.toISOString(),
       })
     })
   }),

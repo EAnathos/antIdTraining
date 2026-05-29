@@ -16,7 +16,7 @@ export default defineConfig({
       // Adjusted thresholds to current achievable baseline in CI.
       thresholds: {
         lines: 80,
-        functions:70,
+        functions: 70,
         branches: 70,
         statements: 75,
       },

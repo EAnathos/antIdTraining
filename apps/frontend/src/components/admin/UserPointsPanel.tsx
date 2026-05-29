@@ -116,9 +116,9 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
         <table className="user-points-table min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-white text-left text-slate-900 dark:bg-slate-800 dark:text-slate-100">
-            <tr>
-              <th className="px-4 py-3 font-medium">
+          <thead className="table-head-row">
+            <tr className="table-head-row">
+              <th className="table-head-sticky px-4 py-3 font-medium">
                 <button
                   className="flex items-center gap-2"
                   type="button"
@@ -128,7 +128,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <span className="text-xs">{sortIndicator('username')}</span>
                 </button>
               </th>
-              <th className="px-4 py-3 font-medium">
+              <th className="table-head-sticky px-4 py-3 font-medium">
                 <button
                   className="flex items-center gap-2"
                   type="button"
@@ -137,7 +137,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   Rôle <span className="text-xs">{sortIndicator('role')}</span>
                 </button>
               </th>
-              <th className="px-4 py-3 font-medium">
+              <th className="table-head-sticky px-4 py-3 font-medium">
                 <button
                   className="flex items-center gap-2"
                   type="button"
@@ -147,7 +147,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <span className="text-xs">{sortIndicator('points')}</span>
                 </button>
               </th>
-              <th className="px-4 py-3 font-medium">
+              <th className="table-head-sticky px-4 py-3 font-medium">
                 <button
                   className="flex items-center gap-2"
                   type="button"
@@ -157,7 +157,9 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <span className="text-xs">{sortIndicator('createdAt')}</span>
                 </button>
               </th>
-              <th className="px-4 py-3 font-medium">Action</th>
+              <th className="table-head-sticky px-4 py-3 font-medium">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
@@ -202,7 +204,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      className="w-full rounded-lg bg-slate-900 text-white border border-slate-800 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 hover:bg-slate-800 dark:bg-slate-200 dark:border-slate-300 dark:text-slate-900 dark:hover:bg-slate-300"
+                      className="ui-action ui-action--muted w-full disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={savingUserId === user.id}
                       onClick={() => void handleSave(user.id, user.points)}
                     >

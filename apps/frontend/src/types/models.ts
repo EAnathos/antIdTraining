@@ -173,6 +173,7 @@ export type AuthMeResponse = {
   email: string | null
   avatar: string | null
   bio: string | null
+  createdAt: string | null
   points: number
 }
 

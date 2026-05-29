@@ -349,6 +349,7 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: null,
+      createdAt: new Date('2026-04-07T09:00:00.000Z'),
     })
     commonMocks.getUserPoints.mockResolvedValue(42)
 
@@ -364,11 +365,18 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: null,
+      createdAt: '2026-04-07T09:00:00.000Z',
       points: 42,
     })
     expect(prismaMocks.user.findUnique).toHaveBeenCalledWith({
       where: { id: 'user_42' },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
     expect(commonMocks.getUserPoints).toHaveBeenCalledWith('user_42')
   })
@@ -389,6 +397,7 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: 'Salut',
+      createdAt: new Date('2026-04-07T09:00:00.000Z'),
     })
     commonMocks.getUserPoints.mockResolvedValue(5)
 
@@ -406,12 +415,19 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: 'Salut',
+      createdAt: '2026-04-07T09:00:00.000Z',
       points: 5,
     })
     expect(prismaMocks.user.update).toHaveBeenCalledWith({
       where: { id: 'user_1' },
       data: { bio: 'Salut' },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
   })
 
@@ -421,6 +437,7 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: null,
+      createdAt: new Date('2026-04-07T09:00:00.000Z'),
     })
     commonMocks.getUserPoints.mockResolvedValue(0)
 
@@ -435,7 +452,13 @@ describe('authRouter', () => {
     expect(prismaMocks.user.update).toHaveBeenCalledWith({
       where: { id: 'user_1' },
       data: { bio: null },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
   })
 
@@ -535,12 +558,12 @@ describe('authRouter', () => {
     expect(prismaMocks.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'user_1' },
-        data: expect.objectContaining({
+        data: {
           passwordHash: expect.any(String),
           passwordResetToken: null,
           passwordResetTokenExpiresAt: null,
           passwordResetRequestedAt: null,
-        }),
+        },
       }),
     )
   })
@@ -618,6 +641,7 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: null,
       bio: null,
+      createdAt: new Date('2026-04-07T09:00:00.000Z'),
     })
     commonMocks.getUserPoints.mockResolvedValue(1)
 
@@ -632,7 +656,13 @@ describe('authRouter', () => {
     expect(prismaMocks.user.update).toHaveBeenCalledWith({
       where: { id: 'user_1' },
       data: { avatar: null },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
   })
 
@@ -652,6 +682,7 @@ describe('authRouter', () => {
       email: 'player@example.com',
       avatar: '/uploads/avatar.webp',
       bio: null,
+      createdAt: new Date('2026-04-07T09:00:00.000Z'),
     })
     commonMocks.getUserPoints.mockResolvedValue(11)
 
@@ -679,6 +710,7 @@ describe('authRouter', () => {
     expect(json.email).toBe('player@example.com')
     expect(json.avatar).toMatch(/^\/uploads\/.*\.webp$/)
     expect(json.bio).toBeNull()
+    expect(json.createdAt).toBe('2026-04-07T09:00:00.000Z')
     expect(prismaMocks.user.findUnique).toHaveBeenCalledWith({
       where: { id: 'user_1' },
       select: { avatar: true },
@@ -686,7 +718,13 @@ describe('authRouter', () => {
     expect(prismaMocks.user.update).toHaveBeenCalledWith({
       where: { id: 'user_1' },
       data: { avatar: expect.stringMatching(/^\/uploads\/.*\.webp$/) },
-      select: { username: true, email: true, avatar: true, bio: true },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
     })
     expect(sharpMetadata).toHaveBeenCalled()
     expect(sharpToFile).toHaveBeenCalled()

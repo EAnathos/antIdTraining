@@ -129,13 +129,13 @@ export function LeaderboardPage() {
       {data && (
         <div className="overflow-hidden rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-slate-600">
-              <tr>
-                <th className="px-4 py-3">#</th>
-                <th className="px-4 py-3">Joueur</th>
-                <th className="px-4 py-3">Parties</th>
-                <th className="px-4 py-3">Bonnes réponses</th>
-                <th className="px-4 py-3">Points</th>
+            <thead className="table-head-row">
+              <tr className="table-head-row">
+                <th className="table-head-sticky px-4 py-3">#</th>
+                <th className="table-head-sticky px-4 py-3">Joueur</th>
+                <th className="table-head-sticky px-4 py-3">Parties</th>
+                <th className="table-head-sticky px-4 py-3">Bonnes réponses</th>
+                <th className="table-head-sticky px-4 py-3">Points</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">

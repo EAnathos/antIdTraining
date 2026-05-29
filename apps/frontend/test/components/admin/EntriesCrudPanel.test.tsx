@@ -15,7 +15,9 @@ vi.mock('../../../src/lib/api', () => ({
       if (path.includes('/taxons/species-groups'))
         return Promise.resolve({ data: ['Group'] })
       if (path.includes('/taxons/species-metadata'))
-        return Promise.resolve({ data: { subgenus: 'MetaSub', speciesGroup: 'MetaGroup' } })
+        return Promise.resolve({
+          data: { subgenus: 'MetaSub', speciesGroup: 'MetaGroup' },
+        })
       return Promise.resolve({ data: [] })
     }),
   },
@@ -298,25 +300,34 @@ describe('EntriesCrudPanel', () => {
     const setEntryForm = vi.fn()
     renderComponent({ setEntryForm })
 
-    const deptInput = screen.getByPlaceholderText('Département (ex: 53 - Mayenne, 2A, 974)')
+    const deptInput = screen.getByPlaceholderText(
+      'Département (ex: 53 - Mayenne, 2A, 974)',
+    )
     fireEvent.change(deptInput, { target: { value: '75 - Paris' } })
     fireEvent.blur(deptInput)
 
     await waitFor(() => expect(setEntryForm).toHaveBeenCalled())
     const calledWith = setEntryForm.mock.calls[0][0]
-    expect(calledWith).toEqual(expect.objectContaining({ department: '75 - Paris' }))
+    expect(calledWith).toEqual(
+      expect.objectContaining({ department: '75 - Paris' }),
+    )
   })
 
   it('loads species metadata when selecting a species', async () => {
     const setEntryForm = vi.fn()
-    renderComponent({ setEntryForm, entryForm: { ...undefined, genus: 'Lasius' } as any })
+    renderComponent({
+      setEntryForm,
+      entryForm: { ...undefined, genus: 'Lasius' } as any,
+    })
 
     // wait for species options to load
     await waitFor(() => expect(screen.getByText('niger')).toBeTruthy())
 
     // locate the species select by finding the select that contains the 'Espèce (optionnel)' option
     const selects = screen.getAllByRole('combobox')
-    const speciesSelect = selects.find((s) => s.innerHTML.includes('Espèce (optionnel)'))!
+    const speciesSelect = selects.find((s) =>
+      s.innerHTML.includes('Espèce (optionnel)'),
+    )!
     fireEvent.change(speciesSelect, { target: { value: 'niger' } })
 
     // wait until the species value was applied to the form
