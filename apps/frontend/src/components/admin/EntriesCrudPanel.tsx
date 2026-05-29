@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { api, backendOrigin } from '../../lib/api'
+import { api } from '../../lib/api'
 import { getResponsiveImageProps } from '../../lib/image'
 import type { Entry } from '../../types/models'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
+import { resolveImageUrl } from './imageHelpers'
+import { parseDepartmentInput } from './entriesHelpers'
 
 const departmentOptions = [
   { code: '01', name: 'Ain' },
@@ -108,45 +110,6 @@ const departmentOptions = [
   { code: '974', name: 'La Réunion' },
   { code: '976', name: 'Mayotte' },
 ]
-
-function normalizeDepartment(value: string) {
-  const cleaned = value.trim().toUpperCase().replace(/\s+/g, '')
-  if (!cleaned) return ''
-  if (cleaned === '2A' || cleaned === '2B') return cleaned
-  if (/^\d{1,3}$/.test(cleaned)) {
-    if (cleaned.length <= 2) return cleaned.padStart(2, '0')
-    return cleaned
-  }
-  return value.trim()
-}
-
-function parseDepartmentInput(value: string) {
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-
-  const matchCodeWithLabel = trimmed.match(/^(\d{1,3}|2A|2B)\s*[-–—]/i)
-  if (matchCodeWithLabel) {
-    return normalizeDepartment(matchCodeWithLabel[1])
-  }
-
-  if (/^(\d{1,3}|2A|2B)$/i.test(trimmed)) {
-    return normalizeDepartment(trimmed)
-  }
-
-  return trimmed
-}
-
-function resolveImageUrl(imageUrl: string) {
-  if (!imageUrl) {
-    return imageUrl
-  }
-
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl
-  }
-
-  return `${backendOrigin}${imageUrl}`
-}
 
 type SpeciesMetadata = {
   subgenus?: string | null

@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom'
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -47,6 +47,8 @@ vi.mock('../../src/components/admin/AdminHistoryPanel', () => ({
     <div>history:{history.length}</div>
   ),
 }))
+
+vi.mock('../../src/lib/api', () => ({ api: { post: vi.fn().mockResolvedValue({}) } }))
 
 import { AdminDashboardPage } from '../../src/pages/AdminDashboardPage'
 
@@ -163,5 +165,99 @@ describe('AdminDashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Historique' }))
 
     expect(screen.getByText('history:1')).toBeInTheDocument()
+  })
+
+  it('renders error-styled message when message contains error keywords', () => {
+    useAdminDataMock.mockReturnValueOnce({ message: 'Impossible de charger les données', taxons: [] })
+    renderPage()
+
+    const messageEl = screen.getByText(/Impossible de charger/)
+    expect(messageEl).toHaveClass('bg-red-50')
+  })
+
+  it('renders success-styled message when message is positive', () => {
+    useAdminDataMock.mockReturnValueOnce({ message: 'Opération réussie', taxons: [] })
+    renderPage()
+
+    const messageEl = screen.getByText(/Opération réussie/)
+    expect(messageEl).toHaveClass('bg-emerald-50')
+  })
+
+  it('renders section buttons', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Taxons' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Références' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entrées' })).toBeInTheDocument()
+  })
+
+  it('executes logoutToLogin when the hook requests logout', async () => {
+    const removeSpy = vi.spyOn(window.localStorage.__proto__, 'removeItem')
+    // when the hook is invoked, call the provided logout callback
+    useAdminDataMock.mockImplementationOnce((token: any, logout: any) => {
+      if (logout) void logout()
+      return {
+        message: '',
+        taxons: [],
+        // minimal data required by the component
+        taxonForm: { subfamily: '', tribe: '', genus: '', subgenus: '', speciesGroup: '', species: '', distribution: [] },
+        setTaxonForm: vi.fn(),
+        selectedTaxonId: '',
+        setSelectedTaxonId: vi.fn(),
+        createTaxon: vi.fn(),
+        updateTaxon: vi.fn(),
+        deleteTaxon: vi.fn(),
+        saveTaxonLevelDetails: vi.fn(),
+        references: [],
+        referenceForm: { title: '', authors: '', description: '', type: 'WEBSITE', url: '', taxonIds: [] },
+        setReferenceForm: vi.fn(),
+        selectedReferenceId: '',
+        setSelectedReferenceId: vi.fn(),
+        createReference: vi.fn(),
+        updateReference: vi.fn(),
+        deleteReference: vi.fn(),
+        saveReferenceAuthorsAndTaxons: vi.fn(),
+        saveReferenceAuthorsAndTaxonsById: vi.fn(),
+        entries: [],
+        entriesPage: 1,
+        entriesLimit: 25,
+        entriesTotal: 0,
+        entriesPages: 1,
+        setEntriesPage: vi.fn(),
+        setEntriesLimit: vi.fn(),
+        entryStats: null,
+        gameStats: [],
+        statsPeriod: 'all',
+        setStatsPeriod: vi.fn(),
+        entryForm: { subfamily: '', genus: '', subgenus: '', species: '', speciesGroup: '', department: '', observedAt: '', biotope: '', photoCredit: '', caste: '' },
+        setEntryForm: vi.fn(),
+        entryFiles: null,
+        setEntryFiles: vi.fn(),
+        selectedEntryId: '',
+        setSelectedEntryId: vi.fn(),
+        createEntry: vi.fn(),
+        updateEntry: vi.fn(),
+        deleteEntry: vi.fn(),
+        reorderEntryImages: vi.fn(),
+        suggestions: [],
+        setSuggestionStatus: vi.fn(),
+        deleteSuggestion: vi.fn(),
+        updateSuggestionRejectionMessage: vi.fn(),
+        proposals: [],
+        setProposalStatus: vi.fn(),
+        deleteProposal: vi.fn(),
+        updateProposalRejectionMessage: vi.fn(),
+        history: [],
+        users: [],
+        setUserPoints: vi.fn(),
+        exportDatabaseSnapshot: vi.fn(),
+        importDatabaseSnapshot: vi.fn(),
+        cleanupUploads: vi.fn(),
+      }
+    })
+
+    renderPage()
+
+    // logoutToLogin should remove localStorage keys
+    await waitFor(() => expect(removeSpy).toHaveBeenCalled())
   })
 })
