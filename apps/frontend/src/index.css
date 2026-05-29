@@ -40,6 +40,15 @@ html[data-theme='dark'] .bg-slate-100 {
   background-color: #1e293b !important;
 }
 
+html[data-theme='dark'] .cancel-button {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='dark'] .cancel-button:hover {
+  background-color: #e2e8f0 !important;
+}
+
 html[data-theme='dark'] .bg-white,
 html[data-theme='dark'] .bg-white\/90,
 html[data-theme='dark'] .bg-slate-50 {

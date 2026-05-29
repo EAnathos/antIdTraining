@@ -76,14 +76,14 @@ function MoonIcon() {
 function navClass({ isActive }: { isActive: boolean }) {
   return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
     isActive
-      ? 'bg-slate-900 text-white'
-      : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+      ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+      : 'bg-slate-900 text-white'
   }`
 }
 
 function adminNavClass({ isActive }: { isActive: boolean }) {
   return `admin-nav-button rounded-lg border border-amber-800 bg-amber-700 px-3 py-2 text-sm font-medium text-amber-50 shadow-sm transition-colors hover:bg-amber-800 ${
-    isActive ? 'admin-nav-button-active' : 'admin-nav-button-inactive'
+    isActive ? 'admin-nav-button-inactive' : 'admin-nav-button-active'
   }`
 }
 

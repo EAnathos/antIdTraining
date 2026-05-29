@@ -124,7 +124,7 @@ export function useAdminData(
   const [entryStats, setEntryStats] = useState<unknown>(null)
   const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
-  const [history] = useState<AdminHistoryItem[]>([])
+  const [history, setHistory] = useState<AdminHistoryItem[]>([])
   const [users, setUsers] = useState<AdminUserPointsItem[]>([])
 
   const [taxonForm, setTaxonForm] = useState<{
@@ -282,6 +282,7 @@ export function useAdminData(
       entryRes,
       statsRes,
       entryStatsRes,
+      historyRes,
       usersRes,
       suggestionsRes,
       proposalsRes,
@@ -301,6 +302,7 @@ export function useAdminData(
       adminApi.get<unknown>('/stats/entries', {
         params: { period: statsPeriod },
       }),
+      adminApi.get<AdminHistoryItem[]>('/history'),
       adminApi.get<AdminUserPointsItem[]>('/users'),
       adminApi.get<Suggestion[]>('/suggestions'),
       adminApi.get<EntryProposal[]>('/entry-proposals'),
@@ -316,6 +318,7 @@ export function useAdminData(
     setEntriesPages(entryRes.data.pagination.pages)
     setGameStats(statsRes.data.levels)
     setEntryStats(entryStatsRes.data)
+    setHistory(historyRes.data)
     setUsers(usersRes.data)
     setSuggestions(suggestionsRes.data)
     setProposals(proposalsRes.data)
