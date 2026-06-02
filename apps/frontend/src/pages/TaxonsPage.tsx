@@ -1325,29 +1325,30 @@ export function TaxonsPage() {
               <p className="mt-1 text-slate-700">Aucune référence liée.</p>
             )}
 
-            {selectedDetail.taxon.confusions.length > 0 && (
-              <>
-                <p className="mt-3 font-medium text-slate-900">
-                  Confusions possibles
-                </p>
-                <ul className="mt-1 space-y-2 text-slate-700">
-                  {selectedDetail.taxon.confusions.map((confusion) => (
-                    <li
-                      key={confusion.id}
-                      className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-                    >
-                      <p className="font-semibold">
-                        Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
-                        <em>{confusion.confusedTaxon.species}</em>
-                      </p>
-                      <p className="mt-1 whitespace-pre-wrap">
-                        {confusion.detail}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+            {selectedDetail.level === 'species' &&
+              selectedDetail.taxon.confusions.length > 0 && (
+                <>
+                  <p className="mt-3 font-medium text-slate-900">
+                    Confusions possibles
+                  </p>
+                  <ul className="mt-1 space-y-2 text-slate-700">
+                    {selectedDetail.taxon.confusions.map((confusion) => (
+                      <li
+                        key={confusion.id}
+                        className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                      >
+                        <p className="font-semibold">
+                          Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
+                          <em>{confusion.confusedTaxon.species}</em>
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap">
+                          {confusion.detail}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
             {selectedDetail.level === 'species' && (
               <>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { resolveImageUrl } from '../lib/imageUrl'
 import type { AuthMeResponse } from '../types/models'
 
 type ThemePreference = 'system' | 'light' | 'dark'
@@ -330,7 +331,7 @@ export function ProfilePage() {
           <div className="relative">
             {profile?.avatar ? (
               <img
-                src={profile.avatar}
+                src={resolveImageUrl(profile.avatar)}
                 alt={profile.username || 'Avatar'}
                 className="w-24 h-24 rounded-full object-cover ring-2 ring-var(--app-primary)"
               />
@@ -396,7 +397,7 @@ export function ProfilePage() {
               <div className="flex items-center gap-3">
                 {avatar && (
                   <img
-                    src={avatar}
+                    src={resolveImageUrl(avatar)}
                     alt="Preview"
                     className="w-12 h-12 rounded-full object-cover"
                   />

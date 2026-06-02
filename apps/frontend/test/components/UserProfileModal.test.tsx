@@ -7,6 +7,7 @@ const apiMocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../src/lib/api', () => ({
+  backendOrigin: '',
   api: {
     get: apiMocks.get,
   },
