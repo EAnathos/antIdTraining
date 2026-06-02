@@ -49,5 +49,12 @@
     "prettier": "^3.8.3",
     "typescript-eslint": "^8.59.4",
     "vitest": "^4.1.7"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.8.0": true,
+    "@scarf/scarf@1.4.0": true,
+    "esbuild@0.28.0": true,
+    "prisma@7.8.0": true,
+    "sharp@0.34.5": true
   }
 }
