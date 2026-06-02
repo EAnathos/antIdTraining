@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { EntryProposal, Suggestion } from '../../types/models'
-import { backendOrigin } from '../../lib/api'
 import { getResponsiveImageProps } from '../../lib/image'
+import { resolveImageUrl } from './imageHelpers'
 
 type Props = {
   suggestions: Suggestion[]
@@ -52,14 +52,7 @@ export function SuggestionsPanel({
     alt: string
   } | null>(null)
 
-  function resolveImageUrl(imageUrl: string) {
-    if (!imageUrl) return imageUrl
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl
-    }
-
-    return `${backendOrigin}${imageUrl}`
-  }
+  // resolveImageUrl is imported from shared helper `imageHelpers`.
 
   const filteredSuggestions = useMemo(() => {
     if (filter === 'ALL') return suggestions

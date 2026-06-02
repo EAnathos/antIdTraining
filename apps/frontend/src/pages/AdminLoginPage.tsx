@@ -45,8 +45,10 @@ export function AdminLoginPage() {
 
   if (checkingSession) {
     return (
-      <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-slate-600">Vérification de la session…</p>
+      <section className="surface-panel surface-panel--solid mx-auto max-w-md p-6">
+        <p className="text-[color:var(--app-text-muted)]">
+          Vérification de la session…
+        </p>
       </section>
     )
   }
@@ -56,13 +58,16 @@ export function AdminLoginPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
-        Connexion administrateur
-      </h2>
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+    <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-5 p-6">
+      <div className="space-y-2">
+        <span className="ui-chip ui-chip--warning">Administration</span>
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
+          Connexion administrateur
+        </h2>
+      </div>
+      <form className="space-y-3" onSubmit={onSubmit}>
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Adresse e-mail"
           type="email"
           value={email}
@@ -70,21 +75,20 @@ export function AdminLoginPage() {
           required
         />
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Mot de passe"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button
-          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white"
-          type="submit"
-        >
+        <button className="ui-button ui-button--primary w-full" type="submit">
           Se connecter
         </button>
       </form>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="text-sm text-[color:var(--app-danger)]">{error}</p>
+      )}
     </section>
   )
 }

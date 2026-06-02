@@ -32,26 +32,35 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary flex min-h-screen items-center justify-center bg-gray-100">
-          <div className="error-boundary-card max-w-md rounded-lg bg-white p-8 shadow-lg">
-            <h1 className="mb-4 text-2xl font-bold text-red-600">
+        <div className="page-shell page-shell--centered min-h-screen px-4 py-6">
+          <div className="surface-panel surface-panel--solid w-full max-w-lg p-8">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="ui-chip ui-chip--danger">Erreur critique</span>
+              <p className="m-0 text-sm text-[color:var(--app-text-muted)]">
+                Une erreur inattendue a interrompu l’affichage.
+              </p>
+            </div>
+
+            <h1 className="text-2xl font-bold tracking-tight text-[color:var(--app-danger)]">
               Oups ! Une erreur s&apos;est produite
             </h1>
-            <p className="mb-4 text-gray-700">
+            <p className="mt-3 text-sm leading-6 text-[color:var(--app-text-muted)]">
               L&apos;application a rencontré une erreur inattendue. Veuillez
               réessayer ou contacter le support.
             </p>
-            <details className="mb-4 rounded bg-gray-100 p-3 text-sm text-gray-500">
+
+            <details className="mt-5 ui-alert ui-alert--warning">
               <summary className="cursor-pointer font-semibold">
                 Détails de l&apos;erreur
               </summary>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-xs">
+              <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap text-xs leading-6">
                 {this.state.error?.toString()}
               </pre>
             </details>
+
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="ui-button ui-button--primary mt-5 w-full"
             >
               Recharger la page
             </button>

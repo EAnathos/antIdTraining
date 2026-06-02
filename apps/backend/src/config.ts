@@ -29,6 +29,7 @@ export const config = {
     null,
   resendApiKey: process.env.RESEND_API_KEY ?? null,
   resendFrom: process.env.RESEND_FROM ?? null,
+  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
   // Set to 'false' to disable sending login notification emails
   sendLoginNotificationEmails:
     (process.env.SEND_LOGIN_NOTIFICATION_EMAILS ?? 'true') !== 'false',

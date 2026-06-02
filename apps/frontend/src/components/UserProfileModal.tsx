@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { resolveImageUrl } from '../lib/imageUrl'
 import type { UserProfile } from '../types/models'
 
 type UserProfileModalProps = {
@@ -78,7 +79,7 @@ export function UserProfileModal({
             <div className="flex items-center gap-4">
               {profile.avatar && (
                 <img
-                  src={profile.avatar}
+                  src={resolveImageUrl(profile.avatar)}
                   alt={profile.username}
                   className="w-16 h-16 rounded-full object-cover"
                 />

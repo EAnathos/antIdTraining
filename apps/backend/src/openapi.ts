@@ -481,12 +481,24 @@ export const openApiDocument = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['userId', 'role', 'username', 'email', 'points'],
+                  required: [
+                    'userId',
+                    'role',
+                    'username',
+                    'email',
+                    'createdAt',
+                    'points',
+                  ],
                   properties: {
                     userId: { type: 'string' },
                     role: { type: 'string', enum: ['ADMIN', 'USER'] },
                     username: { type: 'string', nullable: true },
                     email: { type: 'string', format: 'email', nullable: true },
+                    createdAt: {
+                      type: 'string',
+                      format: 'date-time',
+                      nullable: true,
+                    },
                     points: { type: 'integer' },
                   },
                 },
@@ -495,6 +507,7 @@ export const openApiDocument = {
                   role: 'USER',
                   username: 'joueur1',
                   email: 'joueur1@example.com',
+                  createdAt: '2026-04-07T09:00:00.000Z',
                   points: 42,
                 },
               },

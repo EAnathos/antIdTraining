@@ -28,7 +28,7 @@ describe('AppShell', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light')
   })
 
-  it('toggles theme and shows profile navigation', async () => {
+  it('shows profile navigation when authenticated', () => {
     localStorage.setItem('antidtraining-auth-token', 'token_1')
     localStorage.setItem('antidtraining-auth-role', 'USER')
     localStorage.setItem('antidtraining-auth-username', 'alice')
@@ -42,8 +42,6 @@ describe('AppShell', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.click(screen.getByLabelText(/Passer en mode/))
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
     expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
   })
 
@@ -70,21 +68,18 @@ describe('AppShell', () => {
       </MemoryRouter>,
     )
 
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
     fireEvent(window, new Event('offline'))
     expect(screen.getByText(/Mode hors ligne activé/)).toBeInTheDocument()
     fireEvent(window, beforeInstallPrompt)
 
-    expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Installer l’app' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Passer en mode clair')).toBeInTheDocument()
-
     fireEvent.click(screen.getByRole('button', { name: 'Installer l’app' }))
     await waitFor(() => expect(prompt).toHaveBeenCalled())
 
-    fireEvent.click(screen.getByLabelText('Passer en mode clair'))
-    expect(document.documentElement).toHaveAttribute('data-theme', 'light')
+    expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
   })
 })

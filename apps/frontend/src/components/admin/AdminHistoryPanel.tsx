@@ -5,9 +5,11 @@ type Props = {
 }
 
 const toneClasses: Record<AdminHistoryItem['tone'], string> = {
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  error: 'border-red-200 bg-red-50 text-red-800',
-  info: 'border-amber-200 bg-amber-50 text-amber-800',
+  success:
+    'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-slate-100',
+  error:
+    'border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/35 dark:text-slate-100',
+  info: 'border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/35 dark:text-orange-100',
 }
 
 export function AdminHistoryPanel({ history }: Props) {

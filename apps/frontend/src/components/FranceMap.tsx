@@ -75,7 +75,7 @@ export function FranceMap({
 
   return (
     <div className="france-map space-y-3">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm">
+      <div className="france-map__surface rounded-2xl border border-slate-200 p-3 shadow-sm">
         <svg
           viewBox={MAP_DATA.viewBox}
           className="h-auto w-full"

@@ -110,3 +110,44 @@ export async function sendVerificationEmail(
     'Email de vérification',
   )
 }
+
+export async function sendPasswordResetEmail(
+  email: string,
+  username: string,
+  token: string,
+) {
+  if (!config.resendApiKey) {
+    throw new Error(
+      "RESEND_API_KEY non configurée, impossible d'envoyer le lien de réinitialisation",
+    )
+  }
+
+  const resetUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/reset-password?token=${encodeURIComponent(
+    token,
+  )}`
+
+  await sendResendEmail(
+    {
+      from:
+        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
+      to: email,
+      subject: 'Réinitialisez votre mot de passe',
+      text: [
+        `Bonjour ${username},`,
+        '',
+        `Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :`,
+        '',
+        resetUrl,
+        '',
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
+      ].join('\n'),
+      html: `
+      <p>Bonjour ${username},</p>
+      <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
+      <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
+      <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
+    `,
+    },
+    'Email de réinitialisation',
+  )
+}

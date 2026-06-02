@@ -62,4 +62,40 @@ describe('StatsPanel', () => {
       expect(apiMocks.post).toHaveBeenCalledWith('/admin/stats-tools/reset'),
     )
   })
+
+  it('calls window.location.reload on successful reset', async () => {
+    const setPeriod = vi.fn()
+    apiMocks.post.mockResolvedValue({})
+    const reload = vi.fn()
+    // replace window.location with a writable mock containing reload
+    // @ts-expect-error allow redefining
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload },
+    })
+
+    render(<StatsPanel stats={[]} period="all" setPeriod={setPeriod} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser stats' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Oui, réinitialiser' }))
+
+    await waitFor(() =>
+      expect(apiMocks.post).toHaveBeenCalledWith('/admin/stats-tools/reset'),
+    )
+    expect(reload).toHaveBeenCalled()
+  })
+
+  it('shows an error message when reset fails', async () => {
+    const setPeriod = vi.fn()
+    apiMocks.post.mockRejectedValue(new Error('boom'))
+
+    render(<StatsPanel stats={[]} period="all" setPeriod={setPeriod} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser stats' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Oui, réinitialiser' }))
+
+    expect(
+      await screen.findByText(/boom|Erreur lors de la réinitialisation/),
+    ).toBeTruthy()
+  })
 })

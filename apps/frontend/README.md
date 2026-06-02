@@ -9,6 +9,17 @@ Technologies:
 - TypeScript
 - Tailwind CSS
 
+## Architecture des styles
+
+Le frontend s’appuie sur une base CSS organisée par couches dans `src/styles/` :
+
+- `theme.css` : variables de design, mode clair/sombre et fond global
+- `layout.css` : structure de l’application, shell et grille des pages
+- `components.css` : cartes, boutons, onglets, alertes et champs de formulaire
+- `index.css` : point d’entrée qui agrège Tailwind et les couches de style
+
+Cette séparation permet de faire évoluer l’identité visuelle sans disperser la logique de présentation dans les pages.
+
 ## Démarrage
 
 ### Avec Docker
@@ -56,7 +67,6 @@ Intégration backend:
 
 - L'API backend (Express + Prisma) fournit les données principales: taxons, entrées, images, sessions joueurs, suggestions, statistiques.
 - Endpoints usuels: `/api/taxons`, `/api/entries`, `/api/auth` et endpoints d'upload d'images.
-- Pour modifier l'URL de l'API, consultez le client API dans [src/lib](src/lib).
 
 ## Bonnes pratiques
 

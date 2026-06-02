@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { AuthRegistrationResponse, AuthResponse } from '../types/models'
 
@@ -75,18 +75,23 @@ export function AuthPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Connexion</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Vous pouvez jouer sans être connecté. Créez un compte joueur avec un nom
-        d’utilisateur et une adresse e-mail pour suivre votre progression dans
-        le classement.
-      </p>
+    <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-6 p-6">
+      <div className="space-y-2">
+        <span className="ui-chip ui-chip--accent">Compte joueur</span>
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
+          Connexion
+        </h2>
+        <p className="text-sm leading-6 text-[color:var(--app-text-muted)]">
+          Vous pouvez jouer sans être connecté. Créez un compte joueur avec un
+          nom d’utilisateur et une adresse e-mail pour suivre votre progression
+          dans le classement.
+        </p>
+      </div>
 
-      <div className="mt-4 flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className={`rounded-lg px-3 py-2 text-sm ${mode === 'login' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
+          className={`ui-tab ${mode === 'login' ? 'ui-tab--active' : ''}`}
           onClick={() => {
             setMode('login')
             setError('')
@@ -96,7 +101,7 @@ export function AuthPage() {
         </button>
         <button
           type="button"
-          className={`rounded-lg px-3 py-2 text-sm ${mode === 'register' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
+          className={`ui-tab ${mode === 'register' ? 'ui-tab--active' : ''}`}
           onClick={() => {
             setMode('register')
             setError('')
@@ -107,16 +112,16 @@ export function AuthPage() {
       </div>
 
       {mode === 'verify' && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900 dark:text-amber-100">
+        <div className="ui-alert ui-alert--warning">
           <p>Un code de vérification a été envoyé à {email}.</p>
           <p className="mt-1">Entrez ce code pour activer votre compte.</p>
         </div>
       )}
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="space-y-3" onSubmit={onSubmit}>
         {mode === 'register' && (
           <input
-            className="w-full rounded-lg border border-slate-300 p-2"
+            className="ui-input"
             placeholder="Nom d'utilisateur"
             type="text"
             value={username}
@@ -125,7 +130,7 @@ export function AuthPage() {
           />
         )}
         <input
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className="ui-input"
           placeholder="Adresse e-mail"
           type="email"
           value={email}
@@ -134,27 +139,35 @@ export function AuthPage() {
         />
         {mode !== 'verify' && (
           <input
-            className="w-full rounded-lg border border-slate-300 p-2"
+            className="ui-input"
             placeholder="Mot de passe"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            pattern={mode === 'register' ? '.*[^A-Za-z0-9\\s].*' : undefined}
             required
           />
         )}
         {mode === 'register' && (
-          <input
-            className="w-full rounded-lg border border-slate-300 p-2"
-            placeholder="Confirmer le mot de passe"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+          <>
+            <input
+              className="ui-input"
+              placeholder="Confirmer le mot de passe"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              pattern=".*[^A-Za-z0-9\\s].*"
+              required
+            />
+            <p className="text-xs leading-5 text-[color:var(--app-text-soft)]">
+              Le mot de passe doit contenir au moins 8 caractères et un
+              caractère spécial.
+            </p>
+          </>
         )}
         {mode === 'verify' && (
           <input
-            className="w-full rounded-lg border border-slate-300 p-2"
+            className="ui-input"
             placeholder="Code de vérification"
             type="text"
             inputMode="numeric"
@@ -164,10 +177,7 @@ export function AuthPage() {
             required
           />
         )}
-        <button
-          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white"
-          type="submit"
-        >
+        <button className="ui-button ui-button--primary w-full" type="submit">
           {mode === 'login'
             ? 'Se connecter'
             : mode === 'register'
@@ -176,7 +186,20 @@ export function AuthPage() {
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {mode === 'login' && (
+        <div className="text-sm text-[color:var(--app-text-muted)]">
+          <Link
+            className="font-semibold text-[color:var(--app-primary)] underline decoration-[color:var(--app-primary)] underline-offset-2 hover:opacity-85"
+            to="/forgot-password"
+          >
+            Mot de passe oublié ?
+          </Link>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-sm text-[color:var(--app-danger)]">{error}</p>
+      )}
     </section>
   )
 }

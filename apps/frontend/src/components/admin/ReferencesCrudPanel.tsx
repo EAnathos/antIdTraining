@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { ReferenceItem, Taxon } from '../../types/models'
+import { normalizeAuthors } from './referencesHelpers'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
 
 type ReferenceForm = {
@@ -133,9 +134,9 @@ export function ReferencesCrudPanel({
     [taxons],
   )
 
-  function normalizeAuthors(values: string[]) {
-    return values.map((value) => value.trim()).filter(Boolean)
-  }
+  // normalizeAuthors is implemented in a dedicated helper to keep the
+  // component file free of top-level exports that break certain test imports.
+  // The helper is imported at module scope.
 
   function submitReference(event: FormEvent) {
     return selectedReferenceId ? updateReference(event) : createReference(event)

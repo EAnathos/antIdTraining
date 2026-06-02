@@ -26,11 +26,15 @@
 - `PATCH /api/auth/profile` : mise à jour de l’avatar et de la biographie
 - `POST /api/auth/avatar` : upload d’avatar
 - `POST /api/auth/delete-account` : suppression du compte connecté
-- `POST /api/auth/password-reset-request` : enregistrement d’une demande de réinitialisation de mot de passe
+- `POST /api/auth/password-reset-request` : demande de réinitialisation de mot de passe, soit depuis un compte connecté, soit depuis une adresse e-mail saisie publiquement, avec envoi d’un e-mail contenant un lien vers le frontend si aucune autre demande n’a été faite dans la semaine
+- `POST /api/auth/password-reset` : validation du token reçu par e-mail et définition d’un nouveau mot de passe
 
 Chaque connexion déclenche l’envoi d’un e-mail de notification au compte concerné.
 Une inscription n’est finalisée qu’après saisie du code de vérification reçu par e-mail.
 L’envoi utilise Resend lorsque `RESEND_API_KEY` et `RESEND_FROM` sont configurés.
+Pour l’inscription et la réinitialisation, le mot de passe doit contenir au moins 8 caractères et au moins un caractère spécial.
+Le lien de réinitialisation pointe vers `/#/reset-password?token=...` sur le frontend configuré via `FRONTEND_URL`.
+Le parcours public “Mot de passe oublié ?” utilise `/#/forgot-password` sur le frontend.
 
 ### Jeu
 
