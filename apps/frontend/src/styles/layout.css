@@ -31,8 +31,7 @@
   }
 
   .app-header {
-    position: sticky;
-    top: 1rem;
+    position: static;
     z-index: 20;
     padding: 1rem 1.15rem;
   }

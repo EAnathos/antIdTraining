@@ -595,35 +595,51 @@ export function TaxonsCrudPanel({
         <h3 className="mb-3 text-sm font-semibold text-slate-700">
           Ajout / modification
         </h3>
-        <form onSubmit={submitTaxon} className="grid gap-3">
+        <form
+          onSubmit={submitTaxon}
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+        >
           <input
-            className="rounded border p-2"
+            className="w-full min-w-0 rounded border p-2"
+            placeholder="Sous-famille"
+            value={taxonForm.subfamily}
+            onChange={(e) => handleTaxonChange('subfamily', e.target.value)}
+            required
+          />
+          <input
+            className="w-full min-w-0 rounded border p-2"
+            placeholder="Tribu"
+            value={taxonForm.tribe}
+            onChange={(e) => handleTaxonChange('tribe', e.target.value)}
+          />
+          <input
+            className="w-full min-w-0 rounded border p-2"
             placeholder="Genre"
             value={taxonForm.genus}
             onChange={(e) => handleTaxonChange('genus', e.target.value)}
             required
           />
           <input
-            className="rounded border p-2"
+            className="w-full min-w-0 rounded border p-2"
             placeholder="Sous-genre"
             value={taxonForm.subgenus}
             onChange={(e) => handleTaxonChange('subgenus', e.target.value)}
           />
           <input
-            className="rounded border p-2"
+            className="w-full min-w-0 rounded border p-2"
             placeholder="Groupe d'espèces"
             value={taxonForm.speciesGroup}
             onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)}
           />
           <input
-            className="rounded border p-2"
+            className="w-full min-w-0 rounded border p-2"
             placeholder="Espèce"
             value={taxonForm.species}
             onChange={(e) => handleTaxonChange('species', e.target.value)}
             required
           />
 
-          <div className="md:col-span-6 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3">
             <button className="ui-action ui-action--primary" type="submit">
               {selectedTaxonId ? 'Modifier taxon' : 'Créer taxon'}
             </button>

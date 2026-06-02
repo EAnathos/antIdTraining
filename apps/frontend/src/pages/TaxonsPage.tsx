@@ -1183,7 +1183,7 @@ export function TaxonsPage() {
           onClick={() => setSelectedDetail(null)}
         >
           <div
-            className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            className="flex flex-col max-h-[85vh] w-full max-w-2xl rounded-xl bg-white shadow-xl overflow-hidden"
             style={
               selectedDetail.anchor && typeof window !== 'undefined'
                 ? (() => {
@@ -1204,7 +1204,7 @@ export function TaxonsPage() {
             }
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
               <p className="font-medium text-slate-900">
                 {selectedDetail.level === 'subfamily'
                   ? 'Sous-famille'
@@ -1231,7 +1231,8 @@ export function TaxonsPage() {
               </button>
             </div>
 
-            <p className="mt-2 font-medium text-slate-900">Description</p>
+            <div className="overflow-y-auto flex-1 p-4">
+              <p className="mt-2 font-medium text-slate-900">Description</p>
             <p className="mt-1 text-slate-700">
               {selectedDetail.detail.description ?? 'Aucune description.'}
             </p>
@@ -1376,6 +1377,7 @@ export function TaxonsPage() {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       )}
