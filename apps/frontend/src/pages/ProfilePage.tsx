@@ -207,10 +207,9 @@ export function ProfilePage() {
       })
       const form = new FormData()
       form.append('avatar', file)
-      await authApi.post('/auth/avatar', form)
-      const me = await authApi.get<AuthMeResponse>('/auth/me')
-      setProfile(me.data)
-      setAvatar(me.data.avatar || '')
+      const updated = await authApi.post<AuthMeResponse>('/auth/avatar', form)
+      setProfile(updated.data)
+      setAvatar(updated.data.avatar || '')
       setSuccessMessage('Avatar mis à jour.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
