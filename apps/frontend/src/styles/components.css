@@ -18,6 +18,24 @@
     padding: 1rem;
   }
 
+  .france-map__surface {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.96),
+      rgba(248, 250, 252, 0.96)
+    );
+  }
+
+  html[data-theme='dark'] .france-map__surface {
+    background: linear-gradient(
+      180deg,
+      rgba(30, 41, 59, 0.96),
+      rgba(15, 23, 42, 0.96)
+    );
+    border-color: rgba(71, 85, 105, 0.44);
+    box-shadow: 0 18px 48px rgba(2, 6, 23, 0.4);
+  }
+
   .ui-button,
   .ui-tab,
   .ui-chip,
