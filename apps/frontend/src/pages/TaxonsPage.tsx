@@ -1233,150 +1233,156 @@ export function TaxonsPage() {
 
             <div className="overflow-y-auto flex-1 p-4">
               <p className="mt-2 font-medium text-slate-900">Description</p>
-            <p className="mt-1 text-slate-700">
-              {selectedDetail.detail.description ?? 'Aucune description.'}
-            </p>
+              <p className="mt-1 text-slate-700">
+                {selectedDetail.detail.description ?? 'Aucune description.'}
+              </p>
 
-            <p className="mt-3 font-medium text-slate-900">Caractéristiques</p>
-            {selectedDetail.detail.criteria.length > 0 ||
-            selectedDetail.detail.sizeWorker ||
-            selectedDetail.detail.sizeQueen ||
-            selectedDetail.detail.sizeMale ? (
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                {(selectedDetail.detail.sizeWorker ||
-                  selectedDetail.detail.sizeQueen ||
-                  selectedDetail.detail.sizeMale) && (
-                  <li>
-                    Tailles :{' '}
-                    {[
-                      selectedDetail.detail.sizeWorker
-                        ? `Ouvrière ${selectedDetail.detail.sizeWorker}`
-                        : null,
-                      selectedDetail.detail.sizeQueen
-                        ? `Reine ${selectedDetail.detail.sizeQueen}`
-                        : null,
-                      selectedDetail.detail.sizeMale
-                        ? `Mâle ${selectedDetail.detail.sizeMale}`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' / ')}
-                  </li>
-                )}
-                {selectedDetail.detail.criteria.map((criterion) => (
-                  <li key={criterion.id}>{criterion.label}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
-            )}
-
-            {selectedDetail.level === 'species' && (
-              <>
-                <p className="mt-3 font-medium text-slate-900">
-                  Période d'essaimage
-                </p>
-                {selectedDetail.taxon.swarmingStartMonth &&
-                selectedDetail.taxon.swarmingEndMonth ? (
-                  (() => {
-                    const startMonth = selectedDetail.taxon.swarmingStartMonth
-                    const endMonth = selectedDetail.taxon.swarmingEndMonth
-                    return (
-                      <p className="mt-2 text-slate-700">
-                        {monthLabels[startMonth - 1]} à{' '}
-                        {monthLabels[endMonth - 1]}
-                      </p>
-                    )
-                  })()
-                ) : (
-                  <p className="mt-2 text-slate-700">
-                    Aucune période d'essaimage renseignée.
-                  </p>
-                )}
-              </>
-            )}
-
-            <p className="mt-3 font-medium text-slate-900">Références liées</p>
-            {isLoadingReferences && (
-              <p className="mt-1 text-slate-700">Chargement des références…</p>
-            )}
-            {linkedReferences.length > 0 ? (
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                {linkedReferences.map((reference) => {
-                  const href = getReferenceHref(reference)
-                  return (
-                    <li key={reference.id}>
-                      {href ? (
-                        <a
-                          className="text-indigo-700 underline"
-                          href={href}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {reference.title}
-                        </a>
-                      ) : (
-                        reference.title
-                      )}
+              <p className="mt-3 font-medium text-slate-900">
+                Caractéristiques
+              </p>
+              {selectedDetail.detail.criteria.length > 0 ||
+              selectedDetail.detail.sizeWorker ||
+              selectedDetail.detail.sizeQueen ||
+              selectedDetail.detail.sizeMale ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                  {(selectedDetail.detail.sizeWorker ||
+                    selectedDetail.detail.sizeQueen ||
+                    selectedDetail.detail.sizeMale) && (
+                    <li>
+                      Tailles :{' '}
+                      {[
+                        selectedDetail.detail.sizeWorker
+                          ? `Ouvrière ${selectedDetail.detail.sizeWorker}`
+                          : null,
+                        selectedDetail.detail.sizeQueen
+                          ? `Reine ${selectedDetail.detail.sizeQueen}`
+                          : null,
+                        selectedDetail.detail.sizeMale
+                          ? `Mâle ${selectedDetail.detail.sizeMale}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' / ')}
                     </li>
-                  )
-                })}
-              </ul>
-            ) : (
-              <p className="mt-1 text-slate-700">Aucune référence liée.</p>
-            )}
+                  )}
+                  {selectedDetail.detail.criteria.map((criterion) => (
+                    <li key={criterion.id}>{criterion.label}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+              )}
 
-            {selectedDetail.level === 'species' &&
-              selectedDetail.taxon.confusions.length > 0 && (
+              {selectedDetail.level === 'species' && (
                 <>
                   <p className="mt-3 font-medium text-slate-900">
-                    Confusions possibles
+                    Période d'essaimage
                   </p>
-                  <ul className="mt-1 space-y-2 text-slate-700">
-                    {selectedDetail.taxon.confusions.map((confusion) => (
-                      <li
-                        key={confusion.id}
-                        className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-                      >
-                        <p className="font-semibold">
-                          Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
-                          <em>{confusion.confusedTaxon.species}</em>
+                  {selectedDetail.taxon.swarmingStartMonth &&
+                  selectedDetail.taxon.swarmingEndMonth ? (
+                    (() => {
+                      const startMonth = selectedDetail.taxon.swarmingStartMonth
+                      const endMonth = selectedDetail.taxon.swarmingEndMonth
+                      return (
+                        <p className="mt-2 text-slate-700">
+                          {monthLabels[startMonth - 1]} à{' '}
+                          {monthLabels[endMonth - 1]}
                         </p>
-                        <p className="mt-1 whitespace-pre-wrap">
-                          {confusion.detail}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+                      )
+                    })()
+                  ) : (
+                    <p className="mt-2 text-slate-700">
+                      Aucune période d'essaimage renseignée.
+                    </p>
+                  )}
                 </>
               )}
 
-            {selectedDetail.level === 'species' && (
-              <>
-                <p className="mt-3 font-medium text-slate-900">
-                  Aire de répartition
+              <p className="mt-3 font-medium text-slate-900">
+                Références liées
+              </p>
+              {isLoadingReferences && (
+                <p className="mt-1 text-slate-700">
+                  Chargement des références…
                 </p>
-                <div className="mt-1">
-                  {(() => {
-                    const raw = (selectedDetail.taxon.distribution
-                      ?.departments ?? []) as unknown[]
-                    const codes = raw.filter(
-                      (c) => typeof c === 'string',
-                    ) as FrenchDepartmentCode[]
+              )}
+              {linkedReferences.length > 0 ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                  {linkedReferences.map((reference) => {
+                    const href = getReferenceHref(reference)
+                    return (
+                      <li key={reference.id}>
+                        {href ? (
+                          <a
+                            className="text-indigo-700 underline"
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {reference.title}
+                          </a>
+                        ) : (
+                          reference.title
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <p className="mt-1 text-slate-700">Aucune référence liée.</p>
+              )}
 
-                    if (codes.length === 0) {
-                      return (
-                        <p className="mt-1 text-slate-700">
-                          Aucune aire de répartition renseignée.
-                        </p>
-                      )
-                    }
+              {selectedDetail.level === 'species' &&
+                selectedDetail.taxon.confusions.length > 0 && (
+                  <>
+                    <p className="mt-3 font-medium text-slate-900">
+                      Confusions possibles
+                    </p>
+                    <ul className="mt-1 space-y-2 text-slate-700">
+                      {selectedDetail.taxon.confusions.map((confusion) => (
+                        <li
+                          key={confusion.id}
+                          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                        >
+                          <p className="font-semibold">
+                            Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
+                            <em>{confusion.confusedTaxon.species}</em>
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap">
+                            {confusion.detail}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
 
-                    return <FranceMap selectedDepartments={codes} readonly />
-                  })()}
-                </div>
-              </>
-            )}
+              {selectedDetail.level === 'species' && (
+                <>
+                  <p className="mt-3 font-medium text-slate-900">
+                    Aire de répartition
+                  </p>
+                  <div className="mt-1">
+                    {(() => {
+                      const raw = (selectedDetail.taxon.distribution
+                        ?.departments ?? []) as unknown[]
+                      const codes = raw.filter(
+                        (c) => typeof c === 'string',
+                      ) as FrenchDepartmentCode[]
+
+                      if (codes.length === 0) {
+                        return (
+                          <p className="mt-1 text-slate-700">
+                            Aucune aire de répartition renseignée.
+                          </p>
+                        )
+                      }
+
+                      return <FranceMap selectedDepartments={codes} readonly />
+                    })()}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
