@@ -136,7 +136,7 @@ function TreeView({
   onNodeClick,
 }: {
   root: TreeNode
-  onNodeClick: (node: TreeNode) => void
+  onNodeClick: (node: TreeNode, coords?: { x: number; y: number }) => void
 }) {
   // flatten leaves to compute layout
   const leaves: TreeNode[] = []
@@ -197,7 +197,6 @@ function TreeView({
   const [scale, setScale] = useState(1)
   const dragging = useRef(false)
   const last = useRef<{ x: number; y: number } | null>(null)
-  const pinchStart = useRef<{ distance: number; scale: number } | null>(null)
 
   function clampScale(nextScale: number) {
     return Math.max(0.4, Math.min(3, nextScale))
@@ -224,100 +223,87 @@ function TreeView({
     dragging.current = false
     last.current = null
   }
-  function onWheel(e: React.WheelEvent) {
-    e.preventDefault()
-    const delta = -e.deltaY
-    const factor = delta > 0 ? 1.08 : 0.92
-    setScale((s) => clampScale(s * factor))
-  }
-
-  function onTouchStart(e: React.TouchEvent) {
-    if (e.touches.length === 2) {
-      const a = e.touches.item(0)
-      const b = e.touches.item(1)
-      if (!a || !b) {
-        return
-      }
-      pinchStart.current = {
-        distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
-        scale,
-      }
-    }
-  }
-
-  function onTouchMove(e: React.TouchEvent) {
-    if (!pinchStart.current || e.touches.length !== 2) {
-      return
-    }
-
-    const a = e.touches.item(0)
-    const b = e.touches.item(1)
-    if (!a || !b) {
-      return
-    }
-    const currentDistance = Math.hypot(
-      a.clientX - b.clientX,
-      a.clientY - b.clientY,
-    )
-    if (pinchStart.current.distance <= 0) {
-      return
-    }
-
-    const nextScale =
-      pinchStart.current.scale * (currentDistance / pinchStart.current.distance)
-    setScale(clampScale(nextScale))
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    if (e.touches.length < 2) {
-      pinchStart.current = null
-    }
-  }
+  // wheel/pinch handlers intentionally removed — zoom only via buttons
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <div className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-600">
+    <div
+      className="rounded-lg p-3"
+      style={{
+        border: '1px solid var(--app-border)',
+        background: 'var(--app-surface)',
+        color: 'var(--app-text)',
+      }}
+    >
+      <div
+        style={{
+          marginBottom: 8,
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 8,
+          alignItems: 'center',
+          fontSize: 13,
+          color: 'var(--app-text-soft)',
+        }}
+      >
         <div>
           Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez
           la molette pour zoomer et glisser pour vous déplacer.
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             type="button"
-            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
             onClick={() => zoomBy(0.85)}
             aria-label="Dézoomer l’arbre"
+            style={{
+              border: '1px solid var(--app-border)',
+              background: 'var(--app-surface-strong)',
+              color: 'var(--app-text)',
+              padding: '6px 8px',
+              fontSize: 12,
+              borderRadius: 6,
+            }}
           >
             −
           </button>
           <button
             type="button"
-            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
             onClick={() => zoomBy(1.15)}
             aria-label="Zoomer l’arbre"
+            style={{
+              border: '1px solid var(--app-border)',
+              background: 'var(--app-surface-strong)',
+              color: 'var(--app-text)',
+              padding: '6px 8px',
+              fontSize: 12,
+              borderRadius: 6,
+            }}
           >
             +
           </button>
           <button
             type="button"
-            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm"
             onClick={() => setScale(1)}
             aria-label="Réinitialiser le zoom"
+            style={{
+              border: '1px solid var(--app-border)',
+              background: 'var(--app-surface-strong)',
+              color: 'var(--app-text)',
+              padding: '6px 8px',
+              fontSize: 12,
+              borderRadius: 6,
+            }}
           >
             ↺
           </button>
         </div>
       </div>
+
       <div
         style={{ width: '100%', overflow: 'hidden', touchAction: 'none' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onWheel={onWheel}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
       >
         <svg width={Math.min(width, 1400)} height={height}>
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
@@ -328,32 +314,50 @@ function TreeView({
                 y1={l.y1}
                 x2={l.x2}
                 y2={l.y2}
-                stroke="#cbd5e1"
+                stroke="var(--app-border)"
                 strokeWidth={2}
               />
             ))}
 
-            {nodes.map(({ node, x, y }) => (
-              <g
-                key={node.id}
-                transform={`translate(${x},${y})`}
-                style={{ cursor: node.taxon ? 'pointer' : 'default' }}
-                onClick={() => onNodeClick(node)}
-              >
-                <circle
-                  r={node.taxon ? 8 : 6}
-                  fill={node.taxon ? '#4f46e5' : '#94a3b8'}
-                />
-                <text
-                  x={12}
-                  y={6}
-                  fontSize={12}
-                  className="fill-current text-slate-950 dark:text-white font-medium"
+            {nodes.map(({ node, x, y }) => {
+              const name = node.name || ''
+              const isPlaceholder =
+                name === '-' || name === '—' || name.trim() === ''
+              const clickable = !isPlaceholder
+
+              return (
+                <g
+                  key={node.id}
+                  transform={`translate(${x},${y})`}
+                  style={{ cursor: clickable ? 'pointer' : 'default' }}
+                  onClick={(e: React.MouseEvent) => {
+                    if (!clickable) return
+                    e.stopPropagation()
+                    onNodeClick(node, { x: e.clientX, y: e.clientY })
+                  }}
                 >
-                  {node.name || ''}
-                </text>
-              </g>
-            ))}
+                  <circle
+                    r={node.taxon ? 8 : 6}
+                    fill={
+                      clickable ? 'var(--app-primary)' : 'var(--app-text-soft)'
+                    }
+                  />
+                  <text
+                    x={12}
+                    y={6}
+                    fontSize={12}
+                    style={{
+                      fill: clickable
+                        ? 'var(--app-text)'
+                        : 'var(--app-text-soft)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {name}
+                  </text>
+                </g>
+              )
+            })}
           </g>
         </svg>
       </div>
@@ -375,6 +379,7 @@ type SelectedDetail = {
   level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species'
   value: string
   detail: TaxonLevelDetail
+  anchor?: { x: number; y: number }
 }
 
 const monthLabels = [
@@ -602,8 +607,9 @@ export function TaxonsPage() {
     level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species',
     value: string,
     detail: TaxonLevelDetail,
+    coords?: { x: number; y: number },
   ) {
-    setSelectedDetail({ taxon, level, value, detail })
+    setSelectedDetail({ taxon, level, value, detail, anchor: coords })
   }
 
   useEffect(() => {
@@ -858,7 +864,7 @@ export function TaxonsPage() {
             <div className="mt-4">
               <TreeView
                 root={buildTreeFromTaxons(filteredTaxons)}
-                onNodeClick={(node) => {
+                onNodeClick={(node, coords) => {
                   // find representative taxon for the node or its descendants
                   function findTaxon(n: TreeNode | undefined): Taxon | null {
                     if (!n) return null
@@ -880,6 +886,7 @@ export function TaxonsPage() {
                       'subfamily',
                       node.name,
                       rep.levelDetails.subfamily,
+                      coords,
                     )
                   } else if (node.depth === 2) {
                     // Tribe: map to subfamily detail (no tribe-level detail available)
@@ -888,6 +895,7 @@ export function TaxonsPage() {
                       'subfamily',
                       node.name,
                       rep.levelDetails.subfamily,
+                      coords,
                     )
                   } else if (node.depth === 3) {
                     openSelectedDetail(
@@ -895,6 +903,7 @@ export function TaxonsPage() {
                       'genus',
                       node.name,
                       rep.levelDetails.genus,
+                      coords,
                     )
                   } else if (node.depth === 4) {
                     openSelectedDetail(
@@ -908,6 +917,7 @@ export function TaxonsPage() {
                         sizeMale: null,
                         criteria: [],
                       },
+                      coords,
                     )
                   } else if (node.depth === 5) {
                     openSelectedDetail(
@@ -921,6 +931,7 @@ export function TaxonsPage() {
                         sizeMale: null,
                         criteria: [],
                       },
+                      coords,
                     )
                   } else {
                     openSelectedDetail(
@@ -928,6 +939,7 @@ export function TaxonsPage() {
                       'species',
                       rep.species,
                       rep.levelDetails.species,
+                      coords,
                     )
                   }
                 }}
@@ -967,118 +979,156 @@ export function TaxonsPage() {
                     const subgenusDetail = taxon.levelDetails.subgenus
                     const speciesGroupDetail = taxon.levelDetails.speciesGroup
 
+                    const subfamilyVal = taxon.subfamily || '-'
+                    const tribeVal = taxon.tribe || '-'
+                    const genusVal = taxon.genus || '-'
+                    const subgenusVal = subgenus || '-'
+                    const speciesGroupVal = speciesGroup || '-'
+                    const speciesVal = taxon.species || '-'
+
+                    const isClickable = (v: string) =>
+                      v && v !== '-' && v !== '—'
+
                     return (
                       <tr key={taxon.id} className="border-b border-slate-100">
                         <td
                           className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={taxon.subfamily}
+                          title={subfamilyVal}
                         >
-                          <button
-                            className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
-                            type="button"
-                            onClick={() =>
-                              openSelectedDetail(
-                                taxon,
-                                'subfamily',
-                                taxon.subfamily,
-                                taxon.levelDetails.subfamily,
-                              )
-                            }
-                          >
-                            {taxon.subfamily}
-                          </button>
-                        </td>
-                        <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={taxon.tribe ?? '-'}
-                        >
-                          {taxon.tribe ?? '-'}
-                        </td>
-                        <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={taxon.genus}
-                        >
-                          <button
-                            className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
-                            type="button"
-                            onClick={() =>
-                              openSelectedDetail(
-                                taxon,
-                                'genus',
-                                taxon.genus,
-                                taxon.levelDetails.genus,
-                              )
-                            }
-                          >
-                            <em>{taxon.genus}</em>
-                          </button>
-                        </td>
-                        <td
-                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={subgenus ? `(${subgenus})` : '-'}
-                        >
-                          {subgenus && subgenusDetail ? (
-                            <button
-                              className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
-                              type="button"
-                              onClick={() =>
-                                openSelectedDetail(
-                                  taxon,
-                                  'subgenus',
-                                  subgenus,
-                                  subgenusDetail,
-                                )
-                              }
-                            >
-                              ({subgenus})
-                            </button>
-                          ) : subgenus ? (
-                            `(${subgenus})`
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={speciesGroup ?? '-'}
-                        >
-                          {speciesGroup && speciesGroupDetail ? (
+                          {isClickable(subfamilyVal) ? (
                             <button
                               className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
                                   taxon,
-                                  'speciesGroup',
-                                  speciesGroup,
-                                  speciesGroupDetail,
+                                  'subfamily',
+                                  taxon.subfamily,
+                                  taxon.levelDetails.subfamily,
                                 )
                               }
                             >
-                              {speciesGroup}
+                              {subfamilyVal}
                             </button>
                           ) : (
-                            (speciesGroup ?? '-')
+                            <span className="text-slate-500">
+                              {subfamilyVal}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={tribeVal}
+                        >
+                          {tribeVal}
+                        </td>
+                        <td
+                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={genusVal}
+                        >
+                          {isClickable(genusVal) ? (
+                            <button
+                              className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              type="button"
+                              onClick={() =>
+                                openSelectedDetail(
+                                  taxon,
+                                  'genus',
+                                  taxon.genus,
+                                  taxon.levelDetails.genus,
+                                )
+                              }
+                            >
+                              <em>{genusVal}</em>
+                            </button>
+                          ) : (
+                            <span className="text-slate-500">{genusVal}</span>
+                          )}
+                        </td>
+                        <td
+                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={subgenusVal}
+                        >
+                          {subgenus && subgenusDetail ? (
+                            isClickable(subgenusVal) ? (
+                              <button
+                                className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                type="button"
+                                onClick={() =>
+                                  openSelectedDetail(
+                                    taxon,
+                                    'subgenus',
+                                    subgenus,
+                                    subgenusDetail,
+                                  )
+                                }
+                              >
+                                ({subgenusVal})
+                              </button>
+                            ) : (
+                              <span className="text-slate-500">
+                                ({subgenusVal})
+                              </span>
+                            )
+                          ) : subgenus ? (
+                            `(${subgenus})`
+                          ) : (
+                            <span className="text-slate-500">-</span>
                           )}
                         </td>
                         <td
                           className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={taxon.species}
+                          title={speciesGroupVal}
                         >
-                          <button
-                            className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
-                            type="button"
-                            onClick={() =>
-                              openSelectedDetail(
-                                taxon,
-                                'species',
-                                taxon.species,
-                                taxon.levelDetails.species,
-                              )
-                            }
-                          >
-                            <em>{taxon.species}</em>
-                          </button>
+                          {speciesGroup && speciesGroupDetail ? (
+                            isClickable(speciesGroupVal) ? (
+                              <button
+                                className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                type="button"
+                                onClick={() =>
+                                  openSelectedDetail(
+                                    taxon,
+                                    'speciesGroup',
+                                    speciesGroup,
+                                    speciesGroupDetail,
+                                  )
+                                }
+                              >
+                                {speciesGroupVal}
+                              </button>
+                            ) : (
+                              <span className="text-slate-500">
+                                {speciesGroupVal}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-slate-500">
+                              {speciesGroupVal}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          title={speciesVal}
+                        >
+                          {isClickable(speciesVal) ? (
+                            <button
+                              className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              type="button"
+                              onClick={() =>
+                                openSelectedDetail(
+                                  taxon,
+                                  'species',
+                                  taxon.species,
+                                  taxon.levelDetails.species,
+                                )
+                              }
+                            >
+                              <em>{speciesVal}</em>
+                            </button>
+                          ) : (
+                            <span className="text-slate-500">{speciesVal}</span>
+                          )}
                         </td>
                       </tr>
                     )
@@ -1134,6 +1184,24 @@ export function TaxonsPage() {
         >
           <div
             className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            style={
+              selectedDetail.anchor && typeof window !== 'undefined'
+                ? (() => {
+                    const vh = window.innerHeight
+                    const top = Math.min(
+                      Math.max(selectedDetail.anchor.y, 12),
+                      vh - 12,
+                    )
+                    return {
+                      position: 'absolute',
+                      left: '50%',
+                      top: `${top}px`,
+                      transform: 'translateX(-50%) translateY(-10%)',
+                      maxWidth: 'min(90vw, 40rem)',
+                    } as React.CSSProperties
+                  })()
+                : undefined
+            }
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
