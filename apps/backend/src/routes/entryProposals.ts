@@ -39,9 +39,7 @@ const proposalSchema = z.object({
   speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
   department: z
     .string()
-    .min(2, 'Département invalide')
-    .max(2, 'Département invalide')
-    .regex(/^[0-9]{2}$/, 'Département invalide')
+    .regex(/^(?:[0-9]{2}|2[AB]|9[7-8][0-9])$/, 'Département invalide')
     .trim(),
   observedAt: z.coerce
     .date()
@@ -133,23 +131,29 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
   const baseFileName = `${fileId}.webp`
   const savedPaths: string[] = []
 
-  for (const width of RESPONSIVE_IMAGE_WIDTHS) {
-    const outputFileName =
-      width === 1600 ? baseFileName : `${fileId}-${width}.webp`
-    const outputPath = resolveUploadFilePath(outputFileName)
+  try {
+    for (const width of RESPONSIVE_IMAGE_WIDTHS) {
+      const outputFileName =
+        width === 1600 ? baseFileName : `${fileId}-${width}.webp`
+      const outputPath = resolveUploadFilePath(outputFileName)
 
-    await image
-      .clone()
-      .resize({
-        width,
-        height: width,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: width === 1600 ? 82 : 78, effort: 6 })
-      .toFile(outputPath)
+      await image
+        .clone()
+        .resize({
+          width,
+          height: width,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: width === 1600 ? 82 : 78, effort: 6 })
+        .toFile(outputPath)
 
-    savedPaths.push(outputPath)
+      savedPaths.push(outputPath)
+    }
+  } catch (error) {
+    await Promise.allSettled(savedPaths.map((p) => fs.promises.unlink(p)))
+    if (error instanceof AppError) throw error
+    throw new AppError(400, 'Image corrompue ou invalide.')
   }
 
   return {

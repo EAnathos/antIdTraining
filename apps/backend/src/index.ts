@@ -60,7 +60,7 @@ function parseCorsOrigins(value: string | undefined) {
 }
 
 const app = express()
-app.set('trust proxy', 1)
+app.set('trust proxy', config.trustProxy)
 
 // Security headers
 // The frontend and uploads are served from sibling subdomains in production,

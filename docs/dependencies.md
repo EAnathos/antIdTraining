@@ -1,137 +1,51 @@
-# Schéma de dépendances
+# Dépendances
 
-Ce document résume les dépendances principales du projet et leur utilité.
+Bibliothèques principales du projet et leur rôle.
 
-## Vue d'ensemble
+## Frontend
 
-```mermaid
----
-title: Dépendances principales d'Ant ID Training
----
-flowchart LR
-    subgraph FE[Frontend]
-        direction TB
-        React[React]
-        Router[React Router]
-        Query[TanStack React Query]
-        ZodFE[Zod]
-        Vite[Vite]
-        Tailwind[Tailwind CSS]
-        ESLint[ESLint]
+| Dépendance                             | Rôle                                                      |
+| -------------------------------------- | --------------------------------------------------------- |
+| React                                  | Construction de l'interface utilisateur                   |
+| React Router                           | Navigation entre les pages                                |
+| TanStack React Query                   | Cache et synchronisation des requêtes serveur             |
+| Zod                                    | Validation des données côté client                        |
+| Vite                                   | Serveur de développement et build de production           |
+| Tailwind CSS                           | Styles utilitaires                                        |
+| `@svg-country-maps/france.departments` | Données cartographiques pour l'affichage des départements |
 
-        React --> Router
-        React --> Query
-        React --> ZodFE
-        Vite --> React
-        Tailwind --> React
-        ESLint -. contrôle qualité .-> React
-    end
+## Backend
 
-    subgraph SH[Partagé]
-        direction TB
-        ZodShared[Zod]
-        Cuid2["@paralleldrive/cuid2"]
-        FranceMap["@svg-country-maps/france.departments"]
-    end
+| Dépendance                  | Rôle                                                                 |
+| --------------------------- | -------------------------------------------------------------------- |
+| Express 5                   | Serveur HTTP et routage de l'API                                     |
+| Prisma + `@prisma/client`   | ORM — schéma, migrations, requêtes typées                            |
+| `@prisma/adapter-pg` + `pg` | Adaptateur PostgreSQL bas niveau                                     |
+| ioredis                     | Client Redis — rate limiting et cache applicatif                     |
+| Zod                         | Validation des payloads entrants                                     |
+| jsonwebtoken                | Création et vérification des JWT                                     |
+| bcryptjs                    | Hachage des mots de passe                                            |
+| pino                        | Logs structurés JSON                                                 |
+| multer                      | Gestion des uploads multipart                                        |
+| sharp                       | Traitement et conversion des images (→ WebP multi-résolutions)       |
+| cors                        | Gestion des origines autorisées                                      |
+| helmet                      | En-têtes de sécurité HTTP                                            |
+| compression                 | Compression gzip des réponses                                        |
+| adm-zip                     | Manipulation d'archives ZIP (export/import bundle)                   |
+| swagger-ui-express          | Interface Swagger pour l'OpenAPI généré                              |
+| `@paralleldrive/cuid2`      | Génération d'identifiants courts et uniques                          |
+| dotenv                      | Chargement des variables d'environnement                             |
+| Resend                      | Envoi d'e-mails transactionnels (API REST directe, sans package npm) |
 
-    subgraph BE[Backend]
-        direction TB
-        Express[Express]
-        Prisma["Prisma / @prisma/client"]
-        PgAdapter["@prisma/adapter-pg"]
-        Pg[pg]
-        Postgres[(PostgreSQL)]
-        Redis[(Redis)]
-        JWT[jsonwebtoken]
-        Bcrypt[bcryptjs]
-        Pino[pino]
-        Multer[multer]
-        Sharp[sharp]
-        CORS[cors]
-        Helmet[helmet]
-        Compression[compression]
-        Dotenv[dotenv]
-        Swagger[swagger-ui-express]
-        AdmZip[adm-zip]
+## Outils de développement
 
-        Express --> Prisma
-        Prisma --> PgAdapter --> Pg --> Postgres
-        Express --> Redis
-        Express --> JWT
-        Express --> Bcrypt
-        Express --> Pino
-        Express --> Multer
-        Express --> Sharp
-        Express --> CORS
-        Express --> Helmet
-        Express --> Compression
-        Express --> Dotenv
-        Express --> Swagger
-        Express --> AdmZip
-        Express --> ZodShared
-        Express --> Cuid2
-    end
-
-    React --> FranceMap
-    Query --> ZodShared
-    Router --> Express
-```
-
-## Détail des dépendances
-
-### Frontend
-
-| Dépendance           | Utilité                                                                   |
-| -------------------- | ------------------------------------------------------------------------- |
-| React                | Construction de l'interface utilisateur.                                  |
-| React Router         | Navigation entre les pages.                                               |
-| TanStack React Query | Cache, synchronisation et gestion des requêtes serveur.                   |
-| Zod                  | Validation des données côté client et partage de schémas avec le backend. |
-| Vite                 | Serveur de développement et build de production.                          |
-| Tailwind CSS         | Styles utilitaires de l'interface.                                        |
-| ESLint               | Analyse statique et cohérence du code.                                    |
-
-### Partagé
-
-| Dépendance                           | Utilité                                                    |
-| ------------------------------------ | ---------------------------------------------------------- |
-| Zod                                  | Schémas de validation et typage des payloads.              |
-| @paralleldrive/cuid2                 | Génération d'identifiants courts et uniques.               |
-| @svg-country-maps/france.departments | Données cartographiques pour l'affichage des départements. |
-
-### Backend
-
-| Dépendance              | Utilité                                                   |
-| ----------------------- | --------------------------------------------------------- |
-| Express                 | Serveur HTTP et routage de l'API.                         |
-| Prisma / @prisma/client | Accès à la base, requêtes typées et migrations.           |
-| @prisma/adapter-pg      | Adaptateur Prisma pour PostgreSQL.                        |
-| pg                      | Client PostgreSQL bas niveau.                             |
-| PostgreSQL              | Base de données relationnelle.                            |
-| Redis                   | Cache et rate limiting.                                   |
-| jsonwebtoken            | Création et vérification des jetons d'authentification.   |
-| bcryptjs                | Hash des mots de passe.                                   |
-| pino                    | Logs structurés.                                          |
-| multer                  | Gestion des uploads.                                      |
-| sharp                   | Traitement et conversion des images.                      |
-| cors                    | Gestion des origines autorisées.                          |
-| helmet                  | En-têtes de sécurité HTTP.                                |
-| compression             | Compression des réponses HTTP.                            |
-| dotenv                  | Chargement des variables d'environnement.                 |
-| swagger-ui-express      | Interface de documentation OpenAPI.                       |
-| adm-zip                 | Manipulation d'archives ZIP pour certains scripts/outils. |
-
-### Outils de développement
-
-| Dépendance  | Utilité                                        |
-| ----------- | ---------------------------------------------- |
-| TypeScript  | Typage et compilation.                         |
-| tsx         | Exécution des scripts TypeScript côté backend. |
-| pino-pretty | Lisibilité des logs en développement.          |
-| @types/\*   | Typage TypeScript des bibliothèques JS.        |
-
-## À retenir
-
-- Le frontend s'appuie surtout sur React, React Router et React Query.
-- Le backend est centré sur Express, Prisma, PostgreSQL et les briques de sécurité.
-- Zod est le point de jonction principal pour valider les données entre frontend et backend.
+| Dépendance               | Rôle                                           |
+| ------------------------ | ---------------------------------------------- |
+| TypeScript               | Typage statique et compilation                 |
+| tsx                      | Exécution des scripts TypeScript (backend)     |
+| Vitest                   | Exécution des tests unitaires et d'intégration |
+| `@testing-library/react` | Tests des composants React                     |
+| `@vitest/coverage-v8`    | Rapport de couverture de code                  |
+| ESLint                   | Analyse statique                               |
+| Prettier                 | Formatage du code                              |
+| pino-pretty              | Lisibilité des logs en développement           |

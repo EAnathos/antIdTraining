@@ -1,4 +1,5 @@
 import { AppError } from './errors.js'
+import { logger } from './logger.js'
 import { getRedis } from './redis.js'
 
 function normalizeIp(ip: string) {
@@ -13,7 +14,11 @@ export async function enforceIpRateLimit(
   message: string,
 ) {
   if (!ipInput) {
-    return
+    logger.warn(
+      { namespace },
+      'enforceIpRateLimit: IP manquante, requête bloquée par précaution',
+    )
+    throw new AppError(429, message)
   }
 
   const redis = getRedis()

@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/eanathos/Documents/Github/antIdTraining && npm run lint 2>&1 | tail -10 && npm run format 2>&1 | tail -5"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/eanathos/Documents/Github/antIdTraining && npm run test:coverage 2>&1 | tail -15 && npm run build 2>&1 | tail -10"
+          }
+        ]
+      }
+    ]
+  }
+}

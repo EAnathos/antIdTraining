@@ -1,60 +1,59 @@
-# Sauvegardes base
+# Sauvegardes
 
-Ce projet utilise une stratégie de sauvegarde simple et exploitable sans Docker :
+Stratégie de sauvegarde PostgreSQL + uploads, sans dépendance à Docker.
 
-- export PostgreSQL avec `pg_dump`
-- archivage du dossier `apps/backend/uploads` si présent
-- stockage daté dans un répertoire `backups/`
+## Ce qui est sauvegardé
 
-## Objectifs
+- `database.dump` : dump PostgreSQL au format custom (`pg_dump`)
+- `uploads.tar.gz` : fichiers uploadés (`apps/backend/uploads`)
+- `manifest.json` : métadonnées horodatées
 
-- **RPO** : 24 heures maximum pour une sauvegarde quotidienne
-- **RTO** : dépend du volume, viser moins d’une heure pour une restauration simple
+## Commandes
 
-## Script de sauvegarde
+```bash
+npm run backup:db    # crée un backup daté dans backups/
+npm run restore:db   # restaure depuis un répertoire de backup
+```
 
-Le script `scripts/backup-db.sh` crée un backup horodaté contenant :
-
-- `database.dump` : dump PostgreSQL au format custom
-- `uploads.tar.gz` : archive des fichiers uploadés
-- `manifest.json` : métadonnées de sauvegarde
+Les scripts sous-jacents sont `scripts/backup-db.sh` et `scripts/restore-db.sh`.
 
 ### Variables requises
 
-- `DATABASE_URL` : connexion PostgreSQL à sauvegarder
+- `DATABASE_URL` : connexion PostgreSQL à sauvegarder/restaurer
 
 ### Variables optionnelles
 
-- `BACKUP_ROOT` : dossier racine des backups, par défaut `./backups`
-- `UPLOADS_DIR` : dossier des uploads, par défaut `apps/backend/uploads`
+- `BACKUP_ROOT` : répertoire racine des backups (défaut : `./backups`)
+- `UPLOADS_DIR` : répertoire des uploads (défaut : `apps/backend/uploads`)
 
-## Restauration
-
-Le script `scripts/restore-db.sh` restaure un backup depuis un répertoire de sauvegarde.
-
-Exemple :
+### Exemple de restauration
 
 ```bash
-DATABASE_URL="postgresql://..." ./scripts/restore-db.sh ./backups/20260524T120000Z
+DATABASE_URL="postgresql://..." npm run restore:db -- ./backups/20260524T120000Z
 ```
 
-## Politique de rétention
+## Objectifs
 
-Recommandation minimale :
+- **RPO** : 24 h pour une sauvegarde quotidienne
+- **RTO** : moins d'une heure pour une restauration simple
 
-- conserver les backups quotidiens 7 jours
-- conserver les backups hebdomadaires 4 semaines
-- conserver un backup mensuel 3 mois
+## Politique de rétention recommandée
+
+| Fréquence    | Durée de conservation |
+| ------------ | --------------------- |
+| Quotidien    | 7 jours               |
+| Hebdomadaire | 4 semaines            |
+| Mensuel      | 3 mois                |
 
 ## Runbook
 
-1. Créer le backup.
-2. Copier le répertoire de backup vers un stockage externe.
+1. Créer le backup (`npm run backup:db`).
+2. Copier le répertoire vers un stockage externe (S3, NAS, etc.).
 3. Tester une restauration sur une base de préproduction.
-4. Vérifier l’intégrité des données et des uploads.
+4. Vérifier l'intégrité des données et des uploads.
 
 ## Alertes recommandées
 
-- échec de backup
-- absence de backup dans les dernières 24 heures
-- restauration de test non concluante
+- Échec du script de backup
+- Absence de backup récent (> 24 h)
+- Restauration de test non concluante

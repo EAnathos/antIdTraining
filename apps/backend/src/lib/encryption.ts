@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { config } from '../config.js'
+import { logger } from './logger.js'
 
 const ENCRYPTION_PREFIX = 'enc:v1:'
 
@@ -20,7 +21,12 @@ export function encryptSensitiveText(value: string | null | undefined) {
   if (value == null) return value ?? null
 
   const key = getKeyMaterial()
-  if (!key) return value
+  if (!key) {
+    logger.warn(
+      'encryptSensitiveText: DATA_ENCRYPTION_KEY absent, valeur stockée en clair',
+    )
+    return value
+  }
 
   if (isEncrypted(value)) return value
 

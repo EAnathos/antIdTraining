@@ -1,42 +1,45 @@
-# Monitoring et alerting
+# Monitoring
 
-Cette application expose désormais deux niveaux de santé côté backend :
+Le backend expose deux endpoints de santé :
 
-- `GET /api/health` : liveness simple pour vérifier que l’API répond.
-- `GET /api/health/ready` : readiness détaillée, avec vérification PostgreSQL, Redis et métriques de requêtes.
+| Endpoint                | Type      | Description                                 |
+| ----------------------- | --------- | ------------------------------------------- |
+| `GET /api/health`       | Liveness  | L'API répond                                |
+| `GET /api/health/ready` | Readiness | Vérifie PostgreSQL, Redis et métriques HTTP |
 
 ## Réponse de readiness
 
-L’endpoint `GET /api/health/ready` renvoie :
+```json
+{
+  "ok": true,
+  "timestamp": "...",
+  "uptime": 3600,
+  "checks": {
+    "postgres": { "ok": true, "latencyMs": 2 },
+    "redis": { "ok": true, "latencyMs": 1 }
+  },
+  "metrics": {
+    "totalRequests": 1200,
+    "serverErrors": 0
+  }
+}
+```
 
-- l’état global `ok`
-- un horodatage
-- l’uptime du service
-- l’état de PostgreSQL et Redis
-- des métriques de trafic HTTP en mémoire
+Renvoie `503` si PostgreSQL ou Redis est en échec.
 
 ## Alertes recommandées
 
-À connecter dans votre outil de supervision ou votre orchestrateur :
+1. **API indisponible** — `GET /api/health` ne renvoie pas `200`
+2. **Dépendance dégradée** — `GET /api/health/ready` renvoie `503`
+3. **Hausse des erreurs serveur** — `metrics.serverErrors` augmente sur une fenêtre glissante
+4. **Latence anormale** — `latencyMs` dépasse votre seuil SLO
 
-1. **API indisponible**
-   - alerter si `GET /api/health` renvoie autre chose que `200`
+## Traçabilité des erreurs
 
-2. **Dépendance dégradée**
-   - alerter si `GET /api/health/ready` renvoie `503`
-   - déclencher si PostgreSQL ou Redis est en échec
-
-3. **Hausse des erreurs serveur**
-   - surveiller `serverErrors` dans la réponse readiness
-   - déclencher si la tendance augmente sur une fenêtre glissante
-
-4. **Latence anormale**
-   - surveiller `latencyMs` des checks base et Redis
-   - déclencher si la latence dépasse votre seuil SLO
+Les erreurs 500 incluent un `errorId` dans la réponse JSON et dans les logs structurés (pino). Pour diagnostiquer une erreur signalée par un utilisateur, chercher cet `errorId` dans les logs du backend.
 
 ## Bonnes pratiques
 
-- Garder les checks simples et rapides.
-- Utiliser un uptime check externe en plus des logs applicatifs.
-- Définir des seuils d’alerte séparés pour la disponibilité et la performance.
-- Conserver les logs structurés du backend pour corréler les alertes.
+- Ajouter un uptime check externe (Uptime Kuma, Better Uptime, etc.) sur `/api/health`.
+- Définir des seuils d'alerte séparés pour la disponibilité et la performance.
+- Corréler les alertes avec les logs JSON du backend (champ `err`, `errorId`, `path`).
