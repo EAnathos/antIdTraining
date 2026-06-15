@@ -487,6 +487,9 @@ describe('TaxonsPage', () => {
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
+    // Lasiini (tribe, depth 2) is collapsed by default — expand to show Formica
+    fireEvent.click(screen.getByRole('button', { name: 'Étendre Lasiini' }))
+
     fireEvent.click(screen.getByText('Formica'))
     expect(
       await screen.findByText(
@@ -494,6 +497,9 @@ describe('TaxonsPage', () => {
       ),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    // Formica (genus, depth 3) is collapsed — expand to show Serviformica
+    fireEvent.click(screen.getByRole('button', { name: 'Étendre Formica' }))
 
     fireEvent.click(screen.getByText('Serviformica'))
     expect(
@@ -503,6 +509,11 @@ describe('TaxonsPage', () => {
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
 
+    // Serviformica (subgenus, depth 4) is collapsed — expand to show rufibarbis group
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Étendre Serviformica' }),
+    )
+
     fireEvent.click(screen.getByText('rufibarbis group'))
     expect(
       await screen.findByText(
@@ -511,6 +522,11 @@ describe('TaxonsPage', () => {
       ),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+
+    // rufibarbis group (depth 5) is collapsed — expand to show the species
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Étendre rufibarbis group' }),
+    )
 
     fireEvent.click(screen.getByText('rufibarbis'))
     expect(

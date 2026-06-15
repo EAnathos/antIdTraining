@@ -85,18 +85,15 @@
 
   .ui-button--primary,
   .ui-tab--active {
-    background: linear-gradient(
-      135deg,
-      var(--app-primary),
-      var(--app-primary-strong)
-    );
+    background: var(--app-primary);
     color: var(--app-text-inverse);
-    box-shadow: 0 14px 28px rgba(109, 40, 217, 0.26);
+    box-shadow: 0 2px 8px rgba(109, 40, 217, 0.18);
   }
 
   .ui-button--primary:hover,
   .ui-tab--active:hover {
-    box-shadow: 0 18px 34px rgba(109, 40, 217, 0.3);
+    background: var(--app-primary-strong);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.22);
   }
 
   .ui-button--secondary {
@@ -121,13 +118,14 @@
   }
 
   .ui-button--danger {
-    background: linear-gradient(135deg, #dc2626, #991b1b);
+    background: var(--app-danger);
     color: #fff;
-    box-shadow: 0 14px 28px rgba(220, 38, 38, 0.2);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.16);
   }
 
   .ui-button--danger:hover {
-    box-shadow: 0 18px 32px rgba(220, 38, 38, 0.24);
+    background: #991b1b;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
   }
 
   .profile-action-card {
@@ -841,34 +839,84 @@
     background: var(--app-surface-strong);
   }
 
-  /* Action button utilities for admin panels */
+  /* Action button — canonical class for all admin panel buttons */
   .ui-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    font-weight: 700;
+    gap: 0.4rem;
+    padding: 0.38rem 0.7rem;
+    border-radius: 0.4rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
     cursor: pointer;
     border: 1px solid transparent;
+    user-select: none;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .ui-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 
   .ui-action--primary {
     background: var(--app-primary);
-    color: var(--app-text-inverse);
-    border-color: transparent;
+    color: #fff;
   }
 
+  .ui-action--primary:hover:not(:disabled) {
+    background: var(--app-primary-strong);
+  }
+
+  .ui-action--secondary,
   .ui-action--muted {
     background: var(--app-surface-strong);
     color: var(--app-text);
     border-color: var(--app-border);
   }
 
+  .ui-action--secondary:hover:not(:disabled),
+  .ui-action--muted:hover:not(:disabled) {
+    background: var(--app-surface-muted);
+  }
+
+  .ui-action--danger {
+    background: var(--app-danger-soft);
+    color: var(--app-danger);
+    border-color: rgba(239, 68, 68, 0.22);
+  }
+
+  .ui-action--danger:hover:not(:disabled) {
+    background: var(--app-danger);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  html[data-theme='dark'] .ui-action--secondary,
   html[data-theme='dark'] .ui-action--muted {
-    background: var(--app-surface);
-    color: var(--app-text);
-    border-color: var(--app-border);
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(71, 85, 105, 0.42);
+    color: #e2e8f0;
+  }
+
+  html[data-theme='dark'] .ui-action--secondary:hover:not(:disabled),
+  html[data-theme='dark'] .ui-action--muted:hover:not(:disabled) {
+    background: rgba(30, 41, 59, 0.92);
+  }
+
+  html[data-theme='dark'] .ui-action--danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.24);
+  }
+
+  html[data-theme='dark'] .ui-action--danger:hover:not(:disabled) {
+    background: #dc2626;
+    color: #fff;
   }
 }

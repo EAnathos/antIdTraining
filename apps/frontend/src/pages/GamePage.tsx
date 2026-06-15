@@ -303,9 +303,11 @@ export function GamePage() {
   }
 
   return (
-    <section className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Lancer un niveau</h2>
-      <p className="rounded-lg px-3 py-2 text-sm bg-emerald-50 text-emerald-700">
+    <section className="surface-panel surface-panel--solid space-y-4 p-6">
+      <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
+        Lancer un niveau
+      </h2>
+      <p className="ui-alert ui-alert--success text-sm">
         {isConnected ? (
           <>
             Le nombre de points gagnés ou perdus dépend du niveau de difficulté.
@@ -318,39 +320,53 @@ export function GamePage() {
         )}
       </p>
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+      <div className="rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-sm text-[color:var(--app-text-muted)]">
         Score de la session :{' '}
-        <span className="font-semibold text-slate-900">{sessionScore}</span>
+        <span className="font-semibold text-[color:var(--app-text)]">
+          {sessionScore}
+        </span>
       </div>
 
       <div className="grid gap-2 md:grid-cols-3">
         <button
-          className={`rounded-lg border p-3 text-left ${level === 'easy' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200'}`}
+          className={`rounded-xl border p-3 text-left transition-colors ${level === 'easy' ? 'border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface)]'}`}
           onClick={() => handleLevelChange('easy')}
         >
-          <p className="font-semibold">Niveau simple</p>
-          <p className="text-sm text-slate-600">Deviner la sous-famille.</p>
+          <p className="font-semibold text-[color:var(--app-text)]">
+            Niveau simple
+          </p>
+          <p className="text-sm text-[color:var(--app-text-muted)]">
+            Deviner la sous-famille.
+          </p>
         </button>
         <button
-          className={`rounded-lg border p-3 text-left ${level === 'medium' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200'}`}
+          className={`rounded-xl border p-3 text-left transition-colors ${level === 'medium' ? 'border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface)]'}`}
           onClick={() => handleLevelChange('medium')}
         >
-          <p className="font-semibold">Niveau moyen</p>
-          <p className="text-sm text-slate-600">Sous-famille puis genre.</p>
+          <p className="font-semibold text-[color:var(--app-text)]">
+            Niveau moyen
+          </p>
+          <p className="text-sm text-[color:var(--app-text-muted)]">
+            Sous-famille puis genre.
+          </p>
         </button>
         <button
-          className="cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 p-3 text-left opacity-60"
+          className="cursor-not-allowed rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-3 text-left opacity-60"
           disabled
         >
-          <p className="font-semibold">Niveau difficile</p>
-          <p className="text-sm text-slate-600">Bientôt disponible.</p>
+          <p className="font-semibold text-[color:var(--app-text)]">
+            Niveau difficile
+          </p>
+          <p className="text-sm text-[color:var(--app-text-muted)]">
+            Bientôt disponible.
+          </p>
         </button>
       </div>
 
       {!question && (
         <div className="flex justify-center">
           <button
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
             onClick={loadQuestion}
             disabled={isLoadingQuestion}
           >
@@ -360,15 +376,17 @@ export function GamePage() {
       )}
 
       {question && (
-        <div className="space-y-3 rounded-lg border border-slate-200 p-4">
-          <p className="font-medium text-slate-800">{question.prompt}</p>
+        <div className="space-y-3 rounded-xl border border-[color:var(--app-border)] p-4">
+          <p className="font-medium text-[color:var(--app-text)]">
+            {question.prompt}
+          </p>
           {question.images.length > 0 && (
-            <div className="relative rounded-lg bg-slate-100 p-2">
+            <div className="relative rounded-xl bg-[color:var(--app-surface-muted)] p-2">
               <button
                 type="button"
                 onClick={goToPreviousImage}
                 disabled={question.images.length <= 1}
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Photo précédente"
               >
                 <svg
@@ -393,7 +411,7 @@ export function GamePage() {
                     index: currentImageIndex,
                   })
                 }
-                className="absolute right-2 top-2 z-10 rounded-lg bg-white/90 px-2 py-1 text-sm text-slate-900 shadow-sm hover:bg-white sm:right-12"
+                className="absolute right-2 top-2 z-10 rounded-lg bg-[color:var(--app-surface-strong)]/90 px-2 py-1 text-sm text-[color:var(--app-text)] shadow-sm hover:bg-[color:var(--app-surface-strong)] sm:right-12"
                 aria-label="Agrandir l'image"
                 title="Agrandir l'image"
               >
@@ -411,9 +429,9 @@ export function GamePage() {
                 </svg>
               </button>
 
-              <div className="flex justify-center rounded-lg bg-slate-50 p-2">
+              <div className="flex justify-center rounded-xl bg-[color:var(--app-surface-muted)] p-2">
                 {imageLoadFailed ? (
-                  <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-center text-slate-600">
+                  <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-4 text-center text-[color:var(--app-text-muted)]">
                     Impossible de charger cette image. Passe à la suivante ou
                     recharge la question.
                   </div>
@@ -445,7 +463,7 @@ export function GamePage() {
                 type="button"
                 onClick={goToNextImage}
                 disabled={question.images.length <= 1}
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-xl text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Photo suivante"
               >
                 <svg
@@ -462,14 +480,14 @@ export function GamePage() {
                 </svg>
               </button>
 
-              <p className="pt-2 text-center text-xs text-slate-600">
+              <p className="pt-2 text-center text-xs text-[color:var(--app-text-soft)]">
                 Photo {currentImageIndex + 1}/{question.images.length}
               </p>
             </div>
           )}
 
           {question.details && (
-            <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 md:grid-cols-2">
+            <div className="grid gap-2 rounded-xl bg-[color:var(--app-surface-muted)] p-3 text-sm text-[color:var(--app-text-muted)] md:grid-cols-2">
               {question.details.size && (
                 <p>
                   <span className="font-semibold">Taille :</span>{' '}
@@ -500,8 +518,8 @@ export function GamePage() {
           {level === 'medium' &&
             mediumStep === 'genus' &&
             subfamilyValidation && (
-              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                <p className="font-medium text-amber-600">
+              <div className="space-y-2 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-3 text-sm text-[color:var(--app-text-muted)]">
+                <p className="font-medium text-[color:var(--app-warning)]">
                   Correct : sous-famille validée
                 </p>
 
@@ -538,12 +556,12 @@ export function GamePage() {
             )}
 
           {!result && !(level === 'medium' && mediumStep !== 'subfamily') && (
-            <label className="block text-sm text-slate-700">
+            <label className="block text-sm text-[color:var(--app-text-muted)]">
               Sous-famille
               <select
                 value={selectedSubfamily}
                 onChange={(e) => setSelectedSubfamily(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 p-2"
+                className="ui-select mt-1"
               >
                 <option value="">Choisir</option>
                 {subfamilyChoices.map((value) => (
@@ -556,12 +574,12 @@ export function GamePage() {
           )}
 
           {level === 'medium' && mediumStep !== 'subfamily' && !result && (
-            <label className="block text-sm text-slate-700">
+            <label className="block text-sm text-[color:var(--app-text-muted)]">
               Genre
               <select
                 value={selectedGenus}
                 onChange={(e) => setSelectedGenus(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 p-2"
+                className="ui-select mt-1"
               >
                 <option value="">Choisir</option>
                 {genusChoices.map((value) => (
@@ -574,12 +592,14 @@ export function GamePage() {
           )}
 
           {stepFeedback && (
-            <p className="font-medium text-slate-900">{stepFeedback}</p>
+            <p className="font-medium text-[color:var(--app-text)]">
+              {stepFeedback}
+            </p>
           )}
 
           {!result && (
             <button
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
               onClick={validateAnswer}
               disabled={
                 !selectedSubfamily ||
@@ -598,9 +618,9 @@ export function GamePage() {
           )}
 
           {result && (
-            <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-3 text-sm text-[color:var(--app-text-muted)]">
               <p
-                className={`font-medium ${result.correct ? 'text-emerald-600' : 'text-red-600'}`}
+                className={`font-medium ${result.correct ? 'text-[color:var(--app-success)]' : 'text-[color:var(--app-danger)]'}`}
               >
                 {result.correct
                   ? 'Correct'
@@ -687,7 +707,7 @@ export function GamePage() {
           {result && (
             <div className="pt-2">
               <button
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
+                className="ui-button ui-button--primary"
                 onClick={loadQuestion}
               >
                 Question suivante
@@ -740,7 +760,7 @@ export function GamePage() {
                   <>
                     <button
                       type="button"
-                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
+                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
                       aria-label="Photo précédente"
                       onClick={goToPreviousImage}
                     >
@@ -760,7 +780,7 @@ export function GamePage() {
 
                     <button
                       type="button"
-                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
+                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
                       aria-label="Photo suivante"
                       onClick={goToNextImage}
                     >
@@ -782,7 +802,7 @@ export function GamePage() {
 
                 <button
                   type="button"
-                  className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
+                  className="absolute right-2 top-2 rounded-full bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow hover:bg-[color:var(--app-surface-muted)]"
                   onClick={() => setFullscreenImage(null)}
                   aria-label="Fermer"
                 >
@@ -794,7 +814,7 @@ export function GamePage() {
                     sizes: '(max-width: 768px) 95vw, 80vw',
                   })}
                   alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
-                  className="max-h-[90vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+                  className="max-h-[90vh] max-w-[90vw] rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] object-contain"
                   decoding="async"
                 />
               </div>
