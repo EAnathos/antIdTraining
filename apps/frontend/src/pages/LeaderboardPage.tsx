@@ -67,7 +67,6 @@ export function LeaderboardPage() {
     }
   }, [])
 
-  // Refetch points when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -83,7 +82,6 @@ export function LeaderboardPage() {
     }
   }, [])
 
-  // Refetch points when user points are changed from admin panel
   useEffect(() => {
     const handlePointsChanged = () => {
       const cancelled = { value: false }
@@ -104,47 +102,63 @@ export function LeaderboardPage() {
   }, [])
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Classement</h2>
-      <p className="text-sm text-slate-600">
+    <section className="surface-panel surface-panel--solid space-y-4 p-6">
+      <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
+        Classement
+      </h2>
+      <p className="text-sm text-[color:var(--app-text-muted)]">
         Les meilleurs joueurs selon leurs points. Les points proviennent des
         réponses correctes et des ajustements administrateur. Il vous faut 200
         points pour apparaître dans le classement.
       </p>
 
       {currentUserPoints !== null && (
-        <div className="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+        <div className="ui-alert ui-alert--info">
           Vos points actuels :{' '}
           <span className="font-semibold">{currentUserPoints}</span>
         </div>
       )}
 
-      {loading && <p className="text-sm text-slate-600">Chargement…</p>}
-      {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+      {loading && (
+        <p className="text-sm text-[color:var(--app-text-muted)]">
+          Chargement…
         </p>
       )}
+      {error && <p className="ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="overflow-hidden rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="table-head-row">
-              <tr className="table-head-row">
-                <th className="table-head-sticky px-4 py-3">#</th>
-                <th className="table-head-sticky px-4 py-3">Joueur</th>
-                <th className="table-head-sticky px-4 py-3">Parties</th>
-                <th className="table-head-sticky px-4 py-3">Bonnes réponses</th>
-                <th className="table-head-sticky px-4 py-3">Points</th>
+        <div className="overflow-x-auto rounded-lg border border-[color:var(--app-border)]">
+          <table className="min-w-full divide-y divide-[color:var(--app-border)] text-sm">
+            <thead>
+              <tr className="bg-[color:var(--app-surface-muted)]">
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                  #
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                  Joueur
+                </th>
+                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+                  Parties
+                </th>
+                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+                  Bonnes réponses
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                  Points
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-[color:var(--app-border)]">
               {data.items.map((item, index) => (
                 <tr
                   key={item.userId}
-                  className={index < 3 ? 'bg-amber-50/40' : ''}
+                  className={
+                    index < 3
+                      ? 'bg-[color:var(--app-warning-soft)]'
+                      : 'bg-[color:var(--app-surface)]'
+                  }
                 >
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                  <td className="px-4 py-3 font-medium text-[color:var(--app-text)]">
                     {index + 1}
                   </td>
                   <td className="px-4 py-3">
@@ -154,25 +168,28 @@ export function LeaderboardPage() {
                         setSelectedUsername(item.username)
                         setModalOpen(true)
                       }}
-                      className="text-slate-900 hover:text-blue-600 hover:underline cursor-pointer"
+                      className="cursor-pointer text-[color:var(--app-text)] hover:text-[color:var(--app-primary)] hover:underline"
                     >
                       {item.username}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
                     {item.gamesPlayed}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
                     {item.correctCount}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">
+                  <td className="px-4 py-3 font-semibold text-[color:var(--app-text)]">
                     {item.points}
                   </td>
                 </tr>
               ))}
               {!data.items.length && (
                 <tr>
-                  <td className="px-4 py-4 text-slate-600" colSpan={5}>
+                  <td
+                    className="px-4 py-4 text-[color:var(--app-text-muted)]"
+                    colSpan={5}
+                  >
                     Aucun joueur classé pour le moment.
                   </td>
                 </tr>

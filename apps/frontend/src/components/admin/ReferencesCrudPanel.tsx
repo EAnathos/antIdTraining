@@ -267,13 +267,13 @@ export function ReferencesCrudPanel({
 
   return (
     <div className="mt-3 space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text)]">
           Ajout / modification
         </h3>
         <form className="grid gap-2 md:grid-cols-4" onSubmit={submitReference}>
           <input
-            className="rounded border p-2"
+            className="ui-input"
             placeholder="Titre"
             value={referenceForm.title}
             onChange={(e) =>
@@ -282,7 +282,7 @@ export function ReferencesCrudPanel({
             required
           />
           <input
-            className="rounded border p-2 md:col-span-2"
+            className="ui-input md:col-span-2"
             placeholder="Description"
             value={referenceForm.description}
             onChange={(e) =>
@@ -293,7 +293,7 @@ export function ReferencesCrudPanel({
             }
           />
           <select
-            className="rounded border p-2"
+            className="ui-input"
             value={referenceForm.type}
             onChange={(e) => {
               const nextType = e.target.value as 'WEBSITE' | 'MYRMECOLOGY'
@@ -316,7 +316,7 @@ export function ReferencesCrudPanel({
             <option value="MYRMECOLOGY">Référence myrmécologique</option>
           </select>
           <input
-            className="rounded border p-2"
+            className="ui-input"
             placeholder={referenceForm.type === 'MYRMECOLOGY' ? 'DOI' : 'URL'}
             value={referenceForm.url}
             onChange={(e) =>
@@ -324,15 +324,12 @@ export function ReferencesCrudPanel({
             }
           />
           <div className="md:col-span-4 flex flex-wrap gap-2">
-            <button
-              className="rounded bg-slate-900 px-3 py-2 text-white"
-              type="submit"
-            >
+            <button className="ui-button ui-button--primary" type="submit">
               {selectedReferenceId ? 'Modifier référence' : 'Créer référence'}
             </button>
             {selectedReferenceId && (
               <button
-                className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                className="ui-button ui-button--secondary"
                 type="button"
                 onClick={resetReferenceForm}
               >
@@ -343,13 +340,13 @@ export function ReferencesCrudPanel({
         </form>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text)]">
           Recherche / liste
         </h3>
         <div className="flex flex-wrap gap-2">
           <select
-            className="h-10 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700"
+            className="ui-select h-10"
             value={typeFilter}
             onChange={(e) =>
               setTypeFilter(e.target.value as 'ALL' | 'WEBSITE' | 'MYRMECOLOGY')
@@ -360,7 +357,7 @@ export function ReferencesCrudPanel({
             <option value="MYRMECOLOGY">Référence myrmécologique</option>
           </select>
           <input
-            className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
+            className="ui-input h-10 min-w-[260px] flex-1"
             placeholder="Rechercher une référence"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -371,7 +368,7 @@ export function ReferencesCrudPanel({
           {filteredReferences.map((reference) => (
             <li
               key={reference.id}
-              className={`flex items-center justify-between gap-3 rounded border p-2 ${selectedReferenceId === reference.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}
+              className={`flex items-center justify-between gap-3 rounded border p-2 ${selectedReferenceId === reference.id ? 'border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface)]'}`}
             >
               <button
                 className="flex-1 text-left"
@@ -387,7 +384,7 @@ export function ReferencesCrudPanel({
               <div className="flex items-center gap-2">
                 {reference.type === 'MYRMECOLOGY' && (
                   <button
-                    className="rounded bg-indigo-50 px-2 py-1 text-indigo-700"
+                    className="ui-button ui-button--secondary py-1 text-sm"
                     type="button"
                     onClick={() => openAuthorsTaxonsModal(reference)}
                   >
@@ -413,19 +410,19 @@ export function ReferencesCrudPanel({
 
       {authorsTaxonsModalOpen && authorsTaxonsDraft && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={closeAuthorsTaxonsModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-[color:var(--app-surface)] p-4 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-900">
+              <h3 className="text-base font-semibold text-[color:var(--app-text)]">
                 Auteurs et taxons liés — Référence myrmécologique
               </h3>
               <button
-                className="rounded bg-slate-100 px-3 py-1 text-sm"
+                className="ui-button ui-button--secondary text-sm"
                 type="button"
                 onClick={closeAuthorsTaxonsModal}
               >
@@ -433,8 +430,10 @@ export function ReferencesCrudPanel({
               </button>
             </div>
 
-            <div className="space-y-3 rounded border border-slate-200 p-3">
-              <p className="text-sm font-medium text-slate-700">Auteurs</p>
+            <div className="space-y-3 rounded border border-[color:var(--app-border)] p-3">
+              <p className="text-sm font-medium text-[color:var(--app-text)]">
+                Auteurs
+              </p>
               <div className="space-y-2">
                 {authorsTaxonsDraft.authors.map((author, index) => (
                   <div
@@ -442,7 +441,7 @@ export function ReferencesCrudPanel({
                     className="flex items-center gap-2"
                   >
                     <input
-                      className="w-full rounded border p-2"
+                      className="ui-input w-full"
                       placeholder="Nom de l'auteur"
                       value={author}
                       onChange={(e) => {
@@ -455,7 +454,7 @@ export function ReferencesCrudPanel({
                       }}
                     />
                     <button
-                      className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                      className="ui-button ui-button--secondary"
                       type="button"
                       onClick={() =>
                         setAuthorsTaxonsDraft({
@@ -472,7 +471,7 @@ export function ReferencesCrudPanel({
                 ))}
               </div>
               <button
-                className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                className="ui-button ui-button--secondary"
                 type="button"
                 onClick={() =>
                   setAuthorsTaxonsDraft({
@@ -485,14 +484,14 @@ export function ReferencesCrudPanel({
               </button>
             </div>
 
-            <div className="mt-4 space-y-2 rounded border border-slate-200 p-3">
-              <p className="text-sm font-medium text-slate-700">
+            <div className="mt-4 space-y-2 rounded border border-[color:var(--app-border)] p-3">
+              <p className="text-sm font-medium text-[color:var(--app-text)]">
                 Taxons concernés ({authorsTaxonsDraft.taxonIds.length})
               </p>
               <div className="grid gap-2 md:grid-cols-3">
                 <div className="flex gap-2">
                   <select
-                    className="w-full rounded border p-2"
+                    className="ui-select w-full"
                     value={selectedSubfamily}
                     onChange={(e) => setSelectedSubfamily(e.target.value)}
                   >
@@ -505,7 +504,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                    className="ui-button ui-button--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.subfamily === selectedSubfamily,
@@ -518,7 +517,7 @@ export function ReferencesCrudPanel({
                 </div>
                 <div className="flex gap-2">
                   <select
-                    className="w-full rounded border p-2"
+                    className="ui-select w-full"
                     value={selectedGenus}
                     onChange={(e) => setSelectedGenus(e.target.value)}
                   >
@@ -531,7 +530,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                    className="ui-button ui-button--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.genus === selectedGenus,
@@ -544,7 +543,7 @@ export function ReferencesCrudPanel({
                 </div>
                 <div className="flex gap-2">
                   <select
-                    className="w-full rounded border p-2"
+                    className="ui-select w-full"
                     value={selectedSpeciesGroup}
                     onChange={(e) => setSelectedSpeciesGroup(e.target.value)}
                   >
@@ -557,7 +556,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                    className="ui-button ui-button--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.speciesGroup === selectedSpeciesGroup,
@@ -570,18 +569,18 @@ export function ReferencesCrudPanel({
                 </div>
               </div>
               <input
-                className="w-full rounded border p-2"
+                className="ui-input w-full"
                 placeholder="Filtrer les taxons"
                 value={taxonQuery}
                 onChange={(e) => setTaxonQuery(e.target.value)}
               />
-              <div className="max-h-56 space-y-1 overflow-auto rounded border border-slate-200 p-2">
+              <div className="max-h-56 space-y-1 overflow-auto rounded border border-[color:var(--app-border)] p-2">
                 {filteredTaxons.map((taxon) => {
                   const label = `${taxon.subfamily} > ${taxon.genus} > ${taxon.species}`
                   return (
                     <label
                       key={taxon.id}
-                      className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-slate-50"
+                      className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-[color:var(--app-surface-muted)]"
                     >
                       <input
                         type="checkbox"
@@ -596,7 +595,7 @@ export function ReferencesCrudPanel({
 
               <div className="flex justify-between gap-2">
                 <button
-                  className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                  className="ui-button ui-button--secondary"
                   type="button"
                   onClick={() =>
                     setAuthorsTaxonsDraft({
@@ -609,14 +608,14 @@ export function ReferencesCrudPanel({
                 </button>
                 <div className="flex gap-2">
                   <button
-                    className="rounded bg-slate-100 px-3 py-2 text-slate-700"
+                    className="ui-button ui-button--secondary"
                     type="button"
                     onClick={closeAuthorsTaxonsModal}
                   >
                     Annuler
                   </button>
                   <button
-                    className="rounded bg-slate-900 px-3 py-2 text-white"
+                    className="ui-button ui-button--primary"
                     type="button"
                     onClick={() => void validateAuthorsTaxonsModal()}
                   >

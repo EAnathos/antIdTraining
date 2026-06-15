@@ -52,17 +52,17 @@ export function DatabaseToolsPanel({
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-slate-900">
+      <h3 className="text-lg font-semibold text-[color:var(--app-text)]">
         Export / Import base de données
       </h3>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm text-slate-700">
+      <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
+        <p className="text-sm text-[color:var(--app-text-muted)]">
           Télécharge une archive ZIP contenant la base et les images.
         </p>
         <button
           type="button"
-          className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-button ui-button--primary mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => void handleExport()}
           disabled={isExporting}
         >
@@ -70,11 +70,9 @@ export function DatabaseToolsPanel({
         </button>
       </div>
 
-      <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-        <p className="text-sm font-medium text-amber-900">
-          Import (remplacement complet)
-        </p>
-        <p className="mt-1 text-sm text-amber-800">
+      <div className="ui-alert ui-alert--warning rounded-xl p-4">
+        <p className="text-sm font-medium">Import (remplacement complet)</p>
+        <p className="mt-1 text-sm opacity-90">
           Cette action supprime les données actuelles et restaure le contenu du
           fichier sélectionné (format ZIP).
         </p>
@@ -82,11 +80,11 @@ export function DatabaseToolsPanel({
         <input
           type="file"
           accept="application/zip,.zip,application/json,.json"
-          className="mt-3 block w-full rounded-lg border border-amber-300 bg-white p-2 text-sm"
+          className="ui-input mt-3 block w-full p-2 text-sm"
           onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
         />
 
-        <label className="mt-3 flex items-start gap-2 text-sm text-amber-900">
+        <label className="mt-3 flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             checked={confirmReplace}
@@ -98,7 +96,7 @@ export function DatabaseToolsPanel({
 
         <button
           type="button"
-          className="mt-3 rounded-lg bg-amber-700 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-button ui-button--danger mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => void handleImport()}
           disabled={!importFile || !confirmReplace || isImporting}
         >
@@ -106,17 +104,17 @@ export function DatabaseToolsPanel({
         </button>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm font-medium text-slate-900">
+      <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
+        <p className="text-sm font-medium text-[color:var(--app-text)]">
           Nettoyage des images
         </p>
-        <p className="mt-1 text-sm text-slate-700">
+        <p className="mt-1 text-sm text-[color:var(--app-text-muted)]">
           Supprime les fichiers non utilisés dans /uploads et recrée les
           variantes responsives manquantes pour les images référencées.
         </p>
         <button
           type="button"
-          className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-button ui-button--primary mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => void handleCleanupUploads()}
           disabled={isCleaningUploads}
         >

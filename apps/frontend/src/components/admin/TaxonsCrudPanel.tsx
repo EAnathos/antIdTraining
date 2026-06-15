@@ -591,8 +591,8 @@ export function TaxonsCrudPanel({
 
   return (
     <div className="mt-3 space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text)]">
           Ajout / modification
         </h3>
         <form
@@ -600,39 +600,39 @@ export function TaxonsCrudPanel({
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
         >
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Sous-famille"
             value={taxonForm.subfamily}
             onChange={(e) => handleTaxonChange('subfamily', e.target.value)}
             required
           />
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Tribu"
             value={taxonForm.tribe}
             onChange={(e) => handleTaxonChange('tribe', e.target.value)}
           />
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Genre"
             value={taxonForm.genus}
             onChange={(e) => handleTaxonChange('genus', e.target.value)}
             required
           />
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Sous-genre"
             value={taxonForm.subgenus}
             onChange={(e) => handleTaxonChange('subgenus', e.target.value)}
           />
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Groupe d'espèces"
             value={taxonForm.speciesGroup}
             onChange={(e) => handleTaxonChange('speciesGroup', e.target.value)}
           />
           <input
-            className="w-full min-w-0 rounded border p-2"
+            className="ui-input w-full min-w-0"
             placeholder="Espèce"
             value={taxonForm.species}
             onChange={(e) => handleTaxonChange('species', e.target.value)}
@@ -656,25 +656,25 @@ export function TaxonsCrudPanel({
         </form>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text)]">
           Recherche / liste
         </h3>
         <div className="mt-3 flex flex-wrap gap-2">
           <input
-            className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
+            className="ui-input h-10 min-w-[260px] flex-1"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Recherche (sous-famille, genre, espèce...)"
           />
         </div>
 
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-[color:var(--app-text-muted)]">
           {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''}{' '}
           trouvée{filteredTaxons.length > 1 ? 's' : ''}
         </p>
 
-        <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-slate-200">
+        <div className="mt-4 max-h-[65vh] overflow-auto rounded-lg border border-[color:var(--app-border)]">
           <table className="w-full min-w-full table-fixed text-left text-sm">
             <thead className="table-head-row">
               <tr className="table-head-row">
@@ -692,7 +692,7 @@ export function TaxonsCrudPanel({
               {filteredTaxons.map((taxon) => (
                 <tr
                   key={taxon.id}
-                  className={`border-b ${selectedTaxonId === taxon.id ? 'border-slate-200 bg-slate-50' : 'border-slate-100'}`}
+                  className={`border-b ${selectedTaxonId === taxon.id ? 'border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]' : 'border-[color:var(--app-border)]'}`}
                 >
                   <td
                     className="max-w-[180px] whitespace-nowrap p-2 overflow-hidden text-ellipsis"
@@ -732,7 +732,7 @@ export function TaxonsCrudPanel({
                   </td>
                   <td className="p-2">
                     <button
-                      className="rounded bg-indigo-50 px-2 py-1 text-indigo-700"
+                      className="ui-button ui-button--secondary py-1 text-sm"
                       type="button"
                       onClick={() => openDetailsModal(taxon)}
                     >
@@ -762,9 +762,9 @@ export function TaxonsCrudPanel({
       </div>
 
       {modal.taxon && modal.draft && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
-            className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-xl"
+            className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-[color:var(--app-surface)] p-4 shadow-xl"
             role="dialog"
             aria-labelledby="modal-title"
             aria-modal="true"
@@ -772,13 +772,13 @@ export function TaxonsCrudPanel({
             <div className="mb-4 flex items-center justify-between">
               <h3
                 id="modal-title"
-                className="text-base font-semibold text-slate-900"
+                className="text-base font-semibold text-[color:var(--app-text)]"
               >
                 Critères et description — <em>{modal.taxon.genus}</em>{' '}
                 <em>{modal.taxon.species}</em>
               </h3>
               <button
-                className="rounded bg-slate-100 px-3 py-1 text-sm"
+                className="ui-button ui-button--secondary text-sm"
                 type="button"
                 onClick={closeDetailsModal}
                 aria-label="Fermer la boîte de dialogue"
@@ -821,8 +821,8 @@ export function TaxonsCrudPanel({
               ))
             })()}
 
-            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <div className="mt-4 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-3">
+              <label className="inline-flex items-center gap-2 text-sm text-[color:var(--app-text)]">
                 <input
                   type="checkbox"
                   checked={modal.invasive}
@@ -834,19 +834,19 @@ export function TaxonsCrudPanel({
               </label>
             </div>
 
-            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-4 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-800">
+                  <h4 className="text-sm font-semibold text-[color:var(--app-text)]">
                     Confusions possibles
                   </h4>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[color:var(--app-text-muted)]">
                     Indique les taxons proches et explique comment les
                     distinguer.
                   </p>
                 </div>
                 <button
-                  className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                  className="ui-button ui-button--secondary text-sm"
                   type="button"
                   onClick={addConfusion}
                 >
@@ -867,14 +867,14 @@ export function TaxonsCrudPanel({
                   {modal.confusions.map((confusion, index) => (
                     <div
                       key={`confusion-${index}`}
-                      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+                      className="rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 shadow-sm"
                     >
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
-                          <label className="block text-xs font-medium uppercase tracking-wide text-slate-500">
+                          <label className="block text-xs font-medium uppercase tracking-wide text-[color:var(--app-text-soft)]">
                             Taxon à confondre
                             <input
-                              className="mt-1 w-full rounded border border-slate-300 bg-white p-2 text-sm"
+                              className="ui-input mt-1 w-full"
                               list="taxon-confusion-options"
                               placeholder="Rechercher un taxon"
                               value={confusion.confusedTaxonLabel}
@@ -887,22 +887,22 @@ export function TaxonsCrudPanel({
                               }
                             />
                           </label>
-                          <p className="mt-1 text-[11px] text-slate-500">
+                          <p className="mt-1 text-[11px] text-[color:var(--app-text-soft)]">
                             L’autocomplétion propose les taxons existants.
                           </p>
                         </div>
                         <button
-                          className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700"
+                          className="ui-button ui-button--danger py-1 text-xs"
                           type="button"
                           onClick={() => removeConfusion(index)}
                         >
                           Supprimer
                         </button>
                       </div>
-                      <label className="mt-3 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <label className="mt-3 block text-xs font-medium uppercase tracking-wide text-[color:var(--app-text-soft)]">
                         Pourquoi la confusion et comment éviter l’erreur ?
                         <textarea
-                          className="mt-1 min-h-24 w-full rounded border border-slate-300 bg-white p-2 text-sm"
+                          className="ui-textarea mt-1 min-h-24 w-full"
                           placeholder="Ex. couleur similaire, pilosité, taille… et le détail qui permet de les distinguer"
                           value={confusion.detail}
                           onChange={(event) =>
@@ -914,21 +914,21 @@ export function TaxonsCrudPanel({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-[color:var(--app-text-muted)]">
                   Aucune confusion renseignée pour le moment.
                 </p>
               )}
             </div>
 
             {modal.taxon.levelDetails.species && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-4 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label className="block text-sm font-medium text-[color:var(--app-text)]">
                     Aire de répartition
                   </label>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
                     <button
-                      className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                      className="ui-button ui-button--secondary text-sm"
                       type="button"
                       onClick={() =>
                         setModal((prev) => ({
@@ -940,7 +940,7 @@ export function TaxonsCrudPanel({
                       Réinitialiser
                     </button>
                     <button
-                      className="rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white hover:bg-indigo-700"
+                      className="ui-button ui-button--primary text-sm"
                       type="button"
                       onClick={() =>
                         setModal((prev) => ({
@@ -971,14 +971,14 @@ export function TaxonsCrudPanel({
 
             <div className="mt-2 flex justify-end gap-2">
               <button
-                className="rounded bg-slate-100 px-3 py-2"
+                className="ui-button ui-button--secondary"
                 type="button"
                 onClick={closeDetailsModal}
               >
                 Annuler
               </button>
               <button
-                className="rounded bg-slate-900 px-3 py-2 text-white"
+                className="ui-button ui-button--primary"
                 type="button"
                 onClick={() => void saveDetailsModal()}
               >

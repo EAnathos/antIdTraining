@@ -699,13 +699,13 @@ export function TaxonsPage() {
   )
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
+    <section className="surface-panel surface-panel--solid p-6">
+      <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
       <div className="mt-3 flex flex-wrap gap-2">
         <input
-          className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
+          className="ui-input h-10 min-w-[260px] flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Recherche (sous-famille, genre, espèce...)"
@@ -714,13 +714,13 @@ export function TaxonsPage() {
           <button
             type="button"
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="relative ml-2 mt-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2"
+            className="relative ml-2 mt-0 inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             <span>
               {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
             </span>
             {activeFiltersCount > 0 && (
-              <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-600 text-white text-xs">
+              <span className="absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--app-primary)] text-xs text-[color:var(--app-text-inverse)]">
                 {activeFiltersCount}
               </span>
             )}
@@ -734,7 +734,7 @@ export function TaxonsPage() {
                 ? 'Basculer en vue tableau'
                 : 'Basculer en vue arborescente'
             }
-            className="ml-2 rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50"
+            className="ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             {treeMode ? <TableIcon /> : <TreeIcon />}
           </button>
@@ -742,10 +742,10 @@ export function TaxonsPage() {
       </div>
 
       {showAdvancedOptions && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-4 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Période d'essaimage
               </label>
               <div className="flex flex-wrap gap-2">
@@ -763,8 +763,8 @@ export function TaxonsPage() {
                     }}
                     className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                       selectedSwarmingMonths.includes(index + 1)
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                        ? 'bg-[color:var(--app-primary)] text-[color:var(--app-text-inverse)]'
+                        : 'border border-[color:var(--app-border)] bg-[color:var(--app-surface)] text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]'
                     }`}
                   >
                     {month.slice(0, 3)}
@@ -774,7 +774,7 @@ export function TaxonsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Localisation
               </label>
               <FranceMap
@@ -790,7 +790,7 @@ export function TaxonsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Invasivité
               </label>
               <div className="flex gap-3">
@@ -832,7 +832,7 @@ export function TaxonsPage() {
                   setSelectedDepartments([])
                   setSelectedInvasiveFilter('all')
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="ui-button ui-button--secondary text-sm"
               >
                 Réinitialiser les filtres
               </button>
@@ -840,19 +840,23 @@ export function TaxonsPage() {
           </div>
         </div>
       )}
-      <p className="mt-3 text-sm text-slate-600">
+      <p className="mt-3 text-sm text-[color:var(--app-text-muted)]">
         {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''}{' '}
         trouvée{filteredTaxons.length > 1 ? 's' : ''}
       </p>
 
-      {loadError && <p className="mt-2 text-sm text-red-600">{loadError}</p>}
+      {loadError && (
+        <p className="mt-2 text-sm text-[color:var(--app-danger)]">
+          {loadError}
+        </p>
+      )}
 
       {isLoadingTaxons && (
         <div className="mt-4 space-y-2">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={`taxons-skeleton-${index}`}
-              className="h-10 animate-pulse rounded-lg bg-slate-100"
+              className="h-10 animate-pulse rounded-lg bg-[color:var(--app-surface-muted)]"
             />
           ))}
         </div>
@@ -948,7 +952,7 @@ export function TaxonsPage() {
           ) : (
             <div
               ref={tableContainerRef}
-              className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
+              className="-mx-6 mt-4 max-h-[65vh] overflow-auto rounded-lg border border-[color:var(--app-border)]"
               onScroll={(event) =>
                 setTableScrollTop(event.currentTarget.scrollTop)
               }
@@ -990,14 +994,17 @@ export function TaxonsPage() {
                       v && v !== '-' && v !== '—'
 
                     return (
-                      <tr key={taxon.id} className="border-b border-slate-100">
+                      <tr
+                        key={taxon.id}
+                        className="border-b border-[color:var(--app-border)]"
+                      >
                         <td
                           className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
                           title={subfamilyVal}
                         >
                           {isClickable(subfamilyVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1011,7 +1018,7 @@ export function TaxonsPage() {
                               {subfamilyVal}
                             </button>
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-[color:var(--app-text-soft)]">
                               {subfamilyVal}
                             </span>
                           )}
@@ -1028,7 +1035,7 @@ export function TaxonsPage() {
                         >
                           {isClickable(genusVal) ? (
                             <button
-                              className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[160px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1042,7 +1049,9 @@ export function TaxonsPage() {
                               <em>{genusVal}</em>
                             </button>
                           ) : (
-                            <span className="text-slate-500">{genusVal}</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {genusVal}
+                            </span>
                           )}
                         </td>
                         <td
@@ -1052,7 +1061,7 @@ export function TaxonsPage() {
                           {subgenus && subgenusDetail ? (
                             isClickable(subgenusVal) ? (
                               <button
-                                className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                className="max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1066,14 +1075,16 @@ export function TaxonsPage() {
                                 ({subgenusVal})
                               </button>
                             ) : (
-                              <span className="text-slate-500">
+                              <span className="text-[color:var(--app-text-soft)]">
                                 ({subgenusVal})
                               </span>
                             )
                           ) : subgenus ? (
                             `(${subgenus})`
                           ) : (
-                            <span className="text-slate-500">-</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              -
+                            </span>
                           )}
                         </td>
                         <td
@@ -1083,7 +1094,7 @@ export function TaxonsPage() {
                           {speciesGroup && speciesGroupDetail ? (
                             isClickable(speciesGroupVal) ? (
                               <button
-                                className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1097,12 +1108,12 @@ export function TaxonsPage() {
                                 {speciesGroupVal}
                               </button>
                             ) : (
-                              <span className="text-slate-500">
+                              <span className="text-[color:var(--app-text-soft)]">
                                 {speciesGroupVal}
                               </span>
                             )
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-[color:var(--app-text-soft)]">
                               {speciesGroupVal}
                             </span>
                           )}
@@ -1113,7 +1124,7 @@ export function TaxonsPage() {
                         >
                           {isClickable(speciesVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1127,7 +1138,9 @@ export function TaxonsPage() {
                               <em>{speciesVal}</em>
                             </button>
                           ) : (
-                            <span className="text-slate-500">{speciesVal}</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {speciesVal}
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -1145,7 +1158,7 @@ export function TaxonsPage() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="p-4 text-center text-slate-500"
+                        className="p-4 text-center text-[color:var(--app-text-soft)]"
                       >
                         Aucun taxon trouvé.
                       </td>
@@ -1163,7 +1176,7 @@ export function TaxonsPage() {
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={`taxons-loading-more-${index}`}
-              className="h-8 animate-pulse rounded-lg bg-slate-100"
+              className="h-8 animate-pulse rounded-lg bg-[color:var(--app-surface-muted)]"
             />
           ))}
         </div>
@@ -1172,18 +1185,18 @@ export function TaxonsPage() {
         !isLoadingMoreTaxons &&
         !hasMoreTaxons &&
         taxons.length > 0 && (
-          <p className="mt-3 text-center text-xs text-slate-500">
+          <p className="mt-3 text-center text-xs text-[color:var(--app-text-soft)]">
             Fin de la liste.
           </p>
         )}
 
       {selectedDetail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setSelectedDetail(null)}
         >
           <div
-            className="flex flex-col max-h-[85vh] w-full max-w-2xl rounded-xl bg-white shadow-xl overflow-hidden"
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[color:var(--app-surface)] shadow-xl"
             style={
               selectedDetail.anchor && typeof window !== 'undefined'
                 ? (() => {
@@ -1204,8 +1217,8 @@ export function TaxonsPage() {
             }
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
-              <p className="font-medium text-slate-900">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-[color:var(--app-border)] px-4 py-3">
+              <p className="font-medium text-[color:var(--app-text)]">
                 {selectedDetail.level === 'subfamily'
                   ? 'Sous-famille'
                   : selectedDetail.level === 'genus'
@@ -1223,7 +1236,7 @@ export function TaxonsPage() {
                 )}
               </p>
               <button
-                className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                className="ui-button ui-button--secondary text-sm"
                 type="button"
                 onClick={() => setSelectedDetail(null)}
               >
@@ -1231,20 +1244,22 @@ export function TaxonsPage() {
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-4">
-              <p className="mt-2 font-medium text-slate-900">Description</p>
-              <p className="mt-1 text-slate-700">
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="mt-2 font-medium text-[color:var(--app-text)]">
+                Description
+              </p>
+              <p className="mt-1 text-[color:var(--app-text-muted)]">
                 {selectedDetail.detail.description ?? 'Aucune description.'}
               </p>
 
-              <p className="mt-3 font-medium text-slate-900">
+              <p className="mt-3 font-medium text-[color:var(--app-text)]">
                 Caractéristiques
               </p>
               {selectedDetail.detail.criteria.length > 0 ||
               selectedDetail.detail.sizeWorker ||
               selectedDetail.detail.sizeQueen ||
               selectedDetail.detail.sizeMale ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[color:var(--app-text-muted)]">
                   {(selectedDetail.detail.sizeWorker ||
                     selectedDetail.detail.sizeQueen ||
                     selectedDetail.detail.sizeMale) && (
@@ -1270,12 +1285,14 @@ export function TaxonsPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
+                  Aucun critère renseigné.
+                </p>
               )}
 
               {selectedDetail.level === 'species' && (
                 <>
-                  <p className="mt-3 font-medium text-slate-900">
+                  <p className="mt-3 font-medium text-[color:var(--app-text)]">
                     Période d'essaimage
                   </p>
                   {selectedDetail.taxon.swarmingStartMonth &&
@@ -1284,37 +1301,37 @@ export function TaxonsPage() {
                       const startMonth = selectedDetail.taxon.swarmingStartMonth
                       const endMonth = selectedDetail.taxon.swarmingEndMonth
                       return (
-                        <p className="mt-2 text-slate-700">
+                        <p className="mt-2 text-[color:var(--app-text-muted)]">
                           {monthLabels[startMonth - 1]} à{' '}
                           {monthLabels[endMonth - 1]}
                         </p>
                       )
                     })()
                   ) : (
-                    <p className="mt-2 text-slate-700">
+                    <p className="mt-2 text-[color:var(--app-text-muted)]">
                       Aucune période d'essaimage renseignée.
                     </p>
                   )}
                 </>
               )}
 
-              <p className="mt-3 font-medium text-slate-900">
+              <p className="mt-3 font-medium text-[color:var(--app-text)]">
                 Références liées
               </p>
               {isLoadingReferences && (
-                <p className="mt-1 text-slate-700">
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
                   Chargement des références…
                 </p>
               )}
               {linkedReferences.length > 0 ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[color:var(--app-text-muted)]">
                   {linkedReferences.map((reference) => {
                     const href = getReferenceHref(reference)
                     return (
                       <li key={reference.id}>
                         {href ? (
                           <a
-                            className="text-indigo-700 underline"
+                            className="text-[color:var(--app-primary)] underline"
                             href={href}
                             target="_blank"
                             rel="noreferrer"
@@ -1329,20 +1346,22 @@ export function TaxonsPage() {
                   })}
                 </ul>
               ) : (
-                <p className="mt-1 text-slate-700">Aucune référence liée.</p>
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
+                  Aucune référence liée.
+                </p>
               )}
 
               {selectedDetail.level === 'species' &&
                 selectedDetail.taxon.confusions.length > 0 && (
                   <>
-                    <p className="mt-3 font-medium text-slate-900">
+                    <p className="mt-3 font-medium text-[color:var(--app-text)]">
                       Confusions possibles
                     </p>
-                    <ul className="mt-1 space-y-2 text-slate-700">
+                    <ul className="mt-1 space-y-2 text-[color:var(--app-text-muted)]">
                       {selectedDetail.taxon.confusions.map((confusion) => (
                         <li
                           key={confusion.id}
-                          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                          className="rounded-lg border border-[color:var(--app-warning)] bg-[color:var(--app-warning-soft)] px-3 py-2 text-sm text-[color:var(--app-warning)]"
                         >
                           <p className="font-semibold">
                             Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
@@ -1359,7 +1378,7 @@ export function TaxonsPage() {
 
               {selectedDetail.level === 'species' && (
                 <>
-                  <p className="mt-3 font-medium text-slate-900">
+                  <p className="mt-3 font-medium text-[color:var(--app-text)]">
                     Aire de répartition
                   </p>
                   <div className="mt-1">
@@ -1372,7 +1391,7 @@ export function TaxonsPage() {
 
                       if (codes.length === 0) {
                         return (
-                          <p className="mt-1 text-slate-700">
+                          <p className="mt-1 text-[color:var(--app-text-muted)]">
                             Aucune aire de répartition renseignée.
                           </p>
                         )

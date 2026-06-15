@@ -66,12 +66,14 @@ export function SuggestionsPanel({
 
   return (
     <div className="space-y-4">
-      <h3 className="mb-2 text-sm font-semibold text-slate-700">Contribuer</h3>
+      <h3 className="mb-2 text-sm font-semibold text-[color:var(--app-text)]">
+        Contribuer
+      </h3>
 
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-2 border-b border-[color:var(--app-border)]">
         <button
           type="button"
-          className={`px-4 py-2 text-sm font-medium ${tab === 'suggestions' ? 'border-b-2 border-amber-500 text-amber-500' : 'text-slate-600'}`}
+          className={`px-4 py-2 text-sm font-medium ${tab === 'suggestions' ? 'border-b-2 border-[color:var(--app-primary)] text-[color:var(--app-primary)]' : 'text-[color:var(--app-text-muted)]'}`}
           onClick={() => {
             setTab('suggestions')
             setFilter('ALL')
@@ -85,7 +87,7 @@ export function SuggestionsPanel({
         </button>
         <button
           type="button"
-          className={`px-4 py-2 text-sm font-medium ${tab === 'proposals' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-600'}`}
+          className={`px-4 py-2 text-sm font-medium ${tab === 'proposals' ? 'border-b-2 border-[color:var(--app-primary)] text-[color:var(--app-primary)]' : 'text-[color:var(--app-text-muted)]'}`}
           onClick={() => {
             setTab('proposals')
             setFilter('ALL')
@@ -104,7 +106,7 @@ export function SuggestionsPanel({
           <button
             key={f}
             type="button"
-            className={`rounded px-3 py-2 text-sm ${filter === f ? `${tab === 'suggestions' ? 'bg-amber-500' : 'bg-blue-500'} text-white` : 'bg-slate-100'}`}
+            className={`ui-tab text-sm ${filter === f ? 'ui-tab--active' : ''}`}
             onClick={() => setFilter(f)}
           >
             {f}
@@ -115,31 +117,36 @@ export function SuggestionsPanel({
       {tab === 'suggestions' && (
         <ul className="mt-3 space-y-2 text-sm">
           {filteredSuggestions.map((s) => (
-            <li key={s.id} className="rounded border p-3">
+            <li
+              key={s.id}
+              className="rounded-lg border border-[color:var(--app-border)] p-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="text-left">
                   <p className="font-medium">{s.name ?? 'Anonyme'}</p>
-                  <p className="text-xs text-slate-600">{s.email ?? ''}</p>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+                  <p className="text-xs text-[color:var(--app-text-muted)]">
+                    {s.email ?? ''}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--app-primary)]">
                     Message de contribution
                   </p>
                   <p className="mt-2 whitespace-pre-wrap">{s.message}</p>
                   {s.rejectionMessage && (
-                    <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    <div className="mt-2 rounded border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                       {editingMessageId === s.id ? (
                         <>
                           <p className="mb-1 font-semibold uppercase tracking-wide">
                             Modifier le message
                           </p>
                           <textarea
-                            className="mb-2 w-full rounded border p-1 text-xs text-slate-700"
+                            className="ui-textarea mb-2 w-full p-1 text-xs"
                             value={editingMessage}
                             onChange={(e) => setEditingMessage(e.target.value)}
                           />
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                              className="ui-button ui-button--primary py-1 text-xs"
                               onClick={() => {
                                 void updateSuggestionRejectionMessage(
                                   s.id,
@@ -154,7 +161,7 @@ export function SuggestionsPanel({
                             </button>
                             <button
                               type="button"
-                              className="rounded bg-slate-300 px-2 py-1 text-xs"
+                              className="ui-button ui-button--secondary py-1 text-xs"
                               onClick={() => {
                                 setEditingMessageId(null)
                                 setEditingMessage('')
@@ -175,7 +182,7 @@ export function SuggestionsPanel({
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                              className="ui-button ui-button--secondary py-1 text-xs"
                               onClick={() => {
                                 setEditingMessageId(s.id)
                                 setEditingMessage(s.rejectionMessage || '')
@@ -188,14 +195,14 @@ export function SuggestionsPanel({
                       )}
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-[color:var(--app-text-soft)]">
                     {new Date(s.createdAt).toLocaleString()}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
                   <span
-                    className={`rounded px-2 py-1 text-xs ${s.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : s.status === 'PROCESSED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                    className={`ui-chip text-xs ${s.status === 'PENDING' ? 'ui-chip--warning' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                   >
                     {s.status}
                   </span>
@@ -203,7 +210,7 @@ export function SuggestionsPanel({
                     {s.status !== 'PROCESSED' && (
                       <button
                         type="button"
-                        className="rounded bg-emerald-600 px-2 py-1 text-xs text-white"
+                        className="ui-button ui-button--primary py-1 text-xs"
                         onClick={() =>
                           void setSuggestionStatus(s.id, 'PROCESSED')
                         }
@@ -214,7 +221,7 @@ export function SuggestionsPanel({
                     {s.status !== 'REJECTED' && (
                       <button
                         type="button"
-                        className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                        className="ui-button ui-button--danger py-1 text-xs"
                         onClick={() => setRejectingId(s.id)}
                       >
                         Rejeter
@@ -223,7 +230,7 @@ export function SuggestionsPanel({
                     {s.status !== 'PENDING' && (
                       <button
                         type="button"
-                        className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
+                        className="ui-button ui-button--secondary py-1 text-xs"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -242,9 +249,9 @@ export function SuggestionsPanel({
               </div>
 
               {rejectingId === s.id && (
-                <div className="mt-3 space-y-2 border-t pt-2">
+                <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-2">
                   <textarea
-                    className="w-full rounded border p-2 text-xs"
+                    className="ui-textarea w-full p-2 text-xs"
                     placeholder="Message d'explication"
                     value={rejectMessage}
                     onChange={(e) => setRejectMessage(e.target.value)}
@@ -252,7 +259,7 @@ export function SuggestionsPanel({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                      className="ui-button ui-button--danger py-1 text-xs"
                       onClick={() =>
                         void setSuggestionStatus(
                           s.id,
@@ -265,7 +272,7 @@ export function SuggestionsPanel({
                     </button>
                     <button
                       type="button"
-                      className="rounded bg-slate-300 px-2 py-1 text-xs"
+                      className="ui-button ui-button--secondary py-1 text-xs"
                       onClick={() => {
                         setRejectingId(null)
                         setRejectMessage('')
@@ -284,54 +291,54 @@ export function SuggestionsPanel({
       {tab === 'proposals' && (
         <ul className="mt-3 space-y-2 text-sm">
           {filteredProposals.map((p) => (
-            <li key={p.id} className="rounded border p-3">
+            <li key={p.id} className="rounded-lg border border-[color:var(--app-border)] p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
-                      {p.user?.username ?? 'Utilisateur'}
+                      {p.user?.username ?? ‘Utilisateur’}
                     </p>
-                    <p className="text-xs text-slate-500">{p.taxonLevel}</p>
+                    <p className="text-xs text-[color:var(--app-text-soft)]">{p.taxonLevel}</p>
                   </div>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-blue-600">
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--app-primary)]">
                     Proposition d’entrée
                   </p>
-                  <p className="text-sm text-slate-900">{p.taxonValue}</p>
+                  <p className="text-sm text-[color:var(--app-text)]">{p.taxonValue}</p>
                   {p.subfamily && (
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
                       Subfamily: {p.subfamily}
                     </p>
                   )}
                   {p.genus && (
-                    <p className="text-xs text-slate-600">Genus: {p.genus}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">Genus: {p.genus}</p>
                   )}
                   {p.species && (
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
                       Species: {p.species}
                     </p>
                   )}
                   {p.size && (
-                    <p className="text-xs text-slate-600">Size: {p.size}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">Size: {p.size}</p>
                   )}
                   {p.caste && (
-                    <p className="text-xs text-slate-600">Caste: {p.caste}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">Caste: {p.caste}</p>
                   )}
                   {p.rejectionMessage && (
-                    <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    <div className="mt-2 rounded border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                       {editingMessageId === p.id ? (
                         <>
                           <p className="mb-1 font-semibold uppercase tracking-wide">
                             Modifier le message
                           </p>
                           <textarea
-                            className="mb-2 w-full rounded border p-1 text-xs text-slate-700"
+                            className="ui-textarea mb-2 w-full p-1 text-xs"
                             value={editingMessage}
                             onChange={(e) => setEditingMessage(e.target.value)}
                           />
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                              className="ui-button ui-button--danger py-1 text-xs"
                               onClick={() => {
                                 void updateProposalRejectionMessage(
                                   p.id,
@@ -346,7 +353,7 @@ export function SuggestionsPanel({
                             </button>
                             <button
                               type="button"
-                              className="rounded bg-slate-300 px-2 py-1 text-xs"
+                              className="ui-button ui-button--secondary py-1 text-xs"
                               onClick={() => {
                                 setEditingMessageId(null)
                                 setEditingMessage('')
@@ -367,7 +374,7 @@ export function SuggestionsPanel({
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                              className="ui-button ui-button--secondary py-1 text-xs"
                               onClick={() => {
                                 setEditingMessageId(p.id)
                                 setEditingMessage(p.rejectionMessage || '')
@@ -380,23 +387,23 @@ export function SuggestionsPanel({
                       )}
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-slate-600">
+                  <p className="mt-2 text-xs text-[color:var(--app-text-muted)]">
                     {p.department} •{' '}
                     {new Date(p.observedAt).toLocaleDateString()}
                   </p>
                   {p.images.length > 0 && (
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="mt-1 text-xs text-[color:var(--app-text-soft)]">
                       {p.images.length} image(s)
                     </p>
                   )}
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-[color:var(--app-text-soft)]">
                     {new Date(p.createdAt).toLocaleString()}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
                   <span
-                    className={`rounded px-2 py-1 text-xs ${p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : p.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                    className={`ui-chip text-xs ${p.status === 'PENDING' ? 'ui-chip--warning' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                   >
                     {p.status}
                   </span>
@@ -405,14 +412,14 @@ export function SuggestionsPanel({
                       <>
                         <button
                           type="button"
-                          className="rounded bg-emerald-600 px-2 py-1 text-xs text-white"
+                          className="ui-button ui-button--primary py-1 text-xs"
                           onClick={() => void setProposalStatus(p.id, 'ACCEPT')}
                         >
                           Accepter
                         </button>
                         <button
                           type="button"
-                          className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                          className="ui-button ui-button--danger py-1 text-xs"
                           onClick={() => setRejectingId(p.id)}
                         >
                           Rejeter
@@ -422,7 +429,7 @@ export function SuggestionsPanel({
                     {p.status !== 'PENDING' && (
                       <button
                         type="button"
-                        className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
+                        className="ui-button ui-button--secondary py-1 text-xs"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -446,7 +453,7 @@ export function SuggestionsPanel({
                     <button
                       key={image.id}
                       type="button"
-                      className="overflow-hidden rounded border border-slate-200 bg-slate-50"
+                      className="overflow-hidden rounded border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)]"
                       onClick={() =>
                         setPreview({
                           images: p.images.map((proposalImage) =>
@@ -472,9 +479,9 @@ export function SuggestionsPanel({
               )}
 
               {rejectingId === p.id && (
-                <div className="mt-3 space-y-2 border-t pt-2">
+                <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-2">
                   <textarea
-                    className="w-full rounded border p-2 text-xs"
+                    className="ui-textarea w-full p-2 text-xs"
                     placeholder="Message d'explication"
                     value={rejectMessage}
                     onChange={(e) => setRejectMessage(e.target.value)}
@@ -482,7 +489,7 @@ export function SuggestionsPanel({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                      className="ui-button ui-button--danger py-1 text-xs"
                       onClick={() =>
                         void setProposalStatus(p.id, 'REJECT', rejectMessage)
                       }
@@ -491,7 +498,7 @@ export function SuggestionsPanel({
                     </button>
                     <button
                       type="button"
-                      className="rounded bg-slate-300 px-2 py-1 text-xs"
+                      className="ui-button ui-button--secondary py-1 text-xs"
                       onClick={() => {
                         setRejectingId(null)
                         setRejectMessage('')
@@ -509,7 +516,7 @@ export function SuggestionsPanel({
 
       {preview && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           onClick={() => setPreview(null)}
         >
           <div
@@ -518,7 +525,7 @@ export function SuggestionsPanel({
           >
             <button
               type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              className="absolute -right-2 -top-2 rounded-full bg-[color:var(--app-surface)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
               onClick={() => setPreview(null)}
             >
               Fermer
@@ -526,7 +533,7 @@ export function SuggestionsPanel({
 
             <button
               type="button"
-              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() =>
                 setPreview((current) =>
                   !current || current.images.length <= 1
@@ -558,7 +565,7 @@ export function SuggestionsPanel({
 
             <button
               type="button"
-              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() =>
                 setPreview((current) =>
                   !current || current.images.length <= 1
@@ -591,11 +598,11 @@ export function SuggestionsPanel({
                 sizes: '(max-width: 768px) 90vw, 50vw',
               })}
               alt={preview.alt}
-              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-slate-200 bg-white object-contain"
+              className="max-h-[85vh] max-w-[90vw] rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] object-contain"
               decoding="async"
             />
 
-            <p className="mt-2 text-center text-xs text-slate-200">
+            <p className="mt-2 text-center text-xs text-[color:var(--app-text-inverse)]">
               Image {preview.index + 1}/{preview.images.length}
             </p>
           </div>

@@ -43,20 +43,20 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
   return (
     <div className="space-y-4">
       {/* Statistiques des parties */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">
+      <div className="surface-panel surface-panel--solid p-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <h3 className="text-lg font-semibold text-[color:var(--app-text)]">
             Statistiques des parties
           </h3>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-[color:var(--app-text-muted)]">
               Période
               <select
                 value={period}
                 onChange={(event) =>
                   setPeriod(event.target.value as GameStatsPeriod)
                 }
-                className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1"
+                className="ui-select ml-2 py-1"
               >
                 <option value="all">Total</option>
                 <option value="30d">30 jours</option>
@@ -64,7 +64,7 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
               </select>
             </label>
             <button
-              className="ml-4 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+              className="ui-button ui-button--danger ml-4 py-1.5 text-sm disabled:opacity-60"
               onClick={() => setShowConfirm(true)}
               disabled={resetLoading}
               title="Réinitialiser toutes les statistiques"
@@ -75,17 +75,17 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
         </div>
 
         {showConfirm && (
-          <div className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800 flex items-center gap-3">
+          <div className="ui-alert ui-alert--danger mb-3 flex items-center gap-3 text-sm">
             <span>Confirmer la réinitialisation des statistiques ?</span>
             <button
-              className="rounded bg-red-600 px-2 py-1 text-white hover:bg-red-700 disabled:opacity-60"
+              className="ui-button ui-button--danger py-1 text-sm disabled:opacity-60"
               onClick={handleResetStats}
               disabled={resetLoading}
             >
               Oui, réinitialiser
             </button>
             <button
-              className="rounded bg-slate-200 px-2 py-1 text-slate-800 hover:bg-slate-300"
+              className="ui-button ui-button--secondary py-1 text-sm disabled:opacity-60"
               onClick={() => setShowConfirm(false)}
               disabled={resetLoading}
             >
@@ -94,11 +94,13 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
           </div>
         )}
         {resetError && (
-          <div className="mb-3 text-sm text-red-600">{resetError}</div>
+          <div className="ui-alert ui-alert--danger mb-3 text-sm">
+            {resetError}
+          </div>
         )}
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
+        <div className="overflow-x-auto rounded-lg border border-[color:var(--app-border)]">
+          <table className="min-w-full divide-y divide-[color:var(--app-border)] text-sm">
             <thead className="table-head-row">
               <tr className="table-head-row">
                 <th className="table-head-sticky px-4 py-3 font-medium">
@@ -115,7 +117,7 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
+            <tbody className="divide-y divide-[color:var(--app-border)] bg-[color:var(--app-surface)] text-[color:var(--app-text)]">
               {levelsOrder.map((level) => {
                 const item = statsByLevel.get(level)
                 return (

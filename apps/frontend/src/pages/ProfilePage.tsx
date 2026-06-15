@@ -288,19 +288,23 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <section className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-slate-600">Chargement du profil…</p>
+      <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
+        <p className="text-[color:var(--app-text-muted)]">
+          Chargement du profil…
+        </p>
       </section>
     )
   }
 
   if (error && !profile) {
     return (
-      <section className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">Profil</h2>
-        <p className="mt-3 text-sm text-red-600">{error}</p>
+      <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
+        <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
+          Profil
+        </h2>
+        <p className="mt-3 text-sm text-[color:var(--app-danger)]">{error}</p>
         <button
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+          className="ui-button ui-button--secondary mt-4"
           type="button"
           onClick={() => void handleLogout()}
         >
@@ -314,12 +318,10 @@ export function ProfilePage() {
     <section className="mx-auto max-w-3xl space-y-6">
       {/* Error and Success Messages */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600 border border-red-200">
-          {error}
-        </div>
+        <div className="ui-alert ui-alert--danger text-sm">{error}</div>
       )}
       {successMessage && (
-        <div className="rounded-lg bg-green-50 p-4 text-sm text-green-600 border border-green-200">
+        <div className="ui-alert ui-alert--success text-sm">
           {successMessage}
         </div>
       )}
@@ -469,10 +471,10 @@ export function ProfilePage() {
             <button
               key={theme}
               onClick={() => handleThemeChange(theme)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
                 themePreference === theme
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  ? 'ui-button--primary bg-[color:var(--app-primary)] text-[color:var(--app-text-inverse)] shadow-lg'
+                  : 'border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface)]'
               }`}
               type="button"
               title={`Mode ${theme === 'system' ? 'système' : theme === 'light' ? 'clair' : 'sombre'}`}

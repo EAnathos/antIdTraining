@@ -80,8 +80,8 @@ export function AdminDashboardPage() {
                 tabIndex={0}
                 className={`cursor-pointer rounded px-3 py-2 text-sm ${
                   section === item.id
-                    ? 'bg-slate-100 font-semibold text-[color:var(--app-text)]'
-                    : 'text-[color:var(--app-text-soft)] hover:bg-slate-50'
+                    ? 'bg-[color:var(--app-surface-muted)] font-semibold text-[color:var(--app-text)]'
+                    : 'text-[color:var(--app-text-soft)] hover:bg-[color:var(--app-surface-muted)]'
                 }`}
                 onClick={() => setSection(item.id)}
                 onKeyDown={(e) => {

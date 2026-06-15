@@ -252,9 +252,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {authState.token ? (
                 <>
                   {authState.role === 'ADMIN' && (
-                    <NavLink className={adminNavClass} to="/admin">
-                      Admin
-                    </NavLink>
+                    <span className="hidden sm:contents">
+                      <NavLink className={adminNavClass} to="/admin">
+                        Admin
+                      </NavLink>
+                    </span>
                   )}
                   <NavLink className={adminNavClass} to="/profil">
                     Profil

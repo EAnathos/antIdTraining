@@ -5,28 +5,26 @@ type Props = {
 }
 
 const toneClasses: Record<AdminHistoryItem['tone'], string> = {
-  success:
-    'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-slate-100',
-  error:
-    'border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/35 dark:text-slate-100',
-  info: 'border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/35 dark:text-orange-100',
+  success: 'ui-alert ui-alert--success',
+  error: 'ui-alert ui-alert--danger',
+  info: 'ui-alert ui-alert--warning',
 }
 
 export function AdminHistoryPanel({ history }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">
+        <h3 className="text-lg font-semibold text-[color:var(--app-text)]">
           Historique admin
         </h3>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-[color:var(--app-text-muted)]">
           Les dernières actions réalisées dans le panneau d’administration sont
           affichées ici.
         </p>
       </div>
 
       {history.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+        <div className="rounded-xl border border-dashed border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4 text-sm text-[color:var(--app-text-soft)]">
           Aucun événement enregistré pour le moment.
         </div>
       ) : (

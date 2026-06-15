@@ -85,24 +85,24 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
-      <h3 className="text-sm font-semibold text-slate-900">
+      <h3 className="text-sm font-semibold text-[color:var(--app-text)]">
         Points des utilisateurs
       </h3>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-[color:var(--app-text-muted)]">
         Modifiez les points des utilisateurs. Le total inclut les points gagnés
         aux jeux et les ajustements.
       </p>
 
       <div>
         <label
-          className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-600"
+          className="mb-1 block text-xs font-medium uppercase tracking-wide text-[color:var(--app-text-soft)]"
           htmlFor="admin-user-points-search"
         >
           Rechercher un utilisateur
         </label>
         <input
           id="admin-user-points-search"
-          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 placeholder:text-slate-400 shadow-sm"
+          className="ui-input w-full p-2"
           type="search"
           placeholder="Nom d'utilisateur"
           value={search}
@@ -110,12 +110,12 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
         />
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-[color:var(--app-text-muted)]">
         Clique sur un en-tête pour trier le tableau.
       </p>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="user-points-table min-w-full divide-y divide-slate-200 text-sm">
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--app-border)]">
+        <table className="user-points-table min-w-full divide-y divide-[color:var(--app-border)] text-sm">
           <thead className="table-head-row">
             <tr className="table-head-row">
               <th className="table-head-sticky px-4 py-3 font-medium">
@@ -162,7 +162,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
+          <tbody className="divide-y divide-[color:var(--app-border)] bg-[color:var(--app-surface)] text-[color:var(--app-text)]">
             {filteredUsers.map((user) => {
               const draftValue = drafts[user.id] ?? String(user.points)
 
@@ -179,7 +179,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <input
-                      className="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-right text-slate-700"
+                      className="ui-input w-full px-2 py-2 text-right"
                       type="number"
                       placeholder={String(user.points)}
                       value={draftValue}
@@ -198,7 +198,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                       title={`Points: ${user.points}`}
                     />
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-[color:var(--app-text-muted)]">
                     {new Date(user.createdAt).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="px-4 py-3">
@@ -219,7 +219,10 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
 
             {filteredUsers.length === 0 && (
               <tr>
-                <td className="px-4 py-3 text-sm text-slate-700" colSpan={5}>
+                <td
+                  className="px-4 py-3 text-sm text-[color:var(--app-text-muted)]"
+                  colSpan={5}
+                >
                   Aucun utilisateur trouvé.
                 </td>
               </tr>

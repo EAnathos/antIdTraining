@@ -130,14 +130,14 @@ export function TaxonLevelEditor({
   const canAutoSelectSwarming = levelKey === 'species'
 
   return (
-    <div className="mb-4 rounded-lg border border-slate-200 p-3">
-      <p className="font-medium text-slate-800">
+    <div className="mb-4 rounded-lg border border-[color:var(--app-border)] p-3">
+      <p className="font-medium text-[color:var(--app-text)]">
         {renderLevelTitle(levelKey, taxon)}
       </p>
 
       {canAutoSelectSwarming && (
         <div className="mt-3 mb-4 space-y-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[color:var(--app-text)]">
             <span>Essaimage :</span>
             {swarming.swarmingStartMonth && swarming.swarmingEndMonth && (
               <>
@@ -174,16 +174,16 @@ export function TaxonLevelEditor({
                 onPointerUp={onEndSwarmingRangeSelection}
                 className={`shrink-0 rounded-full border transition ${
                   isMonthRangeEndpoint(month.value)
-                    ? 'h-6 w-6 border-indigo-700 bg-indigo-600'
+                    ? 'h-6 w-6 border-[color:var(--app-primary)] bg-[color:var(--app-primary)]'
                     : isMonthInSelectedRange(month.value)
-                      ? 'h-4 w-4 border-indigo-500 bg-indigo-400'
-                      : 'h-4 w-4 border-slate-500 bg-slate-300 hover:border-slate-600'
+                      ? 'h-4 w-4 border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]'
+                      : 'h-4 w-4 border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] hover:border-[color:var(--app-primary)]'
                 }`}
               />
             ))}
           </div>
           <div
-            className="grid grid-cols-12 justify-items-center gap-2 text-xs text-slate-500"
+            className="grid grid-cols-12 justify-items-center gap-2 text-xs text-[color:var(--app-text-soft)]"
             aria-hidden
           >
             {MONTH_OPTIONS.map((month) => (
@@ -196,7 +196,7 @@ export function TaxonLevelEditor({
       )}
 
       <textarea
-        className="mt-2 w-full rounded border p-2"
+        className="ui-textarea mt-2 w-full"
         placeholder="Description"
         rows={2}
         value={levelDraft.description}
@@ -208,7 +208,7 @@ export function TaxonLevelEditor({
         levelKey === 'species') && (
         <div className="mt-2 grid grid-cols-3 gap-2">
           <input
-            className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
+            className={`ui-input ${isAutoCalculatedSize ? 'cursor-not-allowed opacity-50' : ''}`}
             placeholder={
               isAutoCalculatedSize ? undefined : 'Ouvrière (ex: 2-3 mm)'
             }
@@ -222,7 +222,7 @@ export function TaxonLevelEditor({
             }
           />
           <input
-            className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
+            className={`ui-input ${isAutoCalculatedSize ? 'cursor-not-allowed opacity-50' : ''}`}
             placeholder={
               isAutoCalculatedSize ? undefined : 'Reine (ex: 4-5 mm)'
             }
@@ -236,7 +236,7 @@ export function TaxonLevelEditor({
             }
           />
           <input
-            className={`rounded border p-2 ${isAutoCalculatedSize ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
+            className={`ui-input ${isAutoCalculatedSize ? 'cursor-not-allowed opacity-50' : ''}`}
             placeholder={isAutoCalculatedSize ? undefined : 'Mâle (ex: 2-3 mm)'}
             value={levelDraft.sizeMale}
             readOnly={isAutoCalculatedSize}
@@ -251,7 +251,7 @@ export function TaxonLevelEditor({
       )}
 
       {showAutoCalculatedSizeHint && (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-[color:var(--app-text-soft)]">
           Les tailles sont auto-calculées à partir des espèces enfants.
         </p>
       )}
@@ -260,7 +260,7 @@ export function TaxonLevelEditor({
         {levelDraft.criteria.map((criterion, index) => (
           <div key={`${levelKey}-${index}`} className="flex gap-2">
             <input
-              className="flex-1 rounded border p-2"
+              className="ui-input flex-1"
               placeholder="Critère"
               value={criterion}
               onChange={(event) =>
@@ -290,7 +290,7 @@ export function TaxonLevelEditor({
       </div>
 
       <button
-        className="mt-2 rounded bg-slate-100 px-3 py-1 text-sm"
+        className="ui-button ui-button--secondary mt-2 text-sm"
         type="button"
         onClick={() => onAddCriterion(levelKey)}
       >
