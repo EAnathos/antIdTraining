@@ -1,128 +1,169 @@
-# Vue d'ensemble de l'API
+# API
 
 ## Base
 
 - URL locale backend : `http://localhost:4000`
-- Préfixe API : `/api`
-- Documentation interactive : `/api/docs`
+- Préfixe : `/api`
+- Documentation interactive : `/api/docs` (Swagger UI)
 - Spécification OpenAPI : `/api/openapi.json`
+
+## Authentification
+
+Les routes admin requièrent un JWT valide, transmis soit en cookie `adminToken` soit en header `Authorization: Bearer <token>`.
+
+---
 
 ## Routes publiques
 
-### Santé et documentation
+### Santé
 
-- `GET /api/health` : état de santé de l'API
-- `GET /api/health/ready` : readiness détaillée (PostgreSQL, Redis, métriques)
-- `GET /api/openapi.json` : document OpenAPI généré
-- `GET /api/docs` : Swagger UI
+| Méthode | Route               | Description                                        |
+| ------- | ------------------- | -------------------------------------------------- |
+| `GET`   | `/api/health`       | Liveness — l'API répond                            |
+| `GET`   | `/api/health/ready` | Readiness — vérifie PostgreSQL, Redis et métriques |
 
-### Authentification
+### Auth
 
-- `POST /api/auth/login` : connexion avec l’adresse e-mail et le mot de passe
-- `POST /api/auth/register` : création d’un compte avec nom d’utilisateur, adresse e-mail et mot de passe, puis envoi d’un code de vérification
-- `POST /api/auth/verify-email` : validation du code reçu par e-mail et activation du compte
-- `POST /api/auth/logout`
-- `GET /api/auth/me` : profil courant, e-mail et points
-- `PATCH /api/auth/profile` : mise à jour de l’avatar et de la biographie
-- `POST /api/auth/avatar` : upload d’avatar
-- `POST /api/auth/delete-account` : suppression du compte connecté
-- `POST /api/auth/password-reset-request` : demande de réinitialisation de mot de passe, soit depuis un compte connecté, soit depuis une adresse e-mail saisie publiquement, avec envoi d’un e-mail contenant un lien vers le frontend si aucune autre demande n’a été faite dans la semaine
-- `POST /api/auth/password-reset` : validation du token reçu par e-mail et définition d’un nouveau mot de passe
+| Méthode | Route                              | Description                                                                     |
+| ------- | ---------------------------------- | ------------------------------------------------------------------------------- |
+| `POST`  | `/api/auth/register`               | Création de compte (username, email, password) — envoie un code de vérification |
+| `POST`  | `/api/auth/verify-email`           | Activation du compte via le code reçu par e-mail                                |
+| `POST`  | `/api/auth/login`                  | Connexion — renvoie un JWT et pose le cookie `adminToken`                       |
+| `POST`  | `/api/auth/logout`                 | Suppression du cookie                                                           |
+| `GET`   | `/api/auth/me`                     | Profil courant, e-mail et points _(auth requise)_                               |
+| `PATCH` | `/api/auth/profile`                | Mise à jour de l'avatar (URL) et de la biographie _(auth requise)_              |
+| `POST`  | `/api/auth/avatar`                 | Upload d'avatar (multipart) _(auth requise)_                                    |
+| `POST`  | `/api/auth/delete-account`         | Suppression du compte connecté _(auth requise)_                                 |
+| `GET`   | `/api/auth/users/:username`        | Profil public d'un utilisateur (avatar, bio, points)                            |
+| `POST`  | `/api/auth/password-reset-request` | Demande de reset — envoie un e-mail si aucune autre demande dans la semaine     |
+| `POST`  | `/api/auth/password-reset`         | Validation du token et définition du nouveau mot de passe                       |
 
-Chaque connexion déclenche l’envoi d’un e-mail de notification au compte concerné.
-Une inscription n’est finalisée qu’après saisie du code de vérification reçu par e-mail.
-L’envoi utilise Resend lorsque `RESEND_API_KEY` et `RESEND_FROM` sont configurés.
-Pour l’inscription et la réinitialisation, le mot de passe doit contenir au moins 8 caractères et au moins un caractère spécial.
-Le lien de réinitialisation pointe vers `/#/reset-password?token=...` sur le frontend configuré via `FRONTEND_URL`.
-Le parcours public “Mot de passe oublié ?” utilise `/#/forgot-password` sur le frontend.
+**Règles mot de passe** : minimum 8 caractères, au moins un caractère spécial.  
+**Emails** : envoyés via Resend si `RESEND_API_KEY` et `RESEND_FROM` sont configurés.  
+**Notification de connexion** : un e-mail est envoyé à chaque connexion réussie (désactivable via `SEND_LOGIN_NOTIFICATION_EMAILS=false`).
 
 ### Jeu
 
-- `GET /api/game/question?level=easy|medium|hard` : question aléatoire, avec filtres optionnels `departments` et `swarmingMonths`
-- `POST /api/game/validate`
+| Méthode | Route                | Description                                                                               |
+| ------- | -------------------- | ----------------------------------------------------------------------------------------- |
+| `GET`   | `/api/game/question` | Question aléatoire — params : `level=easy\|medium\|hard`, `departments`, `swarmingMonths` |
+| `POST`  | `/api/game/validate` | Validation d'une réponse et enregistrement du score                                       |
 
-### Données publiques
-
-- `GET /api/taxons`
-- `GET /api/taxons/subfamilies`
-- `GET /api/taxons/genera?subfamily=...`
-- `GET /api/taxons/subgenera?genus=...`
-- `GET /api/taxons/species-groups?genus=...`
-- `GET /api/taxons/species?genus=...`
-- `GET /api/taxons/species-metadata?genus=...&species=...`
-- `GET /api/references`
-- `GET /api/stats/leaderboard`
-
-### Contributions utilisateur
-
-- `POST /api/suggestions`
-- `GET /api/entry-proposals/my-contributions`
-- `GET /api/entry-proposals/user-counts`
-- `POST /api/entry-proposals`
-
-## Routes administrateur
-
-Les routes admin sont protégées par `requireAuth` + `requireAdmin`.
-
-### Entrées
-
-- `GET /api/admin/entries`
-- `POST /api/admin/entries`
-- `PUT /api/admin/entries/:id`
-- `PUT /api/admin/entries/:id/images/order`
-- `DELETE /api/admin/entries/:id`
+Les deux endpoints sont limités par IP (rate limiting Redis).
 
 ### Taxons
 
-- `POST /api/admin/taxons`
-- `PUT /api/admin/taxons/:id`
-- `DELETE /api/admin/taxons/:id`
+| Méthode | Route                          | Description                                   |
+| ------- | ------------------------------ | --------------------------------------------- |
+| `GET`   | `/api/taxons`                  | Liste complète                                |
+| `GET`   | `/api/taxons/subfamilies`      | Sous-familles disponibles                     |
+| `GET`   | `/api/taxons/genera`           | Genres d'une sous-famille (`?subfamily=`)     |
+| `GET`   | `/api/taxons/subgenera`        | Sous-genres d'un genre (`?genus=`)            |
+| `GET`   | `/api/taxons/species-groups`   | Groupes d'espèces (`?genus=`)                 |
+| `GET`   | `/api/taxons/species`          | Espèces d'un genre (`?genus=`)                |
+| `GET`   | `/api/taxons/species-metadata` | Métadonnées d'une espèce (`?genus=&species=`) |
+
+### Références et stats
+
+| Méthode | Route                    | Description                           |
+| ------- | ------------------------ | ------------------------------------- |
+| `GET`   | `/api/references`        | Liste des références bibliographiques |
+| `GET`   | `/api/stats/leaderboard` | Classement public                     |
+
+### Contributions utilisateur _(auth requise)_
+
+| Méthode | Route                                   | Description                                  |
+| ------- | --------------------------------------- | -------------------------------------------- |
+| `POST`  | `/api/suggestions`                      | Soumission d'une suggestion                  |
+| `POST`  | `/api/entry-proposals`                  | Proposition d'entrée (multipart avec images) |
+| `GET`   | `/api/entry-proposals/my-contributions` | Propositions de l'utilisateur connecté       |
+| `GET`   | `/api/entry-proposals/user-counts`      | Compteurs de contributions par utilisateur   |
+
+---
+
+## Routes admin _(requireAuth + requireAdmin)_
+
+### Entrées
+
+| Méthode  | Route                                 | Description                      |
+| -------- | ------------------------------------- | -------------------------------- |
+| `GET`    | `/api/admin/entries`                  | Liste paginée (`?page=&limit=`)  |
+| `POST`   | `/api/admin/entries`                  | Création (multipart avec images) |
+| `PUT`    | `/api/admin/entries/:id`              | Modification                     |
+| `PUT`    | `/api/admin/entries/:id/images/order` | Réordonnancement des images      |
+| `DELETE` | `/api/admin/entries/:id`              | Suppression                      |
+
+### Taxons
+
+| Méthode  | Route                   | Description  |
+| -------- | ----------------------- | ------------ |
+| `POST`   | `/api/admin/taxons`     | Création     |
+| `PUT`    | `/api/admin/taxons/:id` | Modification |
+| `DELETE` | `/api/admin/taxons/:id` | Suppression  |
 
 ### Références
 
-- `POST /api/admin/references`
-- `PUT /api/admin/references/:id`
-- `DELETE /api/admin/references/:id`
+| Méthode  | Route                       | Description  |
+| -------- | --------------------------- | ------------ |
+| `POST`   | `/api/admin/references`     | Création     |
+| `PUT`    | `/api/admin/references/:id` | Modification |
+| `DELETE` | `/api/admin/references/:id` | Suppression  |
 
 ### Statistiques
 
-- `GET /api/admin/stats/game`
-- `GET /api/admin/stats/entries`
-- `GET /api/admin/stats/leaderboard`
-- `POST /api/admin/stats-tools/reset`
+| Méthode | Route                          | Description              |
+| ------- | ------------------------------ | ------------------------ |
+| `GET`   | `/api/admin/stats/game`        | Statistiques de jeu      |
+| `GET`   | `/api/admin/stats/entries`     | Statistiques des entrées |
+| `GET`   | `/api/admin/stats/leaderboard` | Classement admin         |
+| `POST`  | `/api/admin/stats-tools/reset` | Remise à zéro des stats  |
 
 ### Base de données
 
-- `GET /api/admin/database/export`
-- `POST /api/admin/database/import`
-- `GET /api/admin/database/export/bundle`
-- `POST /api/admin/database/import/bundle`
-- `POST /api/admin/database/cleanup/uploads`
+| Méthode | Route                                 | Description                      |
+| ------- | ------------------------------------- | -------------------------------- |
+| `GET`   | `/api/admin/database/export`          | Export JSON des données          |
+| `POST`  | `/api/admin/database/import`          | Import JSON                      |
+| `GET`   | `/api/admin/database/export/bundle`   | Export ZIP (données + uploads)   |
+| `POST`  | `/api/admin/database/import/bundle`   | Import ZIP                       |
+| `POST`  | `/api/admin/database/cleanup/uploads` | Nettoyage des fichiers orphelins |
 
-### Historique
+### Utilisateurs, historique, suggestions, propositions
 
-- `GET /api/admin/history`
+| Méthode  | Route                            | Description                 |
+| -------- | -------------------------------- | --------------------------- |
+| `GET`    | `/api/admin/history`             | Journal des actions admin   |
+| `GET`    | `/api/admin/users`               | Liste des utilisateurs      |
+| `PUT`    | `/api/admin/users/:id/points`    | Modification des points     |
+| `GET`    | `/api/admin/suggestions`         | Liste des suggestions       |
+| `PUT`    | `/api/admin/suggestions/:id`     | Traitement d'une suggestion |
+| `DELETE` | `/api/admin/suggestions/:id`     | Suppression                 |
+| `GET`    | `/api/admin/entry-proposals`     | Liste des propositions      |
+| `PUT`    | `/api/admin/entry-proposals/:id` | Acceptation ou rejet        |
+| `DELETE` | `/api/admin/entry-proposals/:id` | Suppression                 |
 
-### Utilisateurs
+---
 
-- `GET /api/admin/users`
-- `PUT /api/admin/users/:id/points`
+## Format des erreurs
 
-### Suggestions
+Toutes les erreurs suivent ce format :
 
-- `GET /api/admin/suggestions`
-- `PUT /api/admin/suggestions/:id`
-- `DELETE /api/admin/suggestions/:id`
+```json
+{ "message": "Description lisible." }
+```
 
-### Propositions d’entrée
+Les erreurs de validation (400) incluent en plus :
 
-- `GET /api/admin/entry-proposals`
-- `PUT /api/admin/entry-proposals/:id`
-- `DELETE /api/admin/entry-proposals/:id`
+```json
+{
+  "message": "Requête invalide.",
+  "errors": { "field": ["message"] },
+  "formErrors": []
+}
+```
 
-## Points d'attention
+Les erreurs serveur (500) incluent un `errorId` pour le support :
 
-- Les erreurs de validation renvoient maintenant une structure exploitable par le frontend
-- Les erreurs serveur incluent un `errorId`
-- Les endpoints de jeu sont limités par IP
-- Les uploads sont limités aux images acceptées par le middleware partagé
+```json
+{ "message": "Erreur interne du serveur.", "errorId": "a1b2c3d4e5f6" }
+```

@@ -547,8 +547,11 @@ describe('authRouter', () => {
       passwordResetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
     })
 
+    // Token must be exactly 48 hex chars (24 random bytes → hex)
+    const validToken = 'a'.repeat(48)
+
     const { response, json } = await post('/api/auth/password-reset', {
-      token: 'valid-token',
+      token: validToken,
       password: 'newpass123!',
       confirmPassword: 'newpass123!',
     })
@@ -571,8 +574,11 @@ describe('authRouter', () => {
   it('rejects password reset when token is invalid', async () => {
     prismaMocks.user.findFirst.mockResolvedValue(null)
 
+    // Valid length (48 hex chars) but unknown token → findFirst returns null
+    const unknownToken = 'b'.repeat(48)
+
     const { response, json } = await post('/api/auth/password-reset', {
-      token: 'invalid-token',
+      token: unknownToken,
       password: 'newpass123!',
       confirmPassword: 'newpass123!',
     })

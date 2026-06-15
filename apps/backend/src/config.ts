@@ -22,6 +22,13 @@ function requiredProductionEnv(name: string) {
 
 export const config = {
   port: Number(process.env.PORT ?? 4000),
+  // Controls Express trust proxy. In Docker behind nginx, 'loopback, uniquelocal'
+  // trusts RFC1918 ranges only, preventing X-Forwarded-For spoofing from internet clients.
+  // Set TRUST_PROXY=1 only if a single known public proxy sits in front.
+  trustProxy: (process.env.TRUST_PROXY ?? 'loopback, uniquelocal') as
+    | string
+    | number
+    | boolean,
   jwtSecret: requiredEnv('JWT_SECRET'),
   dataEncryptionKey:
     requiredProductionEnv('DATA_ENCRYPTION_KEY') ??

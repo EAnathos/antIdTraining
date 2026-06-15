@@ -1,11 +1,8 @@
 # Schéma de base de données
 
-Documentation rapide du modèle Prisma de la base antIdTraining.
+Modèle Prisma simplifié. Le schéma complet est dans [`apps/backend/prisma/schema.prisma`](../apps/backend/prisma/schema.prisma).
 
 ```mermaid
----
-title: antIdTraining database schema
----
 erDiagram
     direction LR
 
@@ -13,9 +10,11 @@ erDiagram
         string id PK
         string username UK
         string email UK
-        datetime emailVerifiedAt
-        string role
+        string avatar
+        string bio
         int points
+        string role
+        datetime emailVerifiedAt
         datetime createdAt
     }
 
@@ -177,13 +176,25 @@ erDiagram
     EntryProposal ||--o{ EntryProposalImage : has
 ```
 
-## Lecture rapide
+## Description des entités
 
-- `User` : comptes admin et utilisateur, identifiés par un nom d’utilisateur et une adresse e-mail, avec validation e-mail avant activation.
-- `Taxon` : référentiel scientifique principal.
-- `TaxonConfusion` : confusions possibles entre taxons, avec explication, enregistrées de façon miroir pour apparaître sur les deux taxons.
-- `ObservationEntry` : entrées de jeu et observations.
-- `GameSession` : historique des parties.
-- `EntryProposal` : propositions de contribution utilisateur.
-- `AdminHistoryEvent` : audit des actions d’administration.
-- `Reference` et `Suggestion` : documentation et retours utilisateurs.
+| Entité              | Description                                                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `User`              | Comptes utilisateur et admin. Email vérifié avant activation. Les champs `passwordHash`, `emailVerificationCodeHash` et `passwordResetToken` (haché SHA-256) ne sont pas exposés dans le diagramme. |
+| `Taxon`             | Référentiel scientifique principal. `distribution` est un objet JSON de présence par département.                                                                                                   |
+| `TaxonConfusion`    | Confusions possibles entre taxons (enregistrées en miroir pour apparaître sur les deux taxons).                                                                                                     |
+| `TaxonLevelProfile` | Profils de niveau de jeu (critères d'identification par sous-famille/genre/espèce).                                                                                                                 |
+| `ObservationEntry`  | Entrées de jeu validées. Le département accepte les codes `01`–`95`, `2A`, `2B` et DOM-TOM (`971`–`976`).                                                                                           |
+| `GameSession`       | Historique des parties par entrée et par utilisateur.                                                                                                                                               |
+| `EntryProposal`     | Propositions de contribution utilisateur, avec workflow de validation (PENDING → ACCEPTED/REJECTED).                                                                                                |
+| `Reference`         | Références bibliographiques liées aux taxons.                                                                                                                                                       |
+| `Suggestion`        | Retours libres des utilisateurs, avec workflow de traitement.                                                                                                                                       |
+| `AdminHistoryEvent` | Journal d'audit des actions d'administration.                                                                                                                                                       |
+
+## Champs chiffrés
+
+Les champs suivants sont chiffrés AES-256-GCM en base (préfixe `enc:v1:`) lorsque `DATA_ENCRYPTION_KEY` est défini :
+
+- `ObservationEntry.photoCredit`
+- `EntryProposal.photoCredit`
+- `Suggestion.name`, `Suggestion.email`

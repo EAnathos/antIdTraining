@@ -73,13 +73,24 @@ export async function getGameEntriesCache() {
 
   cache = {
     expiresAt: Date.now() + CACHE_TTL_MS,
-    entries: entries.map((entry) => ({
-      ...entry,
-      photoCredit: (decryptSensitiveText(entry.photoCredit) ??
-        entry.photoCredit) as string,
-      swarmingStartMonth: entry.taxon?.swarmingStartMonth ?? null,
-      swarmingEndMonth: entry.taxon?.swarmingEndMonth ?? null,
-    })),
+    entries: entries.map((entry) => {
+      let photoCredit = entry.photoCredit
+      try {
+        photoCredit = (decryptSensitiveText(entry.photoCredit) ??
+          entry.photoCredit) as string
+      } catch (error) {
+        logger.warn(
+          { err: error, entryId: entry.id },
+          'Impossible de déchiffrer photoCredit, valeur brute utilisée',
+        )
+      }
+      return {
+        ...entry,
+        photoCredit,
+        swarmingStartMonth: entry.taxon?.swarmingStartMonth ?? null,
+        swarmingEndMonth: entry.taxon?.swarmingEndMonth ?? null,
+      }
+    }),
   }
 
   return cache.entries

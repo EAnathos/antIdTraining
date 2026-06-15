@@ -52,9 +52,7 @@ const entrySchema = z.object({
   speciesGroup: z.string().max(255, 'Trop long').trim().optional().nullable(),
   department: z
     .string()
-    .min(2, 'Département invalide')
-    .max(2, 'Département invalide')
-    .regex(/^[0-9]{2}$/, 'Département invalide')
+    .regex(/^(?:[0-9]{2}|2[AB]|9[7-8][0-9])$/, 'Département invalide')
     .trim(),
   observedAt: z.coerce
     .date()
@@ -112,7 +110,7 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
   if (!VALID_IMAGE_MIMETYPES.has(file.mimetype)) {
     throw new AppError(
       400,
-      'Format d’image non accepté. Formats acceptés : JPEG, PNG, WebP, GIF.',
+      "Format d'image non accepté. Formats acceptés : JPEG, PNG, WebP, GIF.",
     )
   }
 
@@ -199,7 +197,7 @@ const uploadEntryImages: RequestHandler = (req, res, next) => {
     if (error) {
       return res
         .status(400)
-        .json({ message: 'Erreur lors de l’upload des images.' })
+        .json({ message: "Erreur lors de l'upload des images." })
     }
 
     return next()
@@ -376,7 +374,7 @@ entriesRouter.put(
       if (!existingIds.has(id)) {
         throw new AppError(
           400,
-          'Une des images n’appartient pas à cette entrée.',
+          "Une des images n'appartient pas à cette entrée.",
         )
       }
     }

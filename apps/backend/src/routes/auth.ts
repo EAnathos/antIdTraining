@@ -13,7 +13,7 @@ import { prisma } from '../prisma.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
 import { upload } from '../middleware/upload.js'
-import crypto from 'node:crypto'
+import crypto, { createHash } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
@@ -103,10 +103,14 @@ const passwordResetRequestSchema = z.object({
   email: emailSchema.optional(),
 })
 
+function hashResetToken(token: string) {
+  return createHash('sha256').update(token).digest('hex')
+}
+
 const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
 const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 const publicPasswordResetMessage =
-  'Si un compte existe pour cette adresse et qu’aucune autre demande n’a été faite dans la semaine, un e-mail de réinitialisation a été envoyé.'
+  "Si un compte existe pour cette adresse et qu'aucune autre demande n'a été faite dans la semaine, un e-mail de réinitialisation a été envoyé."
 
 export const authRouter = Router()
 
@@ -359,14 +363,15 @@ authRouter.post(
 
     // generate a token and expiry (valid 24 hours)
     const token = crypto.randomBytes(24).toString('hex')
+    const tokenHash = hashResetToken(token)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
-    // store token and requestedAt
+    // store hashed token — never the raw token — to limit exposure in case of DB breach
     await prisma.user.update({
       where: { id: authenticatedUserId ?? user.id },
       data: {
         passwordResetRequestedAt: new Date(),
-        passwordResetToken: token,
+        passwordResetToken: tokenHash,
         passwordResetTokenExpiresAt: expiresAt,
       },
     })
@@ -408,7 +413,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = z
       .object({
-        token: z.string().min(6, 'Token invalide'),
+        token: z.string().length(48, 'Token invalide'),
         password: passwordSchema,
         confirmPassword: z.string(),
       })
@@ -425,7 +430,7 @@ authRouter.post(
     const { token, password } = parsed.data
 
     const user = await prisma.user.findFirst({
-      where: { passwordResetToken: token },
+      where: { passwordResetToken: hashResetToken(token) },
       select: {
         id: true,
         passwordResetTokenExpiresAt: true,
@@ -456,121 +461,119 @@ authRouter.post(
   }),
 )
 
+const VALID_AVATAR_MIMETYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+])
+
+function runAvatarUpload(req: any, res: any): Promise<void> {
+  return new Promise((resolve, reject) => {
+    upload.single('avatar')(req, res, (err) => {
+      if (err) reject(err)
+      else resolve()
+    })
+  })
+}
+
 // Upload avatar
 authRouter.post(
   '/avatar',
   optionalAuth,
   asyncHandler(async (req, res) => {
-    upload.single('avatar')(req, res, async (err) => {
-      if (err) {
-        throw new AppError(400, 'Erreur lors de l’upload de l’avatar.')
+    await runAvatarUpload(req, res).catch(() => {
+      throw new AppError(400, "Erreur lors de l'upload de l'avatar.")
+    })
+
+    if (!req.user) {
+      throw new AppError(401, 'Non autorisé.')
+    }
+
+    const file = (req as any).file as Express.Multer.File | undefined
+    if (!file) {
+      throw new AppError(400, 'Fichier avatar manquant (champ avatar).')
+    }
+
+    if (!VALID_AVATAR_MIMETYPES.has(file.mimetype)) {
+      throw new AppError(400, "Format d'image non accepté pour l'avatar.")
+    }
+
+    ensureUploadsDir()
+
+    const safeStem =
+      file.originalname
+        .replace(/\.[^.]+$/, '')
+        .normalize('NFKD')
+        .toLowerCase()
+        .replace(/[^a-z0-9.-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'avatar'
+    const fileId = `${Date.now()}-${safeStem}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`
+    const baseFileName = `${fileId}.webp`
+    const widths = Array.from(RESPONSIVE_IMAGE_WIDTHS)
+    const savedPaths: string[] = []
+
+    try {
+      const image = sharp(file.buffer, { animated: false }).rotate()
+      const metadata = await image.metadata()
+      if (!metadata.width || !metadata.height) {
+        throw new AppError(400, 'Image invalide.')
       }
 
-      if (!req.user) {
-        throw new AppError(401, 'Non autorisé.')
+      for (const width of widths) {
+        const outputFileName =
+          width === widths[0] ? baseFileName : `${fileId}-${width}.webp`
+        const outputPath = resolveUploadFilePath(outputFileName)
+
+        await image
+          .clone()
+          .resize({
+            width,
+            height: width,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality: 78, effort: 6 })
+          .toFile(outputPath)
+
+        savedPaths.push(outputPath)
       }
+    } catch (error) {
+      await Promise.allSettled(savedPaths.map((p) => fs.promises.unlink(p)))
+      if (error instanceof AppError) throw error
+      throw new AppError(400, "Erreur lors du traitement de l'avatar.")
+    }
 
-      const file = (req as any).file as Express.Multer.File | undefined
-      if (!file) {
-        throw new AppError(400, 'Fichier avatar manquant (champ avatar).')
-      }
+    // remove old avatar files
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { avatar: true },
+    })
+    if (user?.avatar) {
+      deleteUploadFilesForImageUrl(user.avatar)
+    }
 
-      ensureUploadsDir()
+    const imageUrl = `/uploads/${baseFileName}`
+    const updated = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { avatar: imageUrl },
+      select: {
+        username: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+      },
+    })
 
-      // Validate and convert to webp with responsive variants
-      const VALID_IMAGE_MIMETYPES = new Set([
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-      ])
-      if (!VALID_IMAGE_MIMETYPES.has(file.mimetype)) {
-        throw new AppError(400, 'Format d’image non accepté pour l’avatar.')
-      }
-
-      const safeStem =
-        file.originalname
-          .replace(/\.[^.]+$/, '')
-          .normalize('NFKD')
-          .toLowerCase()
-          .replace(/[^a-z0-9.-]+/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 40) || 'avatar'
-      const fileId = `${Date.now()}-${safeStem}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`
-      const baseFileName = `${fileId}.webp`
-      const widths = Array.from(RESPONSIVE_IMAGE_WIDTHS)
-      const savedPaths: string[] = []
-
-      try {
-        const image = sharp(file.buffer, { animated: false }).rotate()
-        const metadata = await image.metadata()
-        if (!metadata.width || !metadata.height) {
-          throw new AppError(400, 'Image invalide.')
-        }
-
-        for (const width of widths) {
-          const outputFileName =
-            width === widths[0] ? baseFileName : `${fileId}-${width}.webp`
-          const outputPath = resolveUploadFilePath(outputFileName)
-
-          await image
-            .clone()
-            .resize({
-              width,
-              height: width,
-              fit: 'inside',
-              withoutEnlargement: true,
-            })
-            .webp({ quality: 78, effort: 6 })
-            .toFile(outputPath)
-
-          savedPaths.push(outputPath)
-        }
-      } catch (error) {
-        for (const p of savedPaths) {
-          try {
-            await fs.promises.unlink(p)
-          } catch (cleanupError) {
-            void cleanupError
-          }
-        }
-        throw new AppError(400, 'Erreur lors du traitement de l’avatar.')
-      }
-
-      // remove old avatar files
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.userId },
-        select: { avatar: true },
-      })
-      if (user?.avatar) {
-        try {
-          deleteUploadFilesForImageUrl(user.avatar)
-        } catch (cleanupError) {
-          void cleanupError
-        }
-      }
-
-      const imageUrl = `/uploads/${baseFileName}`
-      const updated = await prisma.user.update({
-        where: { id: req.user.userId },
-        data: { avatar: imageUrl },
-        select: {
-          username: true,
-          email: true,
-          avatar: true,
-          bio: true,
-          createdAt: true,
-        },
-      })
-
-      return res.json({
-        username: updated.username,
-        email: updated.email,
-        avatar: updated.avatar,
-        bio: updated.bio,
-        createdAt: updated.createdAt.toISOString(),
-      })
+    return res.json({
+      username: updated.username,
+      email: updated.email,
+      avatar: updated.avatar,
+      bio: updated.bio,
+      createdAt: updated.createdAt.toISOString(),
     })
   }),
 )
