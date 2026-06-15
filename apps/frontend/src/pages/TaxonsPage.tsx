@@ -51,7 +51,12 @@ type TreeNode = {
 }
 
 function buildTreeFromTaxons(taxons: Taxon[]): TreeNode {
-  const root: TreeNode = { id: 'root', name: 'root', depth: 0, children: [] }
+  const root: TreeNode = {
+    id: 'root',
+    name: 'Formicidae',
+    depth: 0,
+    children: [],
+  }
 
   // Build a nested hierarchy: subfamily -> tribe -> genus -> subgenus -> speciesGroup -> species
   for (const t of taxons) {
@@ -138,223 +143,372 @@ function TreeView({
   root: TreeNode
   onNodeClick: (node: TreeNode, coords?: { x: number; y: number }) => void
 }) {
-  // flatten leaves to compute layout
-  const leaves: TreeNode[] = []
-  function collectLeaves(node: TreeNode) {
-    if (!node.children || node.children.length === 0) {
-      leaves.push(node)
-      return
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const init = new Set<string>()
+    const mark = (node: TreeNode) => {
+      if (!node.children?.length) return
+      if (node.depth >= 2) init.add(node.id)
+      node.children.forEach(mark)
     }
-    for (const c of node.children) collectLeaves(c)
-  }
-  collectLeaves(root)
-
-  const rowHeight = 36
-  const maxDepth = 6
-  const depthX = (d: number) => 40 + (d - 1) * 160
-  const width = Math.max(800, (maxDepth + 1) * 160)
-  const height = Math.max(200, (leaves.length + 1) * rowHeight)
-
-  // assign y positions to leaves and compute internal nodes position as average
-  const yMap = new Map<TreeNode, number>()
-  let index = 0
-  for (const leaf of leaves) {
-    yMap.set(leaf, 30 + index * rowHeight)
-    index += 1
-  }
-
-  function computeInternalY(node: TreeNode): number {
-    if (!node.children || node.children.length === 0) return yMap.get(node) ?? 0
-    const ys = node.children.map((c) => computeInternalY(c))
-    const avg = ys.reduce((a, b) => a + b, 0) / ys.length
-    yMap.set(node, avg)
-    return avg
-  }
-  computeInternalY(root)
-
-  // build lines and nodes list
-  const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
-  const nodes: Array<{ node: TreeNode; x: number; y: number }> = []
-
-  function walk(node: TreeNode) {
-    const x = depthX(node.depth)
-    const y = yMap.get(node) ?? 0
-    nodes.push({ node, x, y })
-    if (node.children) {
-      for (const c of node.children) {
-        const cx = depthX(c.depth)
-        const cy = yMap.get(c) ?? 0
-        lines.push({ x1: x + 60, y1: y, x2: cx - 10, y2: cy })
-        walk(c)
-      }
-    }
-  }
-  walk(root)
-
-  // Pan & zoom simple implementation
-  const [tx, setTx] = useState(20)
-  const [ty, setTy] = useState(20)
+    mark(root)
+    return init
+  })
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tx, setTx] = useState(0)
+  const [ty, setTy] = useState(10)
   const [scale, setScale] = useState(1)
   const dragging = useRef(false)
-  const last = useRef<{ x: number; y: number } | null>(null)
+  const hasDragged = useRef(false)
+  const lastPos = useRef<{ x: number; y: number } | null>(null)
 
-  function clampScale(nextScale: number) {
-    return Math.max(0.4, Math.min(3, nextScale))
+  const ROW_H = 30
+  const COL_W = 150
+  const NODE_W = 118
+  const NODE_H = 22
+
+  const { nodeList, pathList, svgHeight } = useMemo(() => {
+    const visibleLeaves: TreeNode[] = []
+    const collectVisible = (node: TreeNode) => {
+      if (!node.children?.length || collapsed.has(node.id)) {
+        visibleLeaves.push(node)
+      } else {
+        node.children.forEach(collectVisible)
+      }
+    }
+    collectVisible(root)
+
+    const ym = new Map<TreeNode, number>()
+    visibleLeaves.forEach((leaf, i) => ym.set(leaf, i * ROW_H))
+
+    const computeY = (node: TreeNode): number => {
+      if (!node.children?.length || collapsed.has(node.id)) return ym.get(node) ?? 0
+      const ys = node.children.map(computeY)
+      const avg = ys.reduce((a, b) => a + b, 0) / ys.length
+      ym.set(node, avg)
+      return avg
+    }
+    computeY(root)
+
+    const nl: Array<{ node: TreeNode; x: number; y: number }> = []
+    const pl: string[] = []
+
+    const walk = (node: TreeNode) => {
+      const x = 8 + node.depth * COL_W
+      const y = ym.get(node) ?? 0
+      nl.push({ node, x, y })
+      if (node.children && !collapsed.has(node.id)) {
+        for (const c of node.children) {
+          const cx = 8 + c.depth * COL_W
+          const cy = ym.get(c) ?? 0
+          const mx = (x + NODE_W + cx) / 2
+          pl.push(
+            `M${x + NODE_W},${y + NODE_H / 2} H${mx} V${cy + NODE_H / 2} H${cx}`,
+          )
+          walk(c)
+        }
+      }
+    }
+    walk(root)
+
+    const maxY = nl.reduce((m, { y }) => Math.max(m, y), 0)
+    return {
+      nodeList: nl,
+      pathList: pl,
+      svgHeight: Math.max(200, maxY + NODE_H + 30),
+    }
+  }, [root, collapsed])
+
+  const selectedPath = useMemo(() => {
+    if (!selectedId) return []
+    const find = (node: TreeNode, target: string): TreeNode[] => {
+      if (node.id === target) return [node]
+      for (const c of node.children ?? []) {
+        const sub = find(c, target)
+        if (sub.length) return [node, ...sub]
+      }
+      return []
+    }
+    return find(root, selectedId)
+  }, [root, selectedId])
+
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  function zoomBy(factor: number) {
-    setScale((current) => clampScale(current * factor))
+  function collapseAll() {
+    const next = new Set<string>()
+    const mark = (node: TreeNode) => {
+      if (!node.children?.length) return
+      if (node.depth >= 2) next.add(node.id)
+      node.children.forEach(mark)
+    }
+    mark(root)
+    setCollapsed(next)
   }
 
   function onPointerDown(e: React.PointerEvent) {
     dragging.current = true
+    hasDragged.current = false
     ;(e.target as Element).setPointerCapture(e.pointerId)
-    last.current = { x: e.clientX, y: e.clientY }
+    lastPos.current = { x: e.clientX, y: e.clientY }
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging.current || !last.current) return
-    const dx = e.clientX - last.current.x
-    const dy = e.clientY - last.current.y
+    if (!dragging.current || !lastPos.current) return
+    const dx = e.clientX - lastPos.current.x
+    const dy = e.clientY - lastPos.current.y
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true
     setTx((v) => v + dx)
     setTy((v) => v + dy)
-    last.current = { x: e.clientX, y: e.clientY }
+    lastPos.current = { x: e.clientX, y: e.clientY }
   }
-  function onPointerUp(_e: React.PointerEvent) {
+  function onPointerUp() {
     dragging.current = false
-    last.current = null
+    lastPos.current = null
   }
-  // wheel/pinch handlers intentionally removed — zoom only via buttons
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+    setScale((s) => Math.max(0.2, Math.min(3, s * factor)))
+  }
+
+  const svgWidth = 8 + 7 * COL_W + NODE_W + 20
+  const allExpanded = collapsed.size === 0
 
   return (
     <div
-      className="rounded-lg p-3"
-      style={{
-        border: '1px solid var(--app-border)',
-        background: 'var(--app-surface)',
-        color: 'var(--app-text)',
-      }}
+      className="rounded-lg"
+      style={{ border: '1px solid var(--app-border)', background: 'var(--app-surface)' }}
     >
+      {/* Toolbar */}
       <div
         style={{
-          marginBottom: 8,
+          padding: '6px 10px',
+          borderBottom: '1px solid var(--app-border)',
           display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
-          alignItems: 'center',
-          fontSize: 13,
-          color: 'var(--app-text-soft)',
+          flexWrap: 'wrap',
         }}
       >
-        <div>
-          Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez
-          la molette pour zoomer et glisser pour vous déplacer.
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <p style={{ fontSize: 12, color: 'var(--app-text-soft)', margin: 0 }}>
+          Cliquez sur un nœud pour voir le détail — le bouton +/− pour étendre ou
+          réduire. Molette pour zoomer, glisser pour naviguer.
+        </p>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => zoomBy(0.85)}
-            aria-label="Dézoomer l’arbre"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
-            }}
+            className="ui-action ui-action--secondary"
+            onClick={() => setScale((s) => Math.max(0.2, Math.min(3, s / 1.15)))}
+            aria-label="Dézoomer"
           >
             −
           </button>
+          <span
+            style={{
+              fontSize: 11,
+              minWidth: 34,
+              textAlign: 'center',
+              color: 'var(--app-text-muted)',
+            }}
+          >
+            {Math.round(scale * 100)}%
+          </span>
           <button
             type="button"
-            onClick={() => zoomBy(1.15)}
-            aria-label="Zoomer l’arbre"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
-            }}
+            className="ui-action ui-action--secondary"
+            onClick={() => setScale((s) => Math.max(0.2, Math.min(3, s * 1.15)))}
+            aria-label="Zoomer"
           >
             +
           </button>
           <button
             type="button"
-            onClick={() => setScale(1)}
-            aria-label="Réinitialiser le zoom"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
+            className="ui-action ui-action--secondary"
+            onClick={() => {
+              setScale(1)
+              setTx(0)
+              setTy(10)
             }}
+            title="Réinitialiser vue"
           >
             ↺
+          </button>
+          <button
+            type="button"
+            className="ui-action ui-action--secondary"
+            onClick={allExpanded ? collapseAll : () => setCollapsed(new Set())}
+          >
+            {allExpanded ? 'Tout réduire' : 'Tout étendre'}
           </button>
         </div>
       </div>
 
+      {/* Breadcrumb */}
+      {selectedPath.length > 0 && (
+        <div
+          style={{
+            padding: '4px 10px',
+            borderBottom: '1px solid var(--app-border)',
+            fontSize: 12,
+            display: 'flex',
+            gap: 4,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          {selectedPath.map((n, i) => (
+            <span key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {i > 0 && (
+                <span style={{ color: 'var(--app-text-soft)' }}>›</span>
+              )}
+              <span
+                style={{
+                  color:
+                    i === selectedPath.length - 1
+                      ? 'var(--app-primary)'
+                      : 'var(--app-text-muted)',
+                  fontStyle: n.depth >= 3 ? 'italic' : 'normal',
+                  fontWeight: i === selectedPath.length - 1 ? 600 : 400,
+                }}
+              >
+                {n.name}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* SVG canvas */}
       <div
-        style={{ width: '100%', overflow: 'hidden', touchAction: 'none' }}
+        style={{
+          width: '100%',
+          height: Math.min(svgHeight + 20, 540),
+          overflow: 'hidden',
+          touchAction: 'none',
+          cursor: 'grab',
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onWheel={onWheel}
       >
-        <svg width={Math.min(width, 1400)} height={height}>
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          style={{ display: 'block', overflow: 'visible' }}
+        >
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
-            {lines.map((l, i) => (
-              <line
+            {pathList.map((d, i) => (
+              <path
                 key={i}
-                x1={l.x1}
-                y1={l.y1}
-                x2={l.x2}
-                y2={l.y2}
+                d={d}
+                fill="none"
                 stroke="var(--app-border)"
-                strokeWidth={2}
+                strokeWidth={1.5}
               />
             ))}
 
-            {nodes.map(({ node, x, y }) => {
+            {nodeList.map(({ node, x, y }) => {
               const name = node.name || ''
               const isPlaceholder =
                 name === '-' || name === '—' || name.trim() === ''
-              const clickable = !isPlaceholder
+              const hasChildren = (node.children?.length ?? 0) > 0
+              const isCollapsed = collapsed.has(node.id)
+              const isSelected = node.id === selectedId
+              const isRoot = node.depth === 0
+              const w = isRoot ? 104 : NODE_W
+              const label = name.length > 14 ? name.slice(0, 13) + '…' : name
+
+              const fill = isSelected
+                ? 'var(--app-primary)'
+                : isRoot
+                  ? 'var(--app-primary-soft)'
+                  : hasChildren
+                    ? 'var(--app-surface-muted)'
+                    : 'var(--app-surface-strong)'
+              const stroke =
+                isSelected || isRoot || hasChildren
+                  ? 'var(--app-primary)'
+                  : 'var(--app-border)'
+              const textFill = isSelected
+                ? '#fff'
+                : isPlaceholder
+                  ? 'var(--app-text-soft)'
+                  : 'var(--app-text)'
 
               return (
-                <g
-                  key={node.id}
-                  transform={`translate(${x},${y})`}
-                  style={{ cursor: clickable ? 'pointer' : 'default' }}
-                  onClick={(e: React.MouseEvent) => {
-                    if (!clickable) return
-                    e.stopPropagation()
-                    onNodeClick(node, { x: e.clientX, y: e.clientY })
-                  }}
-                >
-                  <circle
-                    r={node.taxon ? 8 : 6}
-                    fill={
-                      clickable ? 'var(--app-primary)' : 'var(--app-text-soft)'
-                    }
-                  />
-                  <text
-                    x={12}
-                    y={6}
-                    fontSize={12}
-                    style={{
-                      fill: clickable
-                        ? 'var(--app-text)'
-                        : 'var(--app-text-soft)',
-                      fontWeight: 600,
+                <g key={node.id} transform={`translate(${x},${y})`}>
+                  {/* Node body — click opens detail */}
+                  <g
+                    style={{ cursor: isPlaceholder ? 'default' : 'pointer' }}
+                    onClick={(e) => {
+                      if (isPlaceholder || hasDragged.current) return
+                      e.stopPropagation()
+                      setSelectedId(node.id)
+                      onNodeClick(node, { x: e.clientX, y: e.clientY })
                     }}
                   >
-                    {name}
-                  </text>
+                    <rect
+                      x={0}
+                      y={0}
+                      width={w}
+                      height={NODE_H}
+                      rx={4}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={isSelected ? 2 : 1}
+                    />
+                    <text
+                      x={6}
+                      y={NODE_H / 2 + 4}
+                      fontSize={11}
+                      fontStyle={node.depth >= 3 && !isRoot ? 'italic' : 'normal'}
+                      fill={textFill}
+                      style={{ userSelect: 'none' }}
+                    >
+                      {label}
+                    </text>
+                  </g>
+                  {/* Collapse toggle — separate click target */}
+                  {hasChildren && (
+                    <g
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        if (hasDragged.current) return
+                        e.stopPropagation()
+                        toggleCollapse(node.id)
+                      }}
+                    >
+                      <rect
+                        x={w - 18}
+                        y={2}
+                        width={16}
+                        height={NODE_H - 4}
+                        rx={3}
+                        fill={isSelected ? 'rgba(255,255,255,0.2)' : 'var(--app-surface-strong)'}
+                        stroke={isSelected ? 'rgba(255,255,255,0.4)' : 'var(--app-border)'}
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={w - 10}
+                        y={NODE_H / 2 + 4}
+                        fontSize={10}
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        fill={isSelected ? '#fff' : 'var(--app-primary)'}
+                        style={{ userSelect: 'none' }}
+                      >
+                        {isCollapsed ? '+' : '−'}
+                      </text>
+                    </g>
+                  )}
                 </g>
               )
             })}
