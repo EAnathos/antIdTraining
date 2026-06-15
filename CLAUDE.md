@@ -74,6 +74,13 @@ Toute modification du schéma (`apps/backend/prisma/schema.prisma`) nécessite :
 
 ## Workflow Git
 
+Avant de commencer toute tâche, s'assurer d'être à jour avec le distant :
+
+```bash
+git checkout dev
+git pull origin dev
+```
+
 Pour chaque nouvelle fonctionnalité ou correction demandée, créer une branche dédiée **avant** de commencer les modifications :
 
 ```bash
