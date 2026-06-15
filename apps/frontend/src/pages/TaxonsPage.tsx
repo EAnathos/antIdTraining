@@ -777,7 +777,7 @@ export function TaxonsPage() {
               <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Localisation
               </label>
-              <div className="max-w-xs">
+              <div className="max-w-lg">
                 <FranceMap
                   selectedDepartments={selectedDepartments}
                   onToggleDepartment={(code) => {
@@ -834,7 +834,7 @@ export function TaxonsPage() {
                   setSelectedDepartments([])
                   setSelectedInvasiveFilter('all')
                 }}
-                className="ui-button ui-button--secondary text-sm"
+                className="ui-action ui-action--secondary"
               >
                 Réinitialiser les filtres
               </button>
