@@ -645,7 +645,7 @@ export function TaxonsCrudPanel({
             </button>
             {selectedTaxonId && (
               <button
-                className="ui-action ui-action--muted"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={resetTaxonForm}
               >
@@ -732,7 +732,7 @@ export function TaxonsCrudPanel({
                   </td>
                   <td className="p-2">
                     <button
-                      className="ui-button ui-button--secondary py-1 text-sm"
+                      className="ui-action ui-action--secondary"
                       type="button"
                       onClick={() => openDetailsModal(taxon)}
                     >
@@ -778,7 +778,7 @@ export function TaxonsCrudPanel({
                 <em>{modal.taxon.species}</em>
               </h3>
               <button
-                className="ui-button ui-button--secondary text-sm"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={closeDetailsModal}
                 aria-label="Fermer la boîte de dialogue"
@@ -846,7 +846,7 @@ export function TaxonsCrudPanel({
                   </p>
                 </div>
                 <button
-                  className="ui-button ui-button--secondary text-sm"
+                  className="ui-action ui-action--secondary"
                   type="button"
                   onClick={addConfusion}
                 >
@@ -892,7 +892,7 @@ export function TaxonsCrudPanel({
                           </p>
                         </div>
                         <button
-                          className="ui-button ui-button--danger py-1 text-xs"
+                          className="ui-action ui-action--danger"
                           type="button"
                           onClick={() => removeConfusion(index)}
                         >
@@ -928,7 +928,7 @@ export function TaxonsCrudPanel({
                   </label>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
                     <button
-                      className="ui-button ui-button--secondary text-sm"
+                      className="ui-action ui-action--secondary"
                       type="button"
                       onClick={() =>
                         setModal((prev) => ({
@@ -940,7 +940,7 @@ export function TaxonsCrudPanel({
                       Réinitialiser
                     </button>
                     <button
-                      className="ui-button ui-button--primary text-sm"
+                      className="ui-action ui-action--primary"
                       type="button"
                       onClick={() =>
                         setModal((prev) => ({
@@ -971,14 +971,14 @@ export function TaxonsCrudPanel({
 
             <div className="mt-2 flex justify-end gap-2">
               <button
-                className="ui-button ui-button--secondary"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={closeDetailsModal}
               >
                 Annuler
               </button>
               <button
-                className="ui-button ui-button--primary"
+                className="ui-action ui-action--primary"
                 type="button"
                 onClick={() => void saveDetailsModal()}
               >

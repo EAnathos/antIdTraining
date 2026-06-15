@@ -146,7 +146,7 @@ export function SuggestionsPanel({
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              className="ui-button ui-button--primary py-1 text-xs"
+                              className="ui-action ui-action--primary"
                               onClick={() => {
                                 void updateSuggestionRejectionMessage(
                                   s.id,
@@ -161,7 +161,7 @@ export function SuggestionsPanel({
                             </button>
                             <button
                               type="button"
-                              className="ui-button ui-button--secondary py-1 text-xs"
+                              className="ui-action ui-action--secondary"
                               onClick={() => {
                                 setEditingMessageId(null)
                                 setEditingMessage('')
@@ -182,7 +182,7 @@ export function SuggestionsPanel({
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="ui-button ui-button--secondary py-1 text-xs"
+                              className="ui-action ui-action--secondary"
                               onClick={() => {
                                 setEditingMessageId(s.id)
                                 setEditingMessage(s.rejectionMessage || '')
@@ -210,7 +210,7 @@ export function SuggestionsPanel({
                     {s.status !== 'PROCESSED' && (
                       <button
                         type="button"
-                        className="ui-button ui-button--primary py-1 text-xs"
+                        className="ui-action ui-action--primary"
                         onClick={() =>
                           void setSuggestionStatus(s.id, 'PROCESSED')
                         }
@@ -221,7 +221,7 @@ export function SuggestionsPanel({
                     {s.status !== 'REJECTED' && (
                       <button
                         type="button"
-                        className="ui-button ui-button--danger py-1 text-xs"
+                        className="ui-action ui-action--danger"
                         onClick={() => setRejectingId(s.id)}
                       >
                         Rejeter
@@ -230,7 +230,7 @@ export function SuggestionsPanel({
                     {s.status !== 'PENDING' && (
                       <button
                         type="button"
-                        className="ui-button ui-button--secondary py-1 text-xs"
+                        className="ui-action ui-action--secondary"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -259,7 +259,7 @@ export function SuggestionsPanel({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="ui-button ui-button--danger py-1 text-xs"
+                      className="ui-action ui-action--danger"
                       onClick={() =>
                         void setSuggestionStatus(
                           s.id,
@@ -272,7 +272,7 @@ export function SuggestionsPanel({
                     </button>
                     <button
                       type="button"
-                      className="ui-button ui-button--secondary py-1 text-xs"
+                      className="ui-action ui-action--secondary"
                       onClick={() => {
                         setRejectingId(null)
                         setRejectMessage('')
@@ -291,26 +291,35 @@ export function SuggestionsPanel({
       {tab === 'proposals' && (
         <ul className="mt-3 space-y-2 text-sm">
           {filteredProposals.map((p) => (
-            <li key={p.id} className="rounded-lg border border-[color:var(--app-border)] p-3">
+            <li
+              key={p.id}
+              className="rounded-lg border border-[color:var(--app-border)] p-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
                       {p.user?.username ?? 'Utilisateur'}
                     </p>
-                    <p className="text-xs text-[color:var(--app-text-soft)]">{p.taxonLevel}</p>
+                    <p className="text-xs text-[color:var(--app-text-soft)]">
+                      {p.taxonLevel}
+                    </p>
                   </div>
                   <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--app-primary)]">
                     Proposition d’entrée
                   </p>
-                  <p className="text-sm text-[color:var(--app-text)]">{p.taxonValue}</p>
+                  <p className="text-sm text-[color:var(--app-text)]">
+                    {p.taxonValue}
+                  </p>
                   {p.subfamily && (
                     <p className="text-xs text-[color:var(--app-text-muted)]">
                       Subfamily: {p.subfamily}
                     </p>
                   )}
                   {p.genus && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">Genus: {p.genus}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
+                      Genus: {p.genus}
+                    </p>
                   )}
                   {p.species && (
                     <p className="text-xs text-[color:var(--app-text-muted)]">
@@ -318,10 +327,14 @@ export function SuggestionsPanel({
                     </p>
                   )}
                   {p.size && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">Size: {p.size}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
+                      Size: {p.size}
+                    </p>
                   )}
                   {p.caste && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">Caste: {p.caste}</p>
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
+                      Caste: {p.caste}
+                    </p>
                   )}
                   {p.rejectionMessage && (
                     <div className="mt-2 rounded border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
@@ -338,7 +351,7 @@ export function SuggestionsPanel({
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              className="ui-button ui-button--danger py-1 text-xs"
+                              className="ui-action ui-action--danger"
                               onClick={() => {
                                 void updateProposalRejectionMessage(
                                   p.id,
@@ -353,7 +366,7 @@ export function SuggestionsPanel({
                             </button>
                             <button
                               type="button"
-                              className="ui-button ui-button--secondary py-1 text-xs"
+                              className="ui-action ui-action--secondary"
                               onClick={() => {
                                 setEditingMessageId(null)
                                 setEditingMessage('')
@@ -374,7 +387,7 @@ export function SuggestionsPanel({
                           <div className="mt-2 flex justify-end">
                             <button
                               type="button"
-                              className="ui-button ui-button--secondary py-1 text-xs"
+                              className="ui-action ui-action--secondary"
                               onClick={() => {
                                 setEditingMessageId(p.id)
                                 setEditingMessage(p.rejectionMessage || '')
@@ -412,14 +425,14 @@ export function SuggestionsPanel({
                       <>
                         <button
                           type="button"
-                          className="ui-button ui-button--primary py-1 text-xs"
+                          className="ui-action ui-action--primary"
                           onClick={() => void setProposalStatus(p.id, 'ACCEPT')}
                         >
                           Accepter
                         </button>
                         <button
                           type="button"
-                          className="ui-button ui-button--danger py-1 text-xs"
+                          className="ui-action ui-action--danger"
                           onClick={() => setRejectingId(p.id)}
                         >
                           Rejeter
@@ -429,7 +442,7 @@ export function SuggestionsPanel({
                     {p.status !== 'PENDING' && (
                       <button
                         type="button"
-                        className="ui-button ui-button--secondary py-1 text-xs"
+                        className="ui-action ui-action--secondary"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -489,7 +502,7 @@ export function SuggestionsPanel({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="ui-button ui-button--danger py-1 text-xs"
+                      className="ui-action ui-action--danger"
                       onClick={() =>
                         void setProposalStatus(p.id, 'REJECT', rejectMessage)
                       }
@@ -498,7 +511,7 @@ export function SuggestionsPanel({
                     </button>
                     <button
                       type="button"
-                      className="ui-button ui-button--secondary py-1 text-xs"
+                      className="ui-action ui-action--secondary"
                       onClick={() => {
                         setRejectingId(null)
                         setRejectMessage('')

@@ -64,7 +64,7 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
               </select>
             </label>
             <button
-              className="ui-button ui-button--danger ml-4 py-1.5 text-sm disabled:opacity-60"
+              className="ui-action ui-action--danger ml-4 disabled:opacity-60"
               onClick={() => setShowConfirm(true)}
               disabled={resetLoading}
               title="Réinitialiser toutes les statistiques"
@@ -78,14 +78,14 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
           <div className="ui-alert ui-alert--danger mb-3 flex items-center gap-3 text-sm">
             <span>Confirmer la réinitialisation des statistiques ?</span>
             <button
-              className="ui-button ui-button--danger py-1 text-sm disabled:opacity-60"
+              className="ui-action ui-action--danger"
               onClick={handleResetStats}
               disabled={resetLoading}
             >
               Oui, réinitialiser
             </button>
             <button
-              className="ui-button ui-button--secondary py-1 text-sm disabled:opacity-60"
+              className="ui-action ui-action--secondary"
               onClick={() => setShowConfirm(false)}
               disabled={resetLoading}
             >

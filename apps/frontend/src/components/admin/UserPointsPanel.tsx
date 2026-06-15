@@ -204,7 +204,7 @@ export function UserPointsPanel({ users, setUserPoints }: Props) {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      className="ui-action ui-action--muted w-full disabled:cursor-not-allowed disabled:opacity-60"
+                      className="ui-action ui-action--secondary w-full disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={savingUserId === user.id}
                       onClick={() => void handleSave(user.id, user.points)}
                     >

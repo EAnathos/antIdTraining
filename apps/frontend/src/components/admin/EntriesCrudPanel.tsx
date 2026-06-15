@@ -639,7 +639,7 @@ export function EntriesCrudPanel({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
-              className="ui-button ui-button--primary inline-flex w-full items-center justify-center gap-2 py-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="ui-action ui-action--primary w-full disabled:cursor-not-allowed sm:w-auto"
               type="submit"
               disabled={isSubmitting}
             >
@@ -669,7 +669,7 @@ export function EntriesCrudPanel({
             </button>
             {selectedEntryId && (
               <button
-                className="ui-button ui-button--secondary disabled:opacity-60 sm:w-auto"
+                className="ui-action ui-action--secondary sm:w-auto"
                 type="button"
                 onClick={resetEntryForm}
                 disabled={isSubmitting}
@@ -708,7 +708,7 @@ export function EntriesCrudPanel({
 
             <button
               title="Inverser l'ordre"
-              className="ui-button ui-button--secondary py-1 text-sm"
+              className="ui-action ui-action--secondary"
               onClick={() =>
                 setSortOrder((s) => (s === 'asc' ? 'desc' : 'asc'))
               }
@@ -784,7 +784,7 @@ export function EntriesCrudPanel({
             <div className="flex items-center gap-1 self-start sm:self-auto">
               <button
                 type="button"
-                className="ui-button ui-button--secondary py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="ui-action ui-action--secondary disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={entriesPage <= 1}
                 onClick={() => setEntriesPage(Math.max(1, entriesPage - 1))}
               >
@@ -795,7 +795,7 @@ export function EntriesCrudPanel({
               </span>
               <button
                 type="button"
-                className="ui-button ui-button--secondary py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="ui-action ui-action--secondary disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={entriesPage >= entriesPages}
                 onClick={() =>
                   setEntriesPage(Math.min(entriesPages, entriesPage + 1))

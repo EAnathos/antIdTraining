@@ -62,7 +62,7 @@ export function DatabaseToolsPanel({
         </p>
         <button
           type="button"
-          className="ui-button ui-button--primary mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-action ui-action--primary mt-3 disabled:cursor-not-allowed"
           onClick={() => void handleExport()}
           disabled={isExporting}
         >
@@ -96,7 +96,7 @@ export function DatabaseToolsPanel({
 
         <button
           type="button"
-          className="ui-button ui-button--danger mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-action ui-action--danger mt-3 disabled:cursor-not-allowed"
           onClick={() => void handleImport()}
           disabled={!importFile || !confirmReplace || isImporting}
         >
@@ -114,7 +114,7 @@ export function DatabaseToolsPanel({
         </p>
         <button
           type="button"
-          className="ui-button ui-button--primary mt-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-action ui-action--primary mt-3 disabled:cursor-not-allowed"
           onClick={() => void handleCleanupUploads()}
           disabled={isCleaningUploads}
         >

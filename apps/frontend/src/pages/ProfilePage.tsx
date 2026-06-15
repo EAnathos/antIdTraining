@@ -304,7 +304,7 @@ export function ProfilePage() {
         </h2>
         <p className="mt-3 text-sm text-[color:var(--app-danger)]">{error}</p>
         <button
-          className="ui-button ui-button--secondary mt-4"
+          className="ui-action ui-action--secondary mt-4"
           type="button"
           onClick={() => void handleLogout()}
         >
@@ -373,7 +373,7 @@ export function ProfilePage() {
 
           {!editMode && (
             <button
-              className="ui-button ui-button--primary text-sm"
+              className="ui-action ui-action--primary"
               type="button"
               onClick={() => setEditMode(true)}
             >
@@ -438,7 +438,7 @@ export function ProfilePage() {
 
           <div className="flex gap-2 pt-2">
             <button
-              className="ui-button ui-button--primary"
+              className="ui-action ui-action--primary"
               type="button"
               onClick={() => void handleSaveProfile()}
               disabled={saving}
@@ -446,7 +446,7 @@ export function ProfilePage() {
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
             <button
-              className="ui-button ui-button--secondary"
+              className="ui-action ui-action--secondary"
               type="button"
               onClick={() => {
                 setEditMode(false)
@@ -473,7 +473,7 @@ export function ProfilePage() {
               onClick={() => handleThemeChange(theme)}
               className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
                 themePreference === theme
-                  ? 'ui-button--primary bg-[color:var(--app-primary)] text-[color:var(--app-text-inverse)] shadow-lg'
+                  ? 'bg-[color:var(--app-primary)] text-white'
                   : 'border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] text-[color:var(--app-text-muted)] hover:bg-[color:var(--app-surface)]'
               }`}
               type="button"
@@ -543,7 +543,7 @@ export function ProfilePage() {
                 </p>
                 <div className="profile-action-card__actions sm:flex-row">
                   <button
-                    className="ui-button ui-button--primary flex-1 text-sm"
+                    className="ui-action ui-action--primary flex-1"
                     type="button"
                     onClick={() => void handlePasswordResetRequest()}
                     disabled={passwordResetLoading}
@@ -551,7 +551,7 @@ export function ProfilePage() {
                     {passwordResetLoading ? 'Envoi…' : 'Envoyer le lien'}
                   </button>
                   <button
-                    className="ui-button ui-button--secondary flex-1 text-sm"
+                    className="ui-action ui-action--secondary flex-1"
                     type="button"
                     onClick={() => setPasswordResetConfirm(false)}
                   >
@@ -604,14 +604,14 @@ export function ProfilePage() {
                 </p>
                 <div className="profile-action-card__actions sm:flex-row">
                   <button
-                    className="ui-button ui-button--danger flex-1 text-sm"
+                    className="ui-action ui-action--danger flex-1"
                     type="button"
                     onClick={() => void handleDeleteAccount()}
                   >
                     Supprimer définitivement
                   </button>
                   <button
-                    className="ui-button ui-button--secondary flex-1 text-sm"
+                    className="ui-action ui-action--secondary flex-1"
                     type="button"
                     onClick={() => setDeleteConfirm(false)}
                   >
@@ -626,7 +626,7 @@ export function ProfilePage() {
 
       {/* Logout Button */}
       <button
-        className="w-full ui-button ui-button--secondary text-base py-3"
+        className="ui-action ui-action--secondary w-full py-3"
         type="button"
         onClick={() => void handleLogout()}
       >

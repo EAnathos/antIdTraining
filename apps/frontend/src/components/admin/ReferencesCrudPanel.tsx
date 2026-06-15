@@ -324,12 +324,12 @@ export function ReferencesCrudPanel({
             }
           />
           <div className="md:col-span-4 flex flex-wrap gap-2">
-            <button className="ui-button ui-button--primary" type="submit">
+            <button className="ui-action ui-action--primary" type="submit">
               {selectedReferenceId ? 'Modifier référence' : 'Créer référence'}
             </button>
             {selectedReferenceId && (
               <button
-                className="ui-button ui-button--secondary"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={resetReferenceForm}
               >
@@ -384,7 +384,7 @@ export function ReferencesCrudPanel({
               <div className="flex items-center gap-2">
                 {reference.type === 'MYRMECOLOGY' && (
                   <button
-                    className="ui-button ui-button--secondary py-1 text-sm"
+                    className="ui-action ui-action--secondary"
                     type="button"
                     onClick={() => openAuthorsTaxonsModal(reference)}
                   >
@@ -422,7 +422,7 @@ export function ReferencesCrudPanel({
                 Auteurs et taxons liés — Référence myrmécologique
               </h3>
               <button
-                className="ui-button ui-button--secondary text-sm"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={closeAuthorsTaxonsModal}
               >
@@ -454,7 +454,7 @@ export function ReferencesCrudPanel({
                       }}
                     />
                     <button
-                      className="ui-button ui-button--secondary"
+                      className="ui-action ui-action--secondary"
                       type="button"
                       onClick={() =>
                         setAuthorsTaxonsDraft({
@@ -471,7 +471,7 @@ export function ReferencesCrudPanel({
                 ))}
               </div>
               <button
-                className="ui-button ui-button--secondary"
+                className="ui-action ui-action--secondary"
                 type="button"
                 onClick={() =>
                   setAuthorsTaxonsDraft({
@@ -504,7 +504,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="ui-button ui-button--secondary"
+                    className="ui-action ui-action--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.subfamily === selectedSubfamily,
@@ -530,7 +530,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="ui-button ui-button--secondary"
+                    className="ui-action ui-action--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.genus === selectedGenus,
@@ -556,7 +556,7 @@ export function ReferencesCrudPanel({
                   </select>
                   <button
                     type="button"
-                    className="ui-button ui-button--secondary"
+                    className="ui-action ui-action--secondary"
                     onClick={() =>
                       addTaxonsByPredicate(
                         (taxon) => taxon.speciesGroup === selectedSpeciesGroup,
@@ -595,7 +595,7 @@ export function ReferencesCrudPanel({
 
               <div className="flex justify-between gap-2">
                 <button
-                  className="ui-button ui-button--secondary"
+                  className="ui-action ui-action--secondary"
                   type="button"
                   onClick={() =>
                     setAuthorsTaxonsDraft({
@@ -608,14 +608,14 @@ export function ReferencesCrudPanel({
                 </button>
                 <div className="flex gap-2">
                   <button
-                    className="ui-button ui-button--secondary"
+                    className="ui-action ui-action--secondary"
                     type="button"
                     onClick={closeAuthorsTaxonsModal}
                   >
                     Annuler
                   </button>
                   <button
-                    className="ui-button ui-button--primary"
+                    className="ui-action ui-action--primary"
                     type="button"
                     onClick={() => void validateAuthorsTaxonsModal()}
                   >

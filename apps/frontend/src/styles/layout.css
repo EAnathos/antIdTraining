@@ -92,6 +92,75 @@
     margin-left: auto;
   }
 
+  /* Navigation links — text + bottom indicator (not pill buttons) */
+  .nav-link {
+    padding: 0.35rem 0.15rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--app-text-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .nav-link:hover {
+    color: var(--app-text);
+  }
+
+  .nav-link--active {
+    color: var(--app-primary);
+    border-bottom-color: var(--app-primary);
+  }
+
+  /* Auth action buttons — secondary style + soft tint when active */
+  .nav-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-pill);
+    background: var(--app-surface-strong);
+    color: var(--app-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: var(--app-shadow-sm);
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .nav-action:hover {
+    background: var(--app-surface-muted);
+  }
+
+  .nav-action--active {
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+    border-color: rgba(109, 40, 217, 0.22);
+  }
+
+  html[data-theme='dark'] .nav-action {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(71, 85, 105, 0.42);
+    color: #e2e8f0;
+  }
+
+  html[data-theme='dark'] .nav-action:hover {
+    background: rgba(30, 41, 59, 0.92);
+  }
+
+  html[data-theme='dark'] .nav-action--active {
+    background: rgba(168, 85, 247, 0.14);
+    color: #c084fc;
+    border-color: rgba(168, 85, 247, 0.28);
+  }
+
   .app-content {
     display: grid;
     gap: 1rem;

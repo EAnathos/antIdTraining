@@ -125,14 +125,14 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 {p.status === 'PENDING' && (
                   <div className="flex gap-2">
                     <button
-                      className="ui-button ui-button--primary py-1 text-xs disabled:opacity-60"
+                      className="ui-action ui-action--primary"
                       disabled={processingId === p.id}
                       onClick={() => void handleAccept(p.id)}
                     >
                       Accepter
                     </button>
                     <button
-                      className="ui-button ui-button--danger py-1 text-xs"
+                      className="ui-action ui-action--danger"
                       onClick={() => setRejectingId(p.id)}
                     >
                       Rejeter
@@ -183,14 +183,14 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 />
                 <div className="flex gap-2">
                   <button
-                    className="ui-button ui-button--danger py-1 text-xs disabled:opacity-60"
+                    className="ui-action ui-action--danger"
                     disabled={processingId === p.id}
                     onClick={() => void handleReject(p.id)}
                   >
                     Confirmer le rejet
                   </button>
                   <button
-                    className="ui-button ui-button--secondary py-1 text-xs"
+                    className="ui-action ui-action--secondary"
                     onClick={() => {
                       setRejectingId(null)
                       setRejectMessage('')

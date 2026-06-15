@@ -290,7 +290,7 @@ export function TaxonLevelEditor({
       </div>
 
       <button
-        className="ui-button ui-button--secondary mt-2 text-sm"
+        className="ui-action ui-action--secondary mt-2"
         type="button"
         onClick={() => onAddCriterion(levelKey)}
       >

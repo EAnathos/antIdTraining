@@ -89,6 +89,8 @@ git checkout -b fix/<nom-court>     # correction de bug
 git checkout -b chore/<nom-court>   # tâche technique (deps, config, …)
 ```
 
+**Exception** : si une branche de feature est déjà active et que la demande relève du même périmètre (ex. suite de travaux CSS/style, continuation d'une même fonctionnalité), rester sur la branche courante sans en créer une nouvelle. Ne créer une branche que si le sujet est clairement distinct.
+
 Ne travailler directement sur `dev` que pour des changements triviaux (typo, commentaire). Merger dans `dev` une fois la tâche terminée et les vérifications passées.
 
 ## Documentation
