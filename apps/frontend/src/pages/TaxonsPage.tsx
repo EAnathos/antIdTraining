@@ -160,6 +160,8 @@ function TreeView({
   const dragging = useRef(false)
   const hasDragged = useRef(false)
   const lastPos = useRef<{ x: number; y: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const MARGIN = 16
 
   const ROW_H = 30
   const COL_W = 150
@@ -263,8 +265,16 @@ function TreeView({
     const dx = e.clientX - lastPos.current.x
     const dy = e.clientY - lastPos.current.y
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true
-    setTx((v) => v + dx)
-    setTy((v) => v + dy)
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+    const sw = svgWidth * scale
+    const sh = svgHeight * scale
+    setTx((v) =>
+      sw <= cw ? 0 : Math.max(cw - sw - MARGIN, Math.min(MARGIN, v + dx)),
+    )
+    setTy((v) =>
+      sh <= ch ? 0 : Math.max(ch - sh - MARGIN, Math.min(MARGIN, v + dy)),
+    )
     lastPos.current = { x: e.clientX, y: e.clientY }
   }
   function onPointerUp() {
@@ -279,6 +289,20 @@ function TreeView({
 
   const svgWidth = 8 + 7 * COL_W + NODE_W + 20
   const allExpanded = collapsed.size === 0
+
+  // Re-clamp translation whenever scale or tree height changes
+  useEffect(() => {
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+    const sw = svgWidth * scale
+    const sh = svgHeight * scale
+    setTx((v) =>
+      sw <= cw ? 0 : Math.max(cw - sw - MARGIN, Math.min(MARGIN, v)),
+    )
+    setTy((v) =>
+      sh <= ch ? 0 : Math.max(ch - sh - MARGIN, Math.min(MARGIN, v)),
+    )
+  }, [scale, svgHeight, svgWidth])
 
   return (
     <div
@@ -397,6 +421,7 @@ function TreeView({
 
       {/* SVG canvas */}
       <div
+        ref={containerRef}
         style={{
           width: '100%',
           height: Math.min(svgHeight + 20, 540),
@@ -1374,24 +1399,6 @@ export function TaxonsPage() {
         >
           <div
             className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[color:var(--app-surface)] shadow-xl"
-            style={
-              selectedDetail.anchor && typeof window !== 'undefined'
-                ? (() => {
-                    const vh = window.innerHeight
-                    const top = Math.min(
-                      Math.max(selectedDetail.anchor.y, 12),
-                      vh - 12,
-                    )
-                    return {
-                      position: 'absolute',
-                      left: '50%',
-                      top: `${top}px`,
-                      transform: 'translateX(-50%) translateY(-10%)',
-                      maxWidth: 'min(90vw, 40rem)',
-                    } as React.CSSProperties
-                  })()
-                : undefined
-            }
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex flex-shrink-0 items-center justify-between border-b border-[color:var(--app-border)] px-4 py-3">
