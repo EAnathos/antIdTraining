@@ -72,6 +72,18 @@ Toute modification du schéma (`apps/backend/prisma/schema.prisma`) nécessite :
 1. Créer le fichier de migration (`npm run db:migrate`)
 2. Mettre à jour l'export de la base de données depuis le panel admin
 
+## Workflow Git
+
+Pour chaque nouvelle fonctionnalité ou correction demandée, créer une branche dédiée **avant** de commencer les modifications :
+
+```bash
+git checkout -b feat/<nom-court>    # nouvelle fonctionnalité
+git checkout -b fix/<nom-court>     # correction de bug
+git checkout -b chore/<nom-court>   # tâche technique (deps, config, …)
+```
+
+Ne travailler directement sur `dev` que pour des changements triviaux (typo, commentaire). Merger dans `dev` une fois la tâche terminée et les vérifications passées.
+
 ## Documentation
 
 Si une modification impacte le comportement, l'architecture, l'API ou les scripts, mettre à jour :
