@@ -460,7 +460,6 @@ function TreeView({
               const isSelected = node.id === selectedId
               const isRoot = node.depth === 0
               const w = isRoot ? 104 : NODE_W
-              const label = name.length > 14 ? name.slice(0, 13) + '…' : name
 
               const fill = isSelected
                 ? 'var(--app-primary)'
@@ -511,17 +510,28 @@ function TreeView({
                       fill={textFill}
                       style={{ userSelect: 'none' }}
                     >
-                      {label}
+                      {name}
                     </text>
                   </g>
                   {/* Collapse toggle — separate click target */}
                   {hasChildren && (
                     <g
+                      role="button"
+                      aria-label={
+                        isCollapsed ? `Étendre ${name}` : `Réduire ${name}`
+                      }
+                      tabIndex={0}
                       style={{ cursor: 'pointer' }}
                       onClick={(e) => {
                         if (hasDragged.current) return
                         e.stopPropagation()
                         toggleCollapse(node.id)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          toggleCollapse(node.id)
+                        }
                       }}
                     >
                       <rect
