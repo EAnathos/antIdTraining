@@ -777,16 +777,18 @@ export function TaxonsPage() {
               <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Localisation
               </label>
-              <FranceMap
-                selectedDepartments={selectedDepartments}
-                onToggleDepartment={(code) => {
-                  setSelectedDepartments((prev) =>
-                    prev.includes(code)
-                      ? prev.filter((d) => d !== code)
-                      : [...prev, code],
-                  )
-                }}
-              />
+              <div className="max-w-xs">
+                <FranceMap
+                  selectedDepartments={selectedDepartments}
+                  onToggleDepartment={(code) => {
+                    setSelectedDepartments((prev) =>
+                      prev.includes(code)
+                        ? prev.filter((d) => d !== code)
+                        : [...prev, code],
+                    )
+                  }}
+                />
+              </div>
             </div>
 
             <div>
