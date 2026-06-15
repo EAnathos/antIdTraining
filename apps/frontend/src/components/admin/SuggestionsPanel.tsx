@@ -296,7 +296,7 @@ export function SuggestionsPanel({
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
-                      {p.user?.username ?? ‘Utilisateur’}
+                      {p.user?.username ?? 'Utilisateur'}
                     </p>
                     <p className="text-xs text-[color:var(--app-text-soft)]">{p.taxonLevel}</p>
                   </div>
