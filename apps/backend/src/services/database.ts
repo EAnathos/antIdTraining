@@ -165,16 +165,6 @@ export const databaseSnapshotSchema = z.object({
         updatedAt: z.coerce.date(),
       }),
     ),
-    users: z.array(
-      z.object({
-        id: z.string(),
-        username: z.string(),
-        passwordHash: z.string(),
-        role: z.string(),
-        createdAt: z.coerce.date(),
-        updatedAt: z.coerce.date(),
-      }),
-    ),
     adminHistoryEvents: z.array(
       z.object({
         id: z.string(),
@@ -213,7 +203,6 @@ export const databaseSnapshotSchema = z.object({
         id: z.string(),
         level: gameDifficultySchema,
         entryId: z.string().nullable(),
-        userId: z.string().nullable().optional(),
         finalCorrect: z.boolean().nullable(),
         validatedAt: z.coerce.date().nullable(),
         createdAt: z.coerce.date(),
@@ -318,7 +307,6 @@ export async function getDatabaseSnapshot() {
     observationEntries,
     entryImages,
     gameSessions,
-    users,
     adminHistoryEvents,
     suggestions,
   ] = await Promise.all([
@@ -342,8 +330,17 @@ export async function getDatabaseSnapshot() {
     prisma.entryImage.findMany({
       orderBy: [{ position: 'asc' } as any, { createdAt: 'asc' }],
     }),
-    prisma.gameSession.findMany({ orderBy: { createdAt: 'asc' } }),
-    prisma.user.findMany({ orderBy: { createdAt: 'asc' } }),
+    prisma.gameSession.findMany({
+      select: {
+        id: true,
+        level: true,
+        entryId: true,
+        finalCorrect: true,
+        validatedAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
     prisma.adminHistoryEvent.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.suggestion.findMany({ orderBy: { createdAt: 'asc' } }),
   ])
@@ -405,7 +402,6 @@ export async function getDatabaseSnapshot() {
       })),
       entryImages,
       gameSessions,
-      users,
       adminHistoryEvents,
       suggestions,
     },
@@ -417,7 +413,6 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
     // Delete in order of foreign key dependencies
     await tx.adminHistoryEvent.deleteMany()
     await tx.gameSession.deleteMany()
-    await tx.user.deleteMany()
     await tx.suggestion.deleteMany()
     await tx.entryImage.deleteMany()
     await tx.observationEntry.deleteMany()
@@ -532,15 +527,6 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       await tx.entryImage.createMany({ data: snapshot.data.entryImages })
     }
 
-    if (snapshot.data.users.length > 0) {
-      await tx.user.createMany({
-        data: snapshot.data.users.map((user) => ({
-          ...user,
-          role: user.role as any,
-        })),
-      })
-    }
-
     if (snapshot.data.gameSessions.length > 0) {
       await tx.gameSession.createMany({ data: snapshot.data.gameSessions })
     }
@@ -549,6 +535,7 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       await tx.adminHistoryEvent.createMany({
         data: snapshot.data.adminHistoryEvents.map((event) => ({
           ...event,
+          actorUserId: null,
           tone: event.tone as any,
         })),
       })
@@ -585,7 +572,6 @@ export async function importDatabaseSnapshot(snapshot: DatabaseSnapshot) {
       referenceTaxons: snapshot.data.referenceTaxons.length,
       observationEntries: snapshot.data.observationEntries.length,
       entryImages: snapshot.data.entryImages.length,
-      users: snapshot.data.users.length,
       gameSessions: snapshot.data.gameSessions.length,
       adminHistoryEvents: snapshot.data.adminHistoryEvents.length,
       suggestions: snapshot.data.suggestions.length,
