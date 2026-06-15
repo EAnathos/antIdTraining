@@ -181,7 +181,8 @@ function TreeView({
     visibleLeaves.forEach((leaf, i) => ym.set(leaf, i * ROW_H))
 
     const computeY = (node: TreeNode): number => {
-      if (!node.children?.length || collapsed.has(node.id)) return ym.get(node) ?? 0
+      if (!node.children?.length || collapsed.has(node.id))
+        return ym.get(node) ?? 0
       const ys = node.children.map(computeY)
       const avg = ys.reduce((a, b) => a + b, 0) / ys.length
       ym.set(node, avg)
@@ -282,7 +283,10 @@ function TreeView({
   return (
     <div
       className="rounded-lg"
-      style={{ border: '1px solid var(--app-border)', background: 'var(--app-surface)' }}
+      style={{
+        border: '1px solid var(--app-border)',
+        background: 'var(--app-surface)',
+      }}
     >
       {/* Toolbar */}
       <div
@@ -297,14 +301,16 @@ function TreeView({
         }}
       >
         <p style={{ fontSize: 12, color: 'var(--app-text-soft)', margin: 0 }}>
-          Cliquez sur un nœud pour voir le détail — le bouton +/− pour étendre ou
-          réduire. Molette pour zoomer, glisser pour naviguer.
+          Cliquez sur un nœud pour voir le détail — le bouton +/− pour étendre
+          ou réduire. Molette pour zoomer, glisser pour naviguer.
         </p>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             type="button"
             className="ui-action ui-action--secondary"
-            onClick={() => setScale((s) => Math.max(0.2, Math.min(3, s / 1.15)))}
+            onClick={() =>
+              setScale((s) => Math.max(0.2, Math.min(3, s / 1.15)))
+            }
             aria-label="Dézoomer"
           >
             −
@@ -322,7 +328,9 @@ function TreeView({
           <button
             type="button"
             className="ui-action ui-action--secondary"
-            onClick={() => setScale((s) => Math.max(0.2, Math.min(3, s * 1.15)))}
+            onClick={() =>
+              setScale((s) => Math.max(0.2, Math.min(3, s * 1.15)))
+            }
             aria-label="Zoomer"
           >
             +
@@ -363,7 +371,10 @@ function TreeView({
           }}
         >
           {selectedPath.map((n, i) => (
-            <span key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span
+              key={n.id}
+              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            >
               {i > 0 && (
                 <span style={{ color: 'var(--app-text-soft)' }}>›</span>
               )}
@@ -469,7 +480,9 @@ function TreeView({
                       x={6}
                       y={NODE_H / 2 + 4}
                       fontSize={11}
-                      fontStyle={node.depth >= 3 && !isRoot ? 'italic' : 'normal'}
+                      fontStyle={
+                        node.depth >= 3 && !isRoot ? 'italic' : 'normal'
+                      }
                       fill={textFill}
                       style={{ userSelect: 'none' }}
                     >
@@ -492,8 +505,16 @@ function TreeView({
                         width={16}
                         height={NODE_H - 4}
                         rx={3}
-                        fill={isSelected ? 'rgba(255,255,255,0.2)' : 'var(--app-surface-strong)'}
-                        stroke={isSelected ? 'rgba(255,255,255,0.4)' : 'var(--app-border)'}
+                        fill={
+                          isSelected
+                            ? 'rgba(255,255,255,0.2)'
+                            : 'var(--app-surface-strong)'
+                        }
+                        stroke={
+                          isSelected
+                            ? 'rgba(255,255,255,0.4)'
+                            : 'var(--app-border)'
+                        }
                         strokeWidth={1}
                       />
                       <text
@@ -848,7 +869,7 @@ export function TaxonsPage() {
   const visibleTaxons = filteredTaxons.slice(visibleStartIndex, visibleEndIndex)
   const topSpacerHeight = visibleStartIndex * rowHeight
   const bottomSpacerHeight = Math.max(
-    (taxons.length - visibleEndIndex) * rowHeight,
+    (filteredTaxons.length - visibleEndIndex) * rowHeight,
     0,
   )
 
