@@ -93,6 +93,8 @@ git checkout -b chore/<nom-court>   # tâche technique (deps, config, …)
 
 Ne travailler directement sur `dev` que pour des changements triviaux (typo, commentaire). Merger dans `dev` une fois la tâche terminée et les vérifications passées.
 
+**Les PRs ciblent toujours `dev`, jamais `master` directement.** `master` ne reçoit que des merges depuis `dev` (releases).
+
 ## Code review subagent
 
 Avant de merger une branche, lancer un subagent de review via l'Agent tool :
