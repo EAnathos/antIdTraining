@@ -59,20 +59,22 @@ export function ReferencesPage() {
         return (
           <section
             key={section.type}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="surface-panel surface-panel--solid p-6"
           >
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
               {section.title}
             </h2>
             {loadError && (
-              <p className="mt-2 text-sm text-red-600">{loadError}</p>
+              <p className="mt-2 text-sm text-[color:var(--app-danger)]">
+                {loadError}
+              </p>
             )}
             {isLoading && (
               <div className="mt-3 space-y-3">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={`${section.type}-skeleton-${index}`}
-                    className="h-20 animate-pulse rounded-lg bg-slate-100"
+                    className="h-20 animate-pulse rounded-lg bg-[color:var(--app-surface-muted)]"
                   />
                 ))}
               </div>
@@ -82,22 +84,24 @@ export function ReferencesPage() {
                 sectionReferences.map((ref) => (
                   <li
                     key={ref.id}
-                    className="rounded-lg border border-slate-200 p-3"
+                    className="rounded-lg border border-[color:var(--app-border)] p-3"
                   >
-                    <p className="font-medium text-slate-900">{ref.title}</p>
+                    <p className="font-medium text-[color:var(--app-text)]">
+                      {ref.title}
+                    </p>
                     {ref.authors.length > 0 && (
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-[color:var(--app-text-muted)]">
                         {ref.authors.join(', ')}
                       </p>
                     )}
                     {ref.description && (
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-[color:var(--app-text-muted)]">
                         {ref.description}
                       </p>
                     )}
                     {ref.url && getReferenceHref(ref) && (
                       <a
-                        className="break-all text-sm text-indigo-700 underline"
+                        className="break-all text-sm text-[color:var(--app-primary)] underline underline-offset-2 hover:opacity-85"
                         href={getReferenceHref(ref) ?? undefined}
                         target="_blank"
                         rel="noreferrer"
@@ -108,7 +112,7 @@ export function ReferencesPage() {
                     {ref.taxons.length > 0 && (
                       <div className="mt-2">
                         <button
-                          className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                          className="ui-button ui-button--secondary text-sm"
                           type="button"
                           onClick={() =>
                             setOpenedReferenceId(
@@ -122,7 +126,7 @@ export function ReferencesPage() {
                         </button>
 
                         {openedReferenceId === ref.id && (
-                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[color:var(--app-text-muted)]">
                             {ref.taxons.map((taxon) => (
                               <li key={taxon.id} className="break-words">
                                 {taxon.subfamily} &gt; {taxon.genus} &gt;{' '}
@@ -136,7 +140,7 @@ export function ReferencesPage() {
                   </li>
                 ))}
               {!isLoading && sectionReferences.length === 0 && (
-                <li className="rounded-lg border border-slate-200 p-3 text-sm text-slate-500">
+                <li className="rounded-lg border border-[color:var(--app-border)] p-3 text-sm text-[color:var(--app-text-soft)]">
                   Aucune référence dans cette section.
                 </li>
               )}

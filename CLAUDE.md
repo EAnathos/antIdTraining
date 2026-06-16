@@ -74,6 +74,13 @@ Toute modification du schéma (`apps/backend/prisma/schema.prisma`) nécessite :
 
 ## Workflow Git
 
+Avant de commencer toute tâche, s'assurer d'être à jour avec le distant :
+
+```bash
+git checkout dev
+git pull origin dev
+```
+
 Pour chaque nouvelle fonctionnalité ou correction demandée, créer une branche dédiée **avant** de commencer les modifications :
 
 ```bash
@@ -82,11 +89,32 @@ git checkout -b fix/<nom-court>     # correction de bug
 git checkout -b chore/<nom-court>   # tâche technique (deps, config, …)
 ```
 
+**Exception** : si une branche de feature est déjà active et que la demande relève du même périmètre (ex. suite de travaux CSS/style, continuation d'une même fonctionnalité), rester sur la branche courante sans en créer une nouvelle. Ne créer une branche que si le sujet est clairement distinct.
+
 Ne travailler directement sur `dev` que pour des changements triviaux (typo, commentaire). Merger dans `dev` une fois la tâche terminée et les vérifications passées.
+
+**Les PRs ciblent toujours `dev`, jamais `master` directement.** `master` ne reçoit que des merges depuis `dev` (releases).
+
+## Code review subagent
+
+Avant de merger une branche, lancer un subagent de review via l'Agent tool :
+
+```
+Fais une code review des changements de la branche courante vs master.
+Reporte les findings groupés par : Critical, Major, Minor, Nitpick.
+Commence par : git diff master...HEAD -- apps/frontend/src apps/backend/src
+```
+
+L'agent reporte ses findings ; analyser chaque point et corriger les **Critical** et **Major** avant le merge. Les **Minor** et **Nitpick** peuvent être traités dans un suivi ou ignorés si hors-scope.
+
+Signes d'un faux positif à vérifier avant de corriger :
+
+- "Régression X" → vérifier si X n'a pas été déplacé ailleurs
+- "Composant hors design-system" → vérifier si c'est pré-existant (`git log master -- <fichier>`)
 
 ## Documentation
 
 Si une modification impacte le comportement, l'architecture, l'API ou les scripts, mettre à jour :
 
-- `docs/` (architecture.md, api.md, database-schema.md, …)
-- ou les fichiers `README.md` concernés
+- [`docs/architecture.md`](docs/architecture.md), [`docs/api.md`](docs/api.md), [`docs/database-schema.md`](docs/database-schema.md)
+- [`apps/frontend/README.md`](apps/frontend/README.md) ou [`apps/backend/README.md`](apps/backend/README.md) selon le périmètre

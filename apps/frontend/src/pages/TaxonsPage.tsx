@@ -51,7 +51,12 @@ type TreeNode = {
 }
 
 function buildTreeFromTaxons(taxons: Taxon[]): TreeNode {
-  const root: TreeNode = { id: 'root', name: 'root', depth: 0, children: [] }
+  const root: TreeNode = {
+    id: 'root',
+    name: 'Formicidae',
+    depth: 0,
+    children: [],
+  }
 
   // Build a nested hierarchy: subfamily -> tribe -> genus -> subgenus -> speciesGroup -> species
   for (const t of taxons) {
@@ -138,223 +143,453 @@ function TreeView({
   root: TreeNode
   onNodeClick: (node: TreeNode, coords?: { x: number; y: number }) => void
 }) {
-  // flatten leaves to compute layout
-  const leaves: TreeNode[] = []
-  function collectLeaves(node: TreeNode) {
-    if (!node.children || node.children.length === 0) {
-      leaves.push(node)
-      return
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const init = new Set<string>()
+    const mark = (node: TreeNode) => {
+      if (!node.children?.length) return
+      if (node.depth >= 2) init.add(node.id)
+      node.children.forEach(mark)
     }
-    for (const c of node.children) collectLeaves(c)
-  }
-  collectLeaves(root)
-
-  const rowHeight = 36
-  const maxDepth = 6
-  const depthX = (d: number) => 40 + (d - 1) * 160
-  const width = Math.max(800, (maxDepth + 1) * 160)
-  const height = Math.max(200, (leaves.length + 1) * rowHeight)
-
-  // assign y positions to leaves and compute internal nodes position as average
-  const yMap = new Map<TreeNode, number>()
-  let index = 0
-  for (const leaf of leaves) {
-    yMap.set(leaf, 30 + index * rowHeight)
-    index += 1
-  }
-
-  function computeInternalY(node: TreeNode): number {
-    if (!node.children || node.children.length === 0) return yMap.get(node) ?? 0
-    const ys = node.children.map((c) => computeInternalY(c))
-    const avg = ys.reduce((a, b) => a + b, 0) / ys.length
-    yMap.set(node, avg)
-    return avg
-  }
-  computeInternalY(root)
-
-  // build lines and nodes list
-  const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
-  const nodes: Array<{ node: TreeNode; x: number; y: number }> = []
-
-  function walk(node: TreeNode) {
-    const x = depthX(node.depth)
-    const y = yMap.get(node) ?? 0
-    nodes.push({ node, x, y })
-    if (node.children) {
-      for (const c of node.children) {
-        const cx = depthX(c.depth)
-        const cy = yMap.get(c) ?? 0
-        lines.push({ x1: x + 60, y1: y, x2: cx - 10, y2: cy })
-        walk(c)
-      }
-    }
-  }
-  walk(root)
-
-  // Pan & zoom simple implementation
-  const [tx, setTx] = useState(20)
-  const [ty, setTy] = useState(20)
+    mark(root)
+    return init
+  })
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tx, setTx] = useState(0)
+  const [ty, setTy] = useState(10)
   const [scale, setScale] = useState(1)
   const dragging = useRef(false)
-  const last = useRef<{ x: number; y: number } | null>(null)
+  const hasDragged = useRef(false)
+  const lastPos = useRef<{ x: number; y: number } | null>(null)
+  const activePointers = useRef<Map<number, { x: number; y: number }>>(
+    new Map(),
+  )
+  const containerRef = useRef<HTMLDivElement>(null)
+  const MARGIN = 16
 
-  function clampScale(nextScale: number) {
-    return Math.max(0.4, Math.min(3, nextScale))
+  const ROW_H = 30
+  const COL_W = 150
+  const NODE_W = 118
+  const NODE_H = 22
+
+  const { nodeList, pathList, svgHeight } = useMemo(() => {
+    const visibleLeaves: TreeNode[] = []
+    const collectVisible = (node: TreeNode) => {
+      if (!node.children?.length || collapsed.has(node.id)) {
+        visibleLeaves.push(node)
+      } else {
+        node.children.forEach(collectVisible)
+      }
+    }
+    collectVisible(root)
+
+    const ym = new Map<TreeNode, number>()
+    visibleLeaves.forEach((leaf, i) => ym.set(leaf, i * ROW_H))
+
+    const computeY = (node: TreeNode): number => {
+      if (!node.children?.length || collapsed.has(node.id))
+        return ym.get(node) ?? 0
+      const ys = node.children.map(computeY)
+      const avg = ys.reduce((a, b) => a + b, 0) / ys.length
+      ym.set(node, avg)
+      return avg
+    }
+    computeY(root)
+
+    const nl: Array<{ node: TreeNode; x: number; y: number }> = []
+    const pl: string[] = []
+
+    const walk = (node: TreeNode) => {
+      const x = 8 + node.depth * COL_W
+      const y = ym.get(node) ?? 0
+      nl.push({ node, x, y })
+      if (node.children && !collapsed.has(node.id)) {
+        for (const c of node.children) {
+          const cx = 8 + c.depth * COL_W
+          const cy = ym.get(c) ?? 0
+          const mx = (x + NODE_W + cx) / 2
+          pl.push(
+            `M${x + NODE_W},${y + NODE_H / 2} H${mx} V${cy + NODE_H / 2} H${cx}`,
+          )
+          walk(c)
+        }
+      }
+    }
+    walk(root)
+
+    const maxY = nl.reduce((m, { y }) => Math.max(m, y), 0)
+    return {
+      nodeList: nl,
+      pathList: pl,
+      svgHeight: Math.max(200, maxY + NODE_H + 30),
+    }
+  }, [root, collapsed])
+
+  const selectedPath = useMemo(() => {
+    if (!selectedId) return []
+    const find = (node: TreeNode, target: string): TreeNode[] => {
+      if (node.id === target) return [node]
+      for (const c of node.children ?? []) {
+        const sub = find(c, target)
+        if (sub.length) return [node, ...sub]
+      }
+      return []
+    }
+    return find(root, selectedId)
+  }, [root, selectedId])
+
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  function zoomBy(factor: number) {
-    setScale((current) => clampScale(current * factor))
+  function collapseAll() {
+    const next = new Set<string>()
+    const mark = (node: TreeNode) => {
+      if (!node.children?.length) return
+      if (node.depth >= 2) next.add(node.id)
+      node.children.forEach(mark)
+    }
+    mark(root)
+    setCollapsed(next)
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    dragging.current = true
     ;(e.target as Element).setPointerCapture(e.pointerId)
-    last.current = { x: e.clientX, y: e.clientY }
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (activePointers.current.size === 1) {
+      dragging.current = true
+      hasDragged.current = false
+      lastPos.current = { x: e.clientX, y: e.clientY }
+    } else {
+      dragging.current = false
+    }
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging.current || !last.current) return
-    const dx = e.clientX - last.current.x
-    const dy = e.clientY - last.current.y
-    setTx((v) => v + dx)
-    setTy((v) => v + dy)
-    last.current = { x: e.clientX, y: e.clientY }
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+
+    if (!dragging.current || !lastPos.current) return
+    const dx = e.clientX - lastPos.current.x
+    const dy = e.clientY - lastPos.current.y
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true
+    const sw = svgWidth * scale
+    const sh = svgHeight * scale
+    setTx((v) =>
+      sw <= cw ? 0 : Math.max(cw - sw - MARGIN, Math.min(MARGIN, v + dx)),
+    )
+    setTy((v) =>
+      sh <= ch ? 0 : Math.max(ch - sh - MARGIN, Math.min(MARGIN, v + dy)),
+    )
+    lastPos.current = { x: e.clientX, y: e.clientY }
   }
-  function onPointerUp(_e: React.PointerEvent) {
-    dragging.current = false
-    last.current = null
+  function onPointerUp(e: React.PointerEvent) {
+    activePointers.current.delete(e.pointerId)
+    if (activePointers.current.size === 0) {
+      dragging.current = false
+      lastPos.current = null
+    } else if (activePointers.current.size === 1) {
+      dragging.current = true
+      const remaining = [...activePointers.current.values()][0]
+      lastPos.current = { x: remaining.x, y: remaining.y }
+    }
   }
-  // wheel/pinch handlers intentionally removed — zoom only via buttons
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+    setScale((s) => Math.max(0.2, Math.min(3, s * factor)))
+  }
+
+  const svgWidth = 8 + 7 * COL_W + NODE_W + 20
+  const allExpanded = collapsed.size === 0
+
+  // Auto-fit initial scale to container width on mount
+  useEffect(() => {
+    const cw = containerRef.current?.clientWidth
+    if (!cw) return
+    const fit = Math.min(1, (cw - MARGIN * 2) / svgWidth)
+    if (fit < 1) setScale(parseFloat(fit.toFixed(2)))
+  }, [svgWidth])
+
+  // Re-clamp translation whenever scale or tree height changes
+  useEffect(() => {
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+    const sw = svgWidth * scale
+    const sh = svgHeight * scale
+    setTx((v) =>
+      sw <= cw ? 0 : Math.max(cw - sw - MARGIN, Math.min(MARGIN, v)),
+    )
+    setTy((v) =>
+      sh <= ch ? 0 : Math.max(ch - sh - MARGIN, Math.min(MARGIN, v)),
+    )
+  }, [scale, svgHeight, svgWidth])
 
   return (
     <div
-      className="rounded-lg p-3"
+      className="rounded-lg"
       style={{
         border: '1px solid var(--app-border)',
         background: 'var(--app-surface)',
-        color: 'var(--app-text)',
       }}
     >
+      {/* Toolbar */}
       <div
         style={{
-          marginBottom: 8,
+          padding: '6px 10px',
+          borderBottom: '1px solid var(--app-border)',
           display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
-          alignItems: 'center',
-          fontSize: 13,
-          color: 'var(--app-text-soft)',
+          flexWrap: 'wrap',
         }}
       >
-        <div>
-          Vue arborescente — cliquez sur un taxon pour voir le détail. Utilisez
-          la molette pour zoomer et glisser pour vous déplacer.
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <p style={{ fontSize: 12, color: 'var(--app-text-soft)', margin: 0 }}>
+          Appuyez sur un nœud pour voir le détail — le bouton +/− pour étendre
+          ou réduire. Molette ou pincement pour zoomer, glisser pour naviguer.
+        </p>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => zoomBy(0.85)}
-            aria-label="Dézoomer l’arbre"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
-            }}
+            className="ui-action ui-action--secondary"
+            onClick={() =>
+              setScale((s) => Math.max(0.2, Math.min(3, s / 1.15)))
+            }
+            aria-label="Dézoomer"
           >
             −
           </button>
+          <span
+            style={{
+              fontSize: 11,
+              minWidth: 34,
+              textAlign: 'center',
+              color: 'var(--app-text-muted)',
+            }}
+          >
+            {Math.round(scale * 100)}%
+          </span>
           <button
             type="button"
-            onClick={() => zoomBy(1.15)}
-            aria-label="Zoomer l’arbre"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
-            }}
+            className="ui-action ui-action--secondary"
+            onClick={() =>
+              setScale((s) => Math.max(0.2, Math.min(3, s * 1.15)))
+            }
+            aria-label="Zoomer"
           >
             +
           </button>
           <button
             type="button"
-            onClick={() => setScale(1)}
-            aria-label="Réinitialiser le zoom"
-            style={{
-              border: '1px solid var(--app-border)',
-              background: 'var(--app-surface-strong)',
-              color: 'var(--app-text)',
-              padding: '6px 8px',
-              fontSize: 12,
-              borderRadius: 6,
+            className="ui-action ui-action--secondary"
+            onClick={() => {
+              setScale(1)
+              setTx(0)
+              setTy(10)
             }}
+            title="Réinitialiser vue"
           >
             ↺
+          </button>
+          <button
+            type="button"
+            className="ui-action ui-action--secondary"
+            onClick={allExpanded ? collapseAll : () => setCollapsed(new Set())}
+          >
+            {allExpanded ? 'Tout réduire' : 'Tout étendre'}
           </button>
         </div>
       </div>
 
+      {/* Breadcrumb */}
+      {selectedPath.length > 0 && (
+        <div
+          style={{
+            padding: '4px 10px',
+            borderBottom: '1px solid var(--app-border)',
+            fontSize: 12,
+            display: 'flex',
+            gap: 4,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          {selectedPath.map((n, i) => (
+            <span
+              key={n.id}
+              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              {i > 0 && (
+                <span style={{ color: 'var(--app-text-soft)' }}>›</span>
+              )}
+              <span
+                style={{
+                  color:
+                    i === selectedPath.length - 1
+                      ? 'var(--app-primary)'
+                      : 'var(--app-text-muted)',
+                  fontStyle: n.depth >= 3 ? 'italic' : 'normal',
+                  fontWeight: i === selectedPath.length - 1 ? 600 : 400,
+                }}
+              >
+                {n.name}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* SVG canvas */}
       <div
-        style={{ width: '100%', overflow: 'hidden', touchAction: 'none' }}
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: Math.min(svgHeight + 20, 540),
+          overflow: 'clip',
+          touchAction: 'none',
+          cursor: 'grab',
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onWheel={onWheel}
       >
-        <svg width={Math.min(width, 1400)} height={height}>
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          style={{ display: 'block', overflow: 'visible' }}
+        >
           <g transform={`translate(${tx},${ty}) scale(${scale})`}>
-            {lines.map((l, i) => (
-              <line
+            {pathList.map((d, i) => (
+              <path
                 key={i}
-                x1={l.x1}
-                y1={l.y1}
-                x2={l.x2}
-                y2={l.y2}
+                d={d}
+                fill="none"
                 stroke="var(--app-border)"
-                strokeWidth={2}
+                strokeWidth={1.5}
               />
             ))}
 
-            {nodes.map(({ node, x, y }) => {
+            {nodeList.map(({ node, x, y }) => {
               const name = node.name || ''
               const isPlaceholder =
                 name === '-' || name === '—' || name.trim() === ''
-              const clickable = !isPlaceholder
+              const hasChildren = (node.children?.length ?? 0) > 0
+              const isCollapsed = collapsed.has(node.id)
+              const isSelected = node.id === selectedId
+              const isRoot = node.depth === 0
+              const w = isRoot ? 104 : NODE_W
+
+              const fill = isSelected
+                ? 'var(--app-primary)'
+                : isRoot
+                  ? 'var(--app-primary-soft)'
+                  : hasChildren
+                    ? 'var(--app-surface-muted)'
+                    : 'var(--app-surface-strong)'
+              const stroke =
+                isSelected || isRoot || hasChildren
+                  ? 'var(--app-primary)'
+                  : 'var(--app-border)'
+              const textFill = isSelected
+                ? '#fff'
+                : isPlaceholder
+                  ? 'var(--app-text-soft)'
+                  : 'var(--app-text)'
 
               return (
-                <g
-                  key={node.id}
-                  transform={`translate(${x},${y})`}
-                  style={{ cursor: clickable ? 'pointer' : 'default' }}
-                  onClick={(e: React.MouseEvent) => {
-                    if (!clickable) return
-                    e.stopPropagation()
-                    onNodeClick(node, { x: e.clientX, y: e.clientY })
-                  }}
-                >
-                  <circle
-                    r={node.taxon ? 8 : 6}
-                    fill={
-                      clickable ? 'var(--app-primary)' : 'var(--app-text-soft)'
-                    }
-                  />
-                  <text
-                    x={12}
-                    y={6}
-                    fontSize={12}
-                    style={{
-                      fill: clickable
-                        ? 'var(--app-text)'
-                        : 'var(--app-text-soft)',
-                      fontWeight: 600,
+                <g key={node.id} transform={`translate(${x},${y})`}>
+                  {/* Node body — click opens detail */}
+                  <g
+                    style={{ cursor: isPlaceholder ? 'default' : 'pointer' }}
+                    onClick={(e) => {
+                      if (isPlaceholder || hasDragged.current) return
+                      e.stopPropagation()
+                      setSelectedId(node.id)
+                      onNodeClick(node, { x: e.clientX, y: e.clientY })
                     }}
                   >
-                    {name}
-                  </text>
+                    <rect
+                      x={0}
+                      y={0}
+                      width={w}
+                      height={NODE_H}
+                      rx={4}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={isSelected ? 2 : 1}
+                    />
+                    <text
+                      x={6}
+                      y={NODE_H / 2 + 4}
+                      fontSize={11}
+                      fontStyle={
+                        node.depth >= 3 && !isRoot ? 'italic' : 'normal'
+                      }
+                      fill={textFill}
+                      style={{ userSelect: 'none' }}
+                    >
+                      {name}
+                    </text>
+                  </g>
+                  {/* Collapse toggle — separate click target */}
+                  {hasChildren && (
+                    <g
+                      role="button"
+                      aria-label={
+                        isCollapsed ? `Étendre ${name}` : `Réduire ${name}`
+                      }
+                      tabIndex={0}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        if (hasDragged.current) return
+                        e.stopPropagation()
+                        toggleCollapse(node.id)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          toggleCollapse(node.id)
+                        }
+                      }}
+                    >
+                      <rect
+                        x={w - 18}
+                        y={2}
+                        width={16}
+                        height={NODE_H - 4}
+                        rx={3}
+                        fill={
+                          isSelected
+                            ? 'rgba(255,255,255,0.2)'
+                            : 'var(--app-surface-strong)'
+                        }
+                        stroke={
+                          isSelected
+                            ? 'rgba(255,255,255,0.4)'
+                            : 'var(--app-border)'
+                        }
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={w - 10}
+                        y={NODE_H / 2 + 4}
+                        fontSize={10}
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        fill={isSelected ? '#fff' : 'var(--app-primary)'}
+                        style={{ userSelect: 'none' }}
+                      >
+                        {isCollapsed ? '+' : '−'}
+                      </text>
+                    </g>
+                  )}
                 </g>
               )
             })}
@@ -468,6 +703,7 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [showExtraColumns, setShowExtraColumns] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -478,6 +714,7 @@ export function TaxonsPage() {
     'all' | 'invasive' | 'non-invasive'
   >('all')
   const [treeMode, setTreeMode] = useState(false)
+
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -694,18 +931,20 @@ export function TaxonsPage() {
   const visibleTaxons = filteredTaxons.slice(visibleStartIndex, visibleEndIndex)
   const topSpacerHeight = visibleStartIndex * rowHeight
   const bottomSpacerHeight = Math.max(
-    (taxons.length - visibleEndIndex) * rowHeight,
+    (filteredTaxons.length - visibleEndIndex) * rowHeight,
     0,
   )
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
+    <section
+      className={`surface-panel surface-panel--solid p-6${treeMode ? ' overflow-hidden' : ''}`}
+    >
+      <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
       <div className="mt-3 flex flex-wrap gap-2">
         <input
-          className="h-10 min-w-[260px] flex-1 rounded-lg border border-slate-300 bg-slate-100 px-3 text-slate-700 placeholder:text-slate-500"
+          className="ui-input h-10 min-w-[260px] flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Recherche (sous-famille, genre, espèce...)"
@@ -714,17 +953,32 @@ export function TaxonsPage() {
           <button
             type="button"
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="relative ml-2 mt-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2"
+            className="relative ml-2 mt-0 inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             <span>
               {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
             </span>
             {activeFiltersCount > 0 && (
-              <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-600 text-white text-xs">
+              <span className="absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--app-primary)] text-xs text-[color:var(--app-text-inverse)]">
                 {activeFiltersCount}
               </span>
             )}
           </button>
+
+          {!treeMode && (
+            <button
+              type="button"
+              onClick={() => setShowExtraColumns((v) => !v)}
+              title={
+                showExtraColumns
+                  ? 'Masquer les colonnes secondaires'
+                  : "Afficher tribu, sous-genre et groupe d'espèce"
+              }
+              className="sm:hidden ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            >
+              {showExtraColumns ? '−' : '+'}
+            </button>
+          )}
 
           <button
             type="button"
@@ -734,7 +988,7 @@ export function TaxonsPage() {
                 ? 'Basculer en vue tableau'
                 : 'Basculer en vue arborescente'
             }
-            className="ml-2 rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50"
+            className="ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             {treeMode ? <TableIcon /> : <TreeIcon />}
           </button>
@@ -742,10 +996,10 @@ export function TaxonsPage() {
       </div>
 
       {showAdvancedOptions && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-4 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Période d'essaimage
               </label>
               <div className="flex flex-wrap gap-2">
@@ -763,8 +1017,8 @@ export function TaxonsPage() {
                     }}
                     className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                       selectedSwarmingMonths.includes(index + 1)
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                        ? 'bg-[color:var(--app-primary)] text-[color:var(--app-text-inverse)]'
+                        : 'border border-[color:var(--app-border)] bg-[color:var(--app-surface)] text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]'
                     }`}
                   >
                     {month.slice(0, 3)}
@@ -774,23 +1028,25 @@ export function TaxonsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Localisation
               </label>
-              <FranceMap
-                selectedDepartments={selectedDepartments}
-                onToggleDepartment={(code) => {
-                  setSelectedDepartments((prev) =>
-                    prev.includes(code)
-                      ? prev.filter((d) => d !== code)
-                      : [...prev, code],
-                  )
-                }}
-              />
+              <div className="max-w-lg">
+                <FranceMap
+                  selectedDepartments={selectedDepartments}
+                  onToggleDepartment={(code) => {
+                    setSelectedDepartments((prev) =>
+                      prev.includes(code)
+                        ? prev.filter((d) => d !== code)
+                        : [...prev, code],
+                    )
+                  }}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-[color:var(--app-text)]">
                 Invasivité
               </label>
               <div className="flex gap-3">
@@ -832,7 +1088,7 @@ export function TaxonsPage() {
                   setSelectedDepartments([])
                   setSelectedInvasiveFilter('all')
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="ui-action ui-action--secondary"
               >
                 Réinitialiser les filtres
               </button>
@@ -840,19 +1096,23 @@ export function TaxonsPage() {
           </div>
         </div>
       )}
-      <p className="mt-3 text-sm text-slate-600">
+      <p className="mt-3 text-sm text-[color:var(--app-text-muted)]">
         {filteredTaxons.length} entrée{filteredTaxons.length > 1 ? 's' : ''}{' '}
         trouvée{filteredTaxons.length > 1 ? 's' : ''}
       </p>
 
-      {loadError && <p className="mt-2 text-sm text-red-600">{loadError}</p>}
+      {loadError && (
+        <p className="mt-2 text-sm text-[color:var(--app-danger)]">
+          {loadError}
+        </p>
+      )}
 
       {isLoadingTaxons && (
         <div className="mt-4 space-y-2">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={`taxons-skeleton-${index}`}
-              className="h-10 animate-pulse rounded-lg bg-slate-100"
+              className="h-10 animate-pulse rounded-lg bg-[color:var(--app-surface-muted)]"
             />
           ))}
         </div>
@@ -861,94 +1121,96 @@ export function TaxonsPage() {
       {!isLoadingTaxons && (
         <>
           {treeMode ? (
-            <div className="mt-4">
-              <TreeView
-                root={buildTreeFromTaxons(filteredTaxons)}
-                onNodeClick={(node, coords) => {
-                  // find representative taxon for the node or its descendants
-                  function findTaxon(n: TreeNode | undefined): Taxon | null {
-                    if (!n) return null
-                    if (n.taxon) return n.taxon
-                    if (!n.children) return null
-                    for (const c of n.children) {
-                      const r = findTaxon(c)
-                      if (r) return r
+            <div className="mt-4 tree-landscape-wrap">
+              <div className="tree-landscape-inner">
+                <TreeView
+                  root={buildTreeFromTaxons(filteredTaxons)}
+                  onNodeClick={(node, coords) => {
+                    // find representative taxon for the node or its descendants
+                    function findTaxon(n: TreeNode | undefined): Taxon | null {
+                      if (!n) return null
+                      if (n.taxon) return n.taxon
+                      if (!n.children) return null
+                      for (const c of n.children) {
+                        const r = findTaxon(c)
+                        if (r) return r
+                      }
+                      return null
                     }
-                    return null
-                  }
 
-                  const rep = node.taxon ?? findTaxon(node)
-                  if (!rep) return
+                    const rep = node.taxon ?? findTaxon(node)
+                    if (!rep) return
 
-                  if (node.depth === 1) {
-                    openSelectedDetail(
-                      rep,
-                      'subfamily',
-                      node.name,
-                      rep.levelDetails.subfamily,
-                      coords,
-                    )
-                  } else if (node.depth === 2) {
-                    // Tribe: map to subfamily detail (no tribe-level detail available)
-                    openSelectedDetail(
-                      rep,
-                      'subfamily',
-                      node.name,
-                      rep.levelDetails.subfamily,
-                      coords,
-                    )
-                  } else if (node.depth === 3) {
-                    openSelectedDetail(
-                      rep,
-                      'genus',
-                      node.name,
-                      rep.levelDetails.genus,
-                      coords,
-                    )
-                  } else if (node.depth === 4) {
-                    openSelectedDetail(
-                      rep,
-                      'subgenus',
-                      node.name,
-                      rep.levelDetails.subgenus ?? {
-                        description: null,
-                        sizeWorker: null,
-                        sizeQueen: null,
-                        sizeMale: null,
-                        criteria: [],
-                      },
-                      coords,
-                    )
-                  } else if (node.depth === 5) {
-                    openSelectedDetail(
-                      rep,
-                      'speciesGroup',
-                      node.name,
-                      rep.levelDetails.speciesGroup ?? {
-                        description: null,
-                        sizeWorker: null,
-                        sizeQueen: null,
-                        sizeMale: null,
-                        criteria: [],
-                      },
-                      coords,
-                    )
-                  } else {
-                    openSelectedDetail(
-                      rep,
-                      'species',
-                      rep.species,
-                      rep.levelDetails.species,
-                      coords,
-                    )
-                  }
-                }}
-              />
+                    if (node.depth === 1) {
+                      openSelectedDetail(
+                        rep,
+                        'subfamily',
+                        node.name,
+                        rep.levelDetails.subfamily,
+                        coords,
+                      )
+                    } else if (node.depth === 2) {
+                      // Tribe: map to subfamily detail (no tribe-level detail available)
+                      openSelectedDetail(
+                        rep,
+                        'subfamily',
+                        node.name,
+                        rep.levelDetails.subfamily,
+                        coords,
+                      )
+                    } else if (node.depth === 3) {
+                      openSelectedDetail(
+                        rep,
+                        'genus',
+                        node.name,
+                        rep.levelDetails.genus,
+                        coords,
+                      )
+                    } else if (node.depth === 4) {
+                      openSelectedDetail(
+                        rep,
+                        'subgenus',
+                        node.name,
+                        rep.levelDetails.subgenus ?? {
+                          description: null,
+                          sizeWorker: null,
+                          sizeQueen: null,
+                          sizeMale: null,
+                          criteria: [],
+                        },
+                        coords,
+                      )
+                    } else if (node.depth === 5) {
+                      openSelectedDetail(
+                        rep,
+                        'speciesGroup',
+                        node.name,
+                        rep.levelDetails.speciesGroup ?? {
+                          description: null,
+                          sizeWorker: null,
+                          sizeQueen: null,
+                          sizeMale: null,
+                          criteria: [],
+                        },
+                        coords,
+                      )
+                    } else {
+                      openSelectedDetail(
+                        rep,
+                        'species',
+                        rep.species,
+                        rep.levelDetails.species,
+                        coords,
+                      )
+                    }
+                  }}
+                />
+              </div>
             </div>
           ) : (
             <div
               ref={tableContainerRef}
-              className="mt-4 max-h-[65vh] -mx-6 overflow-auto rounded-lg border border-slate-200"
+              className="-mx-6 mt-4 max-h-[65vh] overflow-auto rounded-lg border border-[color:var(--app-border)]"
               onScroll={(event) =>
                 setTableScrollTop(event.currentTarget.scrollTop)
               }
@@ -957,10 +1219,22 @@ export function TaxonsPage() {
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
-                    <th className="table-head-sticky">Tribu</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Tribu
+                    </th>
                     <th className="table-head-sticky">Genre</th>
-                    <th className="table-head-sticky">Sous-genre</th>
-                    <th className="table-head-sticky">Groupe d'espèce</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Sous-genre
+                    </th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Groupe d'espèce
+                    </th>
                     <th className="table-head-sticky">Espèce</th>
                   </tr>
                 </thead>
@@ -990,14 +1264,17 @@ export function TaxonsPage() {
                       v && v !== '-' && v !== '—'
 
                     return (
-                      <tr key={taxon.id} className="border-b border-slate-100">
+                      <tr
+                        key={taxon.id}
+                        className="border-b border-[color:var(--app-border)]"
+                      >
                         <td
                           className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
                           title={subfamilyVal}
                         >
                           {isClickable(subfamilyVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1011,13 +1288,13 @@ export function TaxonsPage() {
                               {subfamilyVal}
                             </button>
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-[color:var(--app-text-soft)]">
                               {subfamilyVal}
                             </span>
                           )}
                         </td>
                         <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={tribeVal}
                         >
                           {tribeVal}
@@ -1028,7 +1305,7 @@ export function TaxonsPage() {
                         >
                           {isClickable(genusVal) ? (
                             <button
-                              className="max-w-[160px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[160px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1042,17 +1319,19 @@ export function TaxonsPage() {
                               <em>{genusVal}</em>
                             </button>
                           ) : (
-                            <span className="text-slate-500">{genusVal}</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {genusVal}
+                            </span>
                           )}
                         </td>
                         <td
-                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={subgenusVal}
                         >
                           {subgenus && subgenusDetail ? (
                             isClickable(subgenusVal) ? (
                               <button
-                                className="max-w-[140px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                className="max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1066,24 +1345,26 @@ export function TaxonsPage() {
                                 ({subgenusVal})
                               </button>
                             ) : (
-                              <span className="text-slate-500">
+                              <span className="text-[color:var(--app-text-soft)]">
                                 ({subgenusVal})
                               </span>
                             )
                           ) : subgenus ? (
                             `(${subgenus})`
                           ) : (
-                            <span className="text-slate-500">-</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              -
+                            </span>
                           )}
                         </td>
                         <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={speciesGroupVal}
                         >
                           {speciesGroup && speciesGroupDetail ? (
                             isClickable(speciesGroupVal) ? (
                               <button
-                                className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                                className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1097,12 +1378,12 @@ export function TaxonsPage() {
                                 {speciesGroupVal}
                               </button>
                             ) : (
-                              <span className="text-slate-500">
+                              <span className="text-[color:var(--app-text-soft)]">
                                 {speciesGroupVal}
                               </span>
                             )
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-[color:var(--app-text-soft)]">
                               {speciesGroupVal}
                             </span>
                           )}
@@ -1113,7 +1394,7 @@ export function TaxonsPage() {
                         >
                           {isClickable(speciesVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap text-ellipsis overflow-hidden text-indigo-700 underline underline-offset-2"
+                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1127,7 +1408,9 @@ export function TaxonsPage() {
                               <em>{speciesVal}</em>
                             </button>
                           ) : (
-                            <span className="text-slate-500">{speciesVal}</span>
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {speciesVal}
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -1145,7 +1428,7 @@ export function TaxonsPage() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="p-4 text-center text-slate-500"
+                        className="p-4 text-center text-[color:var(--app-text-soft)]"
                       >
                         Aucun taxon trouvé.
                       </td>
@@ -1163,7 +1446,7 @@ export function TaxonsPage() {
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={`taxons-loading-more-${index}`}
-              className="h-8 animate-pulse rounded-lg bg-slate-100"
+              className="h-8 animate-pulse rounded-lg bg-[color:var(--app-surface-muted)]"
             />
           ))}
         </div>
@@ -1172,40 +1455,22 @@ export function TaxonsPage() {
         !isLoadingMoreTaxons &&
         !hasMoreTaxons &&
         taxons.length > 0 && (
-          <p className="mt-3 text-center text-xs text-slate-500">
+          <p className="mt-3 text-center text-xs text-[color:var(--app-text-soft)]">
             Fin de la liste.
           </p>
         )}
 
       {selectedDetail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setSelectedDetail(null)}
         >
           <div
-            className="flex flex-col max-h-[85vh] w-full max-w-2xl rounded-xl bg-white shadow-xl overflow-hidden"
-            style={
-              selectedDetail.anchor && typeof window !== 'undefined'
-                ? (() => {
-                    const vh = window.innerHeight
-                    const top = Math.min(
-                      Math.max(selectedDetail.anchor.y, 12),
-                      vh - 12,
-                    )
-                    return {
-                      position: 'absolute',
-                      left: '50%',
-                      top: `${top}px`,
-                      transform: 'translateX(-50%) translateY(-10%)',
-                      maxWidth: 'min(90vw, 40rem)',
-                    } as React.CSSProperties
-                  })()
-                : undefined
-            }
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[color:var(--app-surface)] shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
-              <p className="font-medium text-slate-900">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-[color:var(--app-border)] px-4 py-3">
+              <p className="font-medium text-[color:var(--app-text)]">
                 {selectedDetail.level === 'subfamily'
                   ? 'Sous-famille'
                   : selectedDetail.level === 'genus'
@@ -1223,7 +1488,7 @@ export function TaxonsPage() {
                 )}
               </p>
               <button
-                className="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                className="ui-button ui-button--secondary text-sm"
                 type="button"
                 onClick={() => setSelectedDetail(null)}
               >
@@ -1231,20 +1496,22 @@ export function TaxonsPage() {
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-4">
-              <p className="mt-2 font-medium text-slate-900">Description</p>
-              <p className="mt-1 text-slate-700">
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="mt-2 font-medium text-[color:var(--app-text)]">
+                Description
+              </p>
+              <p className="mt-1 text-[color:var(--app-text-muted)]">
                 {selectedDetail.detail.description ?? 'Aucune description.'}
               </p>
 
-              <p className="mt-3 font-medium text-slate-900">
+              <p className="mt-3 font-medium text-[color:var(--app-text)]">
                 Caractéristiques
               </p>
               {selectedDetail.detail.criteria.length > 0 ||
               selectedDetail.detail.sizeWorker ||
               selectedDetail.detail.sizeQueen ||
               selectedDetail.detail.sizeMale ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[color:var(--app-text-muted)]">
                   {(selectedDetail.detail.sizeWorker ||
                     selectedDetail.detail.sizeQueen ||
                     selectedDetail.detail.sizeMale) && (
@@ -1270,12 +1537,14 @@ export function TaxonsPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-slate-700">Aucun critère renseigné.</p>
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
+                  Aucun critère renseigné.
+                </p>
               )}
 
               {selectedDetail.level === 'species' && (
                 <>
-                  <p className="mt-3 font-medium text-slate-900">
+                  <p className="mt-3 font-medium text-[color:var(--app-text)]">
                     Période d'essaimage
                   </p>
                   {selectedDetail.taxon.swarmingStartMonth &&
@@ -1284,37 +1553,37 @@ export function TaxonsPage() {
                       const startMonth = selectedDetail.taxon.swarmingStartMonth
                       const endMonth = selectedDetail.taxon.swarmingEndMonth
                       return (
-                        <p className="mt-2 text-slate-700">
+                        <p className="mt-2 text-[color:var(--app-text-muted)]">
                           {monthLabels[startMonth - 1]} à{' '}
                           {monthLabels[endMonth - 1]}
                         </p>
                       )
                     })()
                   ) : (
-                    <p className="mt-2 text-slate-700">
+                    <p className="mt-2 text-[color:var(--app-text-muted)]">
                       Aucune période d'essaimage renseignée.
                     </p>
                   )}
                 </>
               )}
 
-              <p className="mt-3 font-medium text-slate-900">
+              <p className="mt-3 font-medium text-[color:var(--app-text)]">
                 Références liées
               </p>
               {isLoadingReferences && (
-                <p className="mt-1 text-slate-700">
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
                   Chargement des références…
                 </p>
               )}
               {linkedReferences.length > 0 ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[color:var(--app-text-muted)]">
                   {linkedReferences.map((reference) => {
                     const href = getReferenceHref(reference)
                     return (
                       <li key={reference.id}>
                         {href ? (
                           <a
-                            className="text-indigo-700 underline"
+                            className="text-[color:var(--app-primary)] underline"
                             href={href}
                             target="_blank"
                             rel="noreferrer"
@@ -1329,20 +1598,22 @@ export function TaxonsPage() {
                   })}
                 </ul>
               ) : (
-                <p className="mt-1 text-slate-700">Aucune référence liée.</p>
+                <p className="mt-1 text-[color:var(--app-text-muted)]">
+                  Aucune référence liée.
+                </p>
               )}
 
               {selectedDetail.level === 'species' &&
                 selectedDetail.taxon.confusions.length > 0 && (
                   <>
-                    <p className="mt-3 font-medium text-slate-900">
+                    <p className="mt-3 font-medium text-[color:var(--app-text)]">
                       Confusions possibles
                     </p>
-                    <ul className="mt-1 space-y-2 text-slate-700">
+                    <ul className="mt-1 space-y-2 text-[color:var(--app-text-muted)]">
                       {selectedDetail.taxon.confusions.map((confusion) => (
                         <li
                           key={confusion.id}
-                          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                          className="rounded-lg border border-[color:var(--app-warning)] bg-[color:var(--app-warning-soft)] px-3 py-2 text-sm text-[color:var(--app-warning)]"
                         >
                           <p className="font-semibold">
                             Avec <em>{confusion.confusedTaxon.genus}</em>{' '}
@@ -1359,7 +1630,7 @@ export function TaxonsPage() {
 
               {selectedDetail.level === 'species' && (
                 <>
-                  <p className="mt-3 font-medium text-slate-900">
+                  <p className="mt-3 font-medium text-[color:var(--app-text)]">
                     Aire de répartition
                   </p>
                   <div className="mt-1">
@@ -1372,7 +1643,7 @@ export function TaxonsPage() {
 
                       if (codes.length === 0) {
                         return (
-                          <p className="mt-1 text-slate-700">
+                          <p className="mt-1 text-[color:var(--app-text-muted)]">
                             Aucune aire de répartition renseignée.
                           </p>
                         )

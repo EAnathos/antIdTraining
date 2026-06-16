@@ -17,8 +17,8 @@ export function AdminIconButton({
 }: Props) {
   const classes =
     tone === 'danger'
-      ? 'admin-icon-button ui-button ui-button--danger h-9 w-9 rounded-full p-0'
-      : 'admin-icon-button ui-button ui-button--secondary h-9 w-9 rounded-full p-0'
+      ? 'admin-icon-button ui-action ui-action--danger h-7 w-7 rounded p-0'
+      : 'admin-icon-button ui-action ui-action--secondary h-7 w-7 rounded p-0'
 
   return (
     <button

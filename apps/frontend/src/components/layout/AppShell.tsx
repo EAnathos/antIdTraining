@@ -13,11 +13,11 @@ function buttonClass(kind: 'primary' | 'secondary') {
 }
 
 function navClass({ isActive }: { isActive: boolean }) {
-  return `ui-tab text-sm ${isActive ? 'ui-tab--active' : ''}`
+  return `nav-link${isActive ? ' nav-link--active' : ''}`
 }
 
 function adminNavClass({ isActive }: { isActive: boolean }) {
-  return `ui-button text-sm ${isActive ? 'ui-button--primary' : 'ui-button--secondary'}`
+  return `nav-action${isActive ? ' nav-action--active' : ''}`
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -252,9 +252,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {authState.token ? (
                 <>
                   {authState.role === 'ADMIN' && (
-                    <NavLink className={adminNavClass} to="/admin">
-                      Admin
-                    </NavLink>
+                    <span className="hidden sm:contents">
+                      <NavLink className={adminNavClass} to="/admin">
+                        Admin
+                      </NavLink>
+                    </span>
                   )}
                   <NavLink className={adminNavClass} to="/profil">
                     Profil

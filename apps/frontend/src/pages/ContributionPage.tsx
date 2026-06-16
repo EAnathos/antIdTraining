@@ -480,9 +480,11 @@ export function ContributionPage() {
 
   if (!isConnected) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
-        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+      <section className="surface-panel surface-panel--solid p-6">
+        <h2 className="text-2xl font-semibold text-[color:var(--app-text)]">
+          Contribution
+        </h2>
+        <p className="ui-alert ui-alert--warning mt-4">
           Vous devez être connecté pour accéder à cette section.
         </p>
       </section>
@@ -490,24 +492,26 @@ export function ContributionPage() {
   }
 
   return (
-    <section className="space-y-6 rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+    <section className="surface-panel surface-panel--solid space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold text-slate-900">Contribution</h2>
+        <h2 className="text-2xl font-semibold text-[color:var(--app-text)]">
+          Contribution
+        </h2>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:justify-end">
           <button
-            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'contributions' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            className={`ui-tab w-full text-left sm:w-auto ${view === 'contributions' ? 'ui-tab--active' : ''}`}
             onClick={() => setView('contributions')}
           >
             Mes contributions
           </button>
           <button
-            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'entry' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            className={`ui-tab w-full text-left sm:w-auto ${view === 'entry' ? 'ui-tab--active' : ''}`}
             onClick={() => setView('entry')}
           >
             Proposer une entrée
           </button>
           <button
-            className={`w-full rounded-lg px-3 py-2 text-left sm:w-auto ${view === 'suggestion' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+            className={`ui-tab w-full text-left sm:w-auto ${view === 'suggestion' ? 'ui-tab--active' : ''}`}
             onClick={() => setView('suggestion')}
           >
             Suggestion
@@ -515,24 +519,22 @@ export function ContributionPage() {
         </div>
       </div>
 
-      {message && (
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-          {message}
-        </p>
-      )}
+      {message && <p className="ui-alert text-sm">{message}</p>}
 
       {view === 'contributions' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
-              <p className="text-slate-600">Entrées proposées</p>
-              <p className="text-2xl font-bold text-slate-900">
+            <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
+              <p className="text-[color:var(--app-text-muted)]">
+                Entrées proposées
+              </p>
+              <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.proposalCount}/{counts.proposalLimit}
               </p>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
-              <p className="text-slate-600">Suggestions</p>
-              <p className="text-2xl font-bold text-slate-900">
+            <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
+              <p className="text-[color:var(--app-text-muted)]">Suggestions</p>
+              <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.suggestionCount}/{counts.suggestionLimit}
               </p>
             </div>
@@ -542,19 +544,19 @@ export function ContributionPage() {
             {proposals.map((p) => (
               <div
                 key={p.id}
-                className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
               >
                 <div className="flex justify-between gap-3">
                   <div>
                     <p className="font-medium">
                       {p.subfamily} · {p.genus ?? '-'} · {p.species ?? '-'}
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[color:var(--app-text-soft)]">
                       {p.department} · {p.caste}
                     </p>
                   </div>
                   <span
-                    className={`rounded border px-2 py-1 text-xs ${p.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : p.status === 'ACCEPTED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                    className={`ui-chip text-xs ${p.status === 'PENDING' ? '' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                   >
                     {p.status}
                   </span>
@@ -565,7 +567,7 @@ export function ContributionPage() {
                       <button
                         key={image.id}
                         type="button"
-                        className="overflow-hidden rounded border border-slate-200 bg-slate-50"
+                        className="overflow-hidden rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)]"
                         onClick={() =>
                           setProposalPreview({
                             images: p.images.map((proposalImage) =>
@@ -590,7 +592,7 @@ export function ContributionPage() {
                   </div>
                 )}
                 {p.rejectionMessage && (
-                  <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  <div className="mt-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                     <p className="mb-1 font-semibold uppercase tracking-wide">
                       Message de l'administration
                     </p>
@@ -602,18 +604,18 @@ export function ContributionPage() {
             {suggestions.map((s) => (
               <div
                 key={s.id}
-                className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
               >
                 <div className="flex justify-between gap-3">
                   <p className="whitespace-pre-wrap">{s.message}</p>
                   <span
-                    className={`rounded border px-2 py-1 text-xs ${s.status === 'PENDING' ? 'border-slate-200 bg-slate-100 text-slate-700' : s.status === 'PROCESSED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                    className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                   >
                     {s.status}
                   </span>
                 </div>
                 {s.rejectionMessage && (
-                  <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  <div className="mt-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                     <p className="mb-1 font-semibold uppercase tracking-wide">
                       Message de l'administration
                     </p>
@@ -628,13 +630,13 @@ export function ContributionPage() {
 
       {view === 'entry' && (
         <form className="space-y-4" onSubmit={submitProposal}>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          <div className="surface-panel surface-panel--solid p-4">
+            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
               Sélection du taxon
             </h3>
             <div className="grid gap-2 md:grid-cols-2">
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.subfamily}
                 onChange={(e) =>
                   patchEntryForm({
@@ -655,7 +657,7 @@ export function ContributionPage() {
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.genus}
                 onChange={(e) =>
                   patchEntryForm({
@@ -675,7 +677,7 @@ export function ContributionPage() {
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.subgenus}
                 onChange={(e) =>
                   patchEntryForm({ subgenus: e.target.value, species: '' })
@@ -690,7 +692,7 @@ export function ContributionPage() {
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.speciesGroup}
                 onChange={(e) =>
                   patchEntryForm({ speciesGroup: e.target.value, species: '' })
@@ -705,7 +707,7 @@ export function ContributionPage() {
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.species}
                 onChange={handleSpeciesSelectChange}
                 disabled={!entryForm.genus}
@@ -718,7 +720,7 @@ export function ContributionPage() {
                 ))}
               </select>
               <select
-                className="rounded border p-2"
+                className="ui-select"
                 value={entryForm.caste}
                 onChange={(e) =>
                   patchEntryForm({ caste: e.target.value as EntryCaste | '' })
@@ -733,13 +735,13 @@ export function ContributionPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">
+          <div className="surface-panel surface-panel--solid p-4">
+            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
               Détails de l'observation
             </h3>
             <div className="grid gap-2 md:grid-cols-2">
               <input
-                className="rounded border p-2"
+                className="ui-select"
                 list="department-suggestions"
                 placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
                 value={entryForm.department}
@@ -760,21 +762,21 @@ export function ContributionPage() {
                 ))}
               </datalist>
               <input
-                className="rounded border p-2"
+                className="ui-select"
                 type="date"
                 value={entryForm.observedAt}
                 onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
                 required
               />
               <input
-                className="rounded border border-slate-200 p-2"
+                className="ui-input"
                 placeholder="Biotope"
                 value={entryForm.biotope}
                 onChange={(e) => patchEntryForm({ biotope: e.target.value })}
                 required
               />
               <input
-                className="rounded border border-slate-200 p-2"
+                className="ui-input"
                 placeholder="Crédit photo"
                 value={entryForm.photoCredit}
                 onChange={(e) =>
@@ -783,13 +785,13 @@ export function ContributionPage() {
               />
               <div className="space-y-1">
                 <input
-                  className="w-full rounded border border-slate-200 p-2"
+                  className="ui-input"
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={(e) => setEntryFiles(e.target.files)}
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[color:var(--app-text-soft)]">
                   Images: 8 Mo max par fichier (jusqu'à 3).
                 </p>
               </div>
@@ -797,7 +799,7 @@ export function ContributionPage() {
           </div>
 
           <button
-            className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >
@@ -814,12 +816,12 @@ export function ContributionPage() {
         >
           <textarea
             name="message"
-            className="min-h-32 w-full rounded-lg border border-slate-200 p-2"
+            className="ui-textarea"
             placeholder="Votre suggestion"
             required
           />
           <button
-            className="rounded-lg bg-slate-900 px-4 py-2 text-white"
+            className="ui-button ui-button--primary"
             type="submit"
             disabled={loading}
           >
@@ -839,7 +841,7 @@ export function ContributionPage() {
           >
             <button
               type="button"
-              className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow"
+              className="absolute right-2 top-2 rounded-full bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
               onClick={() => setProposalPreview(null)}
             >
               Fermer
@@ -847,7 +849,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
@@ -879,7 +881,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-lg font-semibold text-slate-700 shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
@@ -915,11 +917,11 @@ export function ContributionPage() {
                 },
               )}
               alt={proposalPreview.alt}
-              className="max-h-[85vh] max-w-[92vw] rounded-lg border border-slate-200 bg-white object-contain"
+              className="max-h-[85vh] max-w-[92vw] rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] object-contain"
               decoding="async"
             />
 
-            <p className="mt-2 text-center text-xs text-slate-200">
+            <p className="mt-2 text-center text-xs text-[color:var(--app-text-inverse)]">
               Image {proposalPreview.index + 1}/{proposalPreview.images.length}
             </p>
           </div>
