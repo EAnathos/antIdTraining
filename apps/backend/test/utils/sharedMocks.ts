@@ -4,6 +4,7 @@ export const prismaMocks = {
   user: {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
     update: vi.fn(),
@@ -12,11 +13,14 @@ export const prismaMocks = {
     create: vi.fn(),
     findUnique: vi.fn(),
     updateMany: vi.fn(),
+    deleteMany: vi.fn(),
+    groupBy: vi.fn(),
   },
   observationEntry: {
     findUnique: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
+    groupBy: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -24,6 +28,7 @@ export const prismaMocks = {
   entryImage: {
     findMany: vi.fn(),
     update: vi.fn(),
+    count: vi.fn(),
   },
   $transaction: vi.fn(),
 }
