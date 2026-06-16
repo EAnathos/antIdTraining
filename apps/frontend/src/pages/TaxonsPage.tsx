@@ -704,6 +704,14 @@ export function TaxonsPage() {
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [showExtraColumns, setShowExtraColumns] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: portrait)')
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setShowExtraColumns(false)
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
