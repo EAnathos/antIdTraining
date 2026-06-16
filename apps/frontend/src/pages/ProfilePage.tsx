@@ -328,8 +328,8 @@ export function ProfilePage() {
 
       {/* Header Card - Profile Summary */}
       <div className="surface-panel surface-panel--solid overflow-hidden">
-        <div className="flex items-start gap-6 p-6">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6">
+          <div className="relative shrink-0">
             {profile?.avatar ? (
               <img
                 src={resolveImageUrl(profile.avatar)}
@@ -343,14 +343,14 @@ export function ProfilePage() {
             )}
           </div>
 
-          <div className="flex-1 pt-1">
+          <div className="flex-1 pt-1 text-center sm:text-left w-full">
             <h1 className="text-2xl font-bold text-[color:var(--app-text)]">
               {profile?.username || 'Profil'}
             </h1>
             <p className="text-sm text-[color:var(--app-text-muted)] mt-1">
               Membre depuis le {formatMemberSince(profile?.createdAt)}
             </p>
-            <div className="mt-3 flex items-center gap-4">
+            <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-[color:var(--app-text-soft)] uppercase">
                   Points
@@ -364,22 +364,21 @@ export function ProfilePage() {
                 <span className="text-xs font-semibold text-[color:var(--app-text-soft)] uppercase">
                   Email
                 </span>
-                <span className="text-sm text-[color:var(--app-text-muted)]">
+                <span className="text-sm text-[color:var(--app-text-muted)] break-all">
                   {profile?.email || 'Non renseigné'}
                 </span>
               </div>
             </div>
+            {!editMode && (
+              <button
+                className="ui-action ui-action--primary mt-4"
+                type="button"
+                onClick={() => setEditMode(true)}
+              >
+                Modifier
+              </button>
+            )}
           </div>
-
-          {!editMode && (
-            <button
-              className="ui-action ui-action--primary"
-              type="button"
-              onClick={() => setEditMode(true)}
-            >
-              Modifier
-            </button>
-          )}
         </div>
       </div>
 
@@ -466,7 +465,7 @@ export function ProfilePage() {
         <h3 className="text-lg font-semibold text-[color:var(--app-text)] mb-4">
           Apparence
         </h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(['system', 'light', 'dark'] as const).map((theme) => (
             <button
               key={theme}

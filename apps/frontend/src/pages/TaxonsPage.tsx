@@ -160,6 +160,11 @@ function TreeView({
   const dragging = useRef(false)
   const hasDragged = useRef(false)
   const lastPos = useRef<{ x: number; y: number } | null>(null)
+  const activePointers = useRef<Map<number, { x: number; y: number }>>(
+    new Map(),
+  )
+  const pinchStartDist = useRef<number | null>(null)
+  const pinchStartScale = useRef<number>(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const MARGIN = 16
 
@@ -255,18 +260,48 @@ function TreeView({
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    dragging.current = true
-    hasDragged.current = false
     ;(e.target as Element).setPointerCapture(e.pointerId)
-    lastPos.current = { x: e.clientX, y: e.clientY }
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (activePointers.current.size === 1) {
+      dragging.current = true
+      hasDragged.current = false
+      lastPos.current = { x: e.clientX, y: e.clientY }
+    } else if (activePointers.current.size === 2) {
+      dragging.current = false
+      const pts = [...activePointers.current.values()]
+      const dx = pts[1].x - pts[0].x
+      const dy = pts[1].y - pts[0].y
+      pinchStartDist.current = Math.hypot(dx, dy)
+      pinchStartScale.current = scale
+    }
   }
   function onPointerMove(e: React.PointerEvent) {
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+
+    if (activePointers.current.size === 2) {
+      const pts = [...activePointers.current.values()]
+      const dx = pts[1].x - pts[0].x
+      const dy = pts[1].y - pts[0].y
+      const dist = Math.hypot(dx, dy)
+      if (pinchStartDist.current !== null && pinchStartDist.current > 0) {
+        const nextScale = Math.max(
+          0.2,
+          Math.min(
+            3,
+            pinchStartScale.current * (dist / pinchStartDist.current),
+          ),
+        )
+        setScale(nextScale)
+      }
+      return
+    }
+
     if (!dragging.current || !lastPos.current) return
     const dx = e.clientX - lastPos.current.x
     const dy = e.clientY - lastPos.current.y
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true
-    const cw = containerRef.current?.clientWidth ?? 400
-    const ch = containerRef.current?.clientHeight ?? 400
     const sw = svgWidth * scale
     const sh = svgHeight * scale
     setTx((v) =>
@@ -277,9 +312,18 @@ function TreeView({
     )
     lastPos.current = { x: e.clientX, y: e.clientY }
   }
-  function onPointerUp() {
-    dragging.current = false
-    lastPos.current = null
+  function onPointerUp(e: React.PointerEvent) {
+    activePointers.current.delete(e.pointerId)
+    if (activePointers.current.size === 0) {
+      dragging.current = false
+      lastPos.current = null
+      pinchStartDist.current = null
+    } else if (activePointers.current.size === 1) {
+      pinchStartDist.current = null
+      dragging.current = true
+      const remaining = [...activePointers.current.values()][0]
+      lastPos.current = { x: remaining.x, y: remaining.y }
+    }
   }
   function onWheel(e: React.WheelEvent) {
     e.preventDefault()
@@ -289,6 +333,14 @@ function TreeView({
 
   const svgWidth = 8 + 7 * COL_W + NODE_W + 20
   const allExpanded = collapsed.size === 0
+
+  // Auto-fit initial scale to container width on mount
+  useEffect(() => {
+    const cw = containerRef.current?.clientWidth
+    if (!cw) return
+    const fit = Math.min(1, (cw - MARGIN * 2) / svgWidth)
+    if (fit < 1) setScale(parseFloat(fit.toFixed(2)))
+  }, [svgWidth])
 
   // Re-clamp translation whenever scale or tree height changes
   useEffect(() => {
@@ -325,8 +377,8 @@ function TreeView({
         }}
       >
         <p style={{ fontSize: 12, color: 'var(--app-text-soft)', margin: 0 }}>
-          Cliquez sur un nœud pour voir le détail — le bouton +/− pour étendre
-          ou réduire. Molette pour zoomer, glisser pour naviguer.
+          Appuyez sur un nœud pour voir le détail — le bouton +/− pour étendre
+          ou réduire. Molette ou pincement pour zoomer, glisser pour naviguer.
         </p>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
@@ -678,6 +730,7 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [showExtraColumns, setShowExtraColumns] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -688,6 +741,7 @@ export function TaxonsPage() {
     'all' | 'invasive' | 'non-invasive'
   >('all')
   const [treeMode, setTreeMode] = useState(false)
+  const [mobileRowDetail, setMobileRowDetail] = useState<Taxon | null>(null)
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -936,6 +990,21 @@ export function TaxonsPage() {
             )}
           </button>
 
+          {!treeMode && (
+            <button
+              type="button"
+              onClick={() => setShowExtraColumns((v) => !v)}
+              title={
+                showExtraColumns
+                  ? 'Masquer les colonnes secondaires'
+                  : "Afficher tribu, sous-genre et groupe d'espèce"
+              }
+              className="sm:hidden ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            >
+              {showExtraColumns ? '−' : '+'}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setTreeMode((v) => !v)}
@@ -1173,18 +1242,33 @@ export function TaxonsPage() {
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
-                    <th className="table-head-sticky">Tribu</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Tribu
+                    </th>
                     <th className="table-head-sticky">Genre</th>
-                    <th className="table-head-sticky">Sous-genre</th>
-                    <th className="table-head-sticky">Groupe d'espèce</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Sous-genre
+                    </th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Groupe d'espèce
+                    </th>
                     <th className="table-head-sticky">Espèce</th>
+                    {!showExtraColumns && (
+                      <th className="table-head-sticky sm:hidden" />
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {topSpacerHeight > 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         style={{ height: `${topSpacerHeight}px` }}
                       />
                     </tr>
@@ -1236,7 +1320,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={tribeVal}
                         >
                           {tribeVal}
@@ -1267,7 +1351,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={subgenusVal}
                         >
                           {subgenus && subgenusDetail ? (
@@ -1300,7 +1384,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={speciesGroupVal}
                         >
                           {speciesGroup && speciesGroupDetail ? (
@@ -1355,13 +1439,25 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
+                        {!showExtraColumns && (
+                          <td className="sm:hidden p-2 text-center">
+                            <button
+                              type="button"
+                              aria-label="Voir Tribu, Sous-genre et Groupe d'espèce"
+                              className="rounded-full text-[color:var(--app-text-soft)] hover:text-[color:var(--app-primary)] text-base leading-none px-1"
+                              onClick={() => setMobileRowDetail(taxon)}
+                            >
+                              ⋯
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}
                   {bottomSpacerHeight > 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         style={{ height: `${bottomSpacerHeight}px` }}
                       />
                     </tr>
@@ -1369,7 +1465,7 @@ export function TaxonsPage() {
                   {taxons.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="p-4 text-center text-[color:var(--app-text-soft)]"
                       >
                         Aucun taxon trouvé.
@@ -1597,6 +1693,62 @@ export function TaxonsPage() {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {mobileRowDetail && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:hidden"
+          onClick={() => setMobileRowDetail(null)}
+        >
+          <div
+            role="dialog"
+            aria-label="Détails du taxon"
+            className="w-full rounded-t-2xl bg-[color:var(--app-surface)] p-5 space-y-3 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-[color:var(--app-text)]">
+                {mobileRowDetail.genus ? (
+                  <em>{mobileRowDetail.genus}</em>
+                ) : null}{' '}
+                {mobileRowDetail.species ? (
+                  <em>{mobileRowDetail.species}</em>
+                ) : (
+                  (mobileRowDetail.subfamily ?? '—')
+                )}
+              </p>
+              <button
+                type="button"
+                className="ui-button ui-button--secondary text-sm"
+                onClick={() => setMobileRowDetail(null)}
+              >
+                Fermer
+              </button>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dt className="font-medium text-[color:var(--app-text-soft)]">
+                Tribu
+              </dt>
+              <dd className="text-[color:var(--app-text-muted)]">
+                {mobileRowDetail.tribe || '—'}
+              </dd>
+              <dt className="font-medium text-[color:var(--app-text-soft)]">
+                Sous-genre
+              </dt>
+              <dd className="text-[color:var(--app-text-muted)] italic">
+                {mobileRowDetail.subgenus
+                  ? `(${mobileRowDetail.subgenus})`
+                  : '—'}
+              </dd>
+              <dt className="font-medium text-[color:var(--app-text-soft)]">
+                Groupe d'espèce
+              </dt>
+              <dd className="text-[color:var(--app-text-muted)]">
+                {mobileRowDetail.speciesGroup || '—'}
+              </dd>
+            </dl>
           </div>
         </div>
       )}
