@@ -1,14 +1,6 @@
-import express from 'express'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   recordAdminAudit: vi.fn(),
@@ -20,33 +12,10 @@ vi.mock('../../src/lib/adminAudit.js', () => ({
 }))
 
 import { adminStatsToolsRouter } from '../../src/routes/adminStatsTools.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use('/api/admin/stats-tools', adminStatsToolsRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(
-  async () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((err) => (err ? reject(err) : resolve())),
-    ),
+const { getBaseUrl } = createTestServer(
+  '/api/admin/stats-tools',
+  adminStatsToolsRouter,
 )
 
 beforeEach(() => {
@@ -59,7 +28,7 @@ describe('POST /api/admin/stats-tools/reset', () => {
     prismaMocks.gameSession.deleteMany = vi.fn().mockResolvedValue({ count: 5 })
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
-    const res = await fetch(`${baseUrl}/api/admin/stats-tools/reset`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/stats-tools/reset`, {
       method: 'POST',
     })
 

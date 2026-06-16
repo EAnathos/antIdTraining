@@ -1,13 +1,5 @@
-import express from 'express'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   getGameStats: vi.fn(),
@@ -22,34 +14,8 @@ vi.mock('../../src/services/stats.js', () => ({
 }))
 
 import { statsRouter } from '../../src/routes/stats.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use('/api/stats', statsRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(
-  async () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((err) => (err ? reject(err) : resolve())),
-    ),
-)
+const { getBaseUrl } = createTestServer('/api/stats', statsRouter)
 
 beforeEach(() => {
   mocks.getGameStats.mockReset()
@@ -62,7 +28,7 @@ describe('GET /api/stats/game', () => {
     const data = { period: 'all', levels: [] }
     mocks.getGameStats.mockResolvedValue(data)
 
-    const res = await fetch(`${baseUrl}/api/stats/game`)
+    const res = await fetch(`${getBaseUrl()}/api/stats/game`)
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(data)
     expect(mocks.getGameStats).toHaveBeenCalledWith(undefined)
@@ -70,7 +36,7 @@ describe('GET /api/stats/game', () => {
 
   it('passes period query param', async () => {
     mocks.getGameStats.mockResolvedValue({ period: '7d', levels: [] })
-    await fetch(`${baseUrl}/api/stats/game?period=7d`)
+    await fetch(`${getBaseUrl()}/api/stats/game?period=7d`)
     expect(mocks.getGameStats).toHaveBeenCalledWith('7d')
   })
 })
@@ -80,7 +46,7 @@ describe('GET /api/stats/entries', () => {
     const data = { period: 'all', totalPhotos: 10, postsByTaxon: [] }
     mocks.getEntryStats.mockResolvedValue(data)
 
-    const res = await fetch(`${baseUrl}/api/stats/entries`)
+    const res = await fetch(`${getBaseUrl()}/api/stats/entries`)
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(data)
   })
@@ -91,7 +57,7 @@ describe('GET /api/stats/leaderboard', () => {
     const data = { items: [] }
     mocks.getLeaderboard.mockResolvedValue(data)
 
-    const res = await fetch(`${baseUrl}/api/stats/leaderboard`)
+    const res = await fetch(`${getBaseUrl()}/api/stats/leaderboard`)
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(data)
   })

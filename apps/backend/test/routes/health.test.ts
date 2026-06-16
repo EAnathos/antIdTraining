@@ -1,5 +1,5 @@
-import express from 'express'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   buildServiceHealthReport: vi.fn(),
@@ -17,37 +17,12 @@ vi.mock('../../src/prisma.js', () => ({
 }))
 
 import { healthRouter } from '../../src/routes/health.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use('/health', healthRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(async () => {
-  await new Promise<void>((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()))
-  })
-})
+const { getBaseUrl } = createTestServer('/health', healthRouter)
 
 describe('GET /health', () => {
   it('returns ok: true', async () => {
-    const res = await fetch(`${baseUrl}/health`)
+    const res = await fetch(`${getBaseUrl()}/health`)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
@@ -63,7 +38,7 @@ describe('GET /health/ready', () => {
       redis: 'ok',
     })
 
-    const res = await fetch(`${baseUrl}/health/ready`)
+    const res = await fetch(`${getBaseUrl()}/health/ready`)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
@@ -76,7 +51,7 @@ describe('GET /health/ready', () => {
       redis: 'ok',
     })
 
-    const res = await fetch(`${baseUrl}/health/ready`)
+    const res = await fetch(`${getBaseUrl()}/health/ready`)
     const body = await res.json()
     expect(res.status).toBe(503)
     expect(body.ok).toBe(false)

@@ -1,14 +1,6 @@
-import express from 'express'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   buildUserPointRows: vi.fn(),
@@ -24,34 +16,8 @@ vi.mock('../../src/lib/adminAudit.js', () => ({
 }))
 
 import { adminUsersRouter } from '../../src/routes/adminUsers.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use('/api/admin/users', adminUsersRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(
-  async () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((err) => (err ? reject(err) : resolve())),
-    ),
-)
+const { getBaseUrl } = createTestServer('/api/admin/users', adminUsersRouter)
 
 beforeEach(() => {
   resetSharedMocks()
@@ -66,7 +32,7 @@ describe('GET /api/admin/users', () => {
     ])
     mocks.buildUserPointRows.mockResolvedValue([{ userId: 'u1', points: 300 }])
 
-    const res = await fetch(`${baseUrl}/api/admin/users`)
+    const res = await fetch(`${getBaseUrl()}/api/admin/users`)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toHaveLength(1)
@@ -80,7 +46,7 @@ describe('GET /api/admin/users', () => {
     ])
     mocks.buildUserPointRows.mockResolvedValue([])
 
-    const res = await fetch(`${baseUrl}/api/admin/users`)
+    const res = await fetch(`${getBaseUrl()}/api/admin/users`)
     const body = await res.json()
     expect(body[0].points).toBe(0)
   })
@@ -101,7 +67,7 @@ describe('PUT /api/admin/users/:id/points', () => {
     })
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
-    const res = await fetch(`${baseUrl}/api/admin/users/u1/points`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/users/u1/points`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ points: 500 }),
@@ -113,7 +79,7 @@ describe('PUT /api/admin/users/:id/points', () => {
   })
 
   it('returns 400 for invalid points (negative)', async () => {
-    const res = await fetch(`${baseUrl}/api/admin/users/u1/points`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/users/u1/points`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ points: -1 }),
@@ -124,7 +90,7 @@ describe('PUT /api/admin/users/:id/points', () => {
   it('returns 404 when user not found', async () => {
     prismaMocks.user.findUnique.mockResolvedValue(null)
 
-    const res = await fetch(`${baseUrl}/api/admin/users/unknown/points`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/users/unknown/points`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ points: 100 }),

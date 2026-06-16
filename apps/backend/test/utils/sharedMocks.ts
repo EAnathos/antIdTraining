@@ -30,6 +30,53 @@ export const prismaMocks = {
     update: vi.fn(),
     count: vi.fn(),
   },
+  taxon: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    count: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  taxonLevelProfile: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
+  taxonConfusion: {
+    deleteMany: vi.fn(),
+    createMany: vi.fn(),
+  },
+  reference: {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  entryProposal: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+  suggestion: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    count: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  adminHistoryEvent: {
+    create: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+  },
   $transaction: vi.fn(),
 }
 

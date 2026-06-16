@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
-;(prismaMocks as any).taxon = { findMany: vi.fn() }
 
 import {
   getTaxonCatalog,
@@ -11,7 +10,6 @@ import {
 
 beforeEach(() => {
   resetSharedMocks()
-  ;(prismaMocks as any).taxon.findMany.mockReset()
   invalidateTaxonCatalogCache()
 })
 
@@ -23,7 +21,7 @@ const taxons = [
 
 describe('getTaxonCatalog', () => {
   it('fetches from DB and builds catalog', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue(taxons)
+    prismaMocks.taxon.findMany.mockResolvedValue(taxons)
 
     const result = await getTaxonCatalog()
 
@@ -34,26 +32,26 @@ describe('getTaxonCatalog', () => {
   })
 
   it('returns cached result on second call without hitting DB', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue(taxons)
+    prismaMocks.taxon.findMany.mockResolvedValue(taxons)
 
     await getTaxonCatalog()
     await getTaxonCatalog()
 
-    expect((prismaMocks as any).taxon.findMany).toHaveBeenCalledTimes(1)
+    expect(prismaMocks.taxon.findMany).toHaveBeenCalledTimes(1)
   })
 
   it('refetches after cache invalidation', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue(taxons)
+    prismaMocks.taxon.findMany.mockResolvedValue(taxons)
 
     await getTaxonCatalog()
     invalidateTaxonCatalogCache()
     await getTaxonCatalog()
 
-    expect((prismaMocks as any).taxon.findMany).toHaveBeenCalledTimes(2)
+    expect(prismaMocks.taxon.findMany).toHaveBeenCalledTimes(2)
   })
 
   it('deduplicates subfamilies', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue([
+    prismaMocks.taxon.findMany.mockResolvedValue([
       { subfamily: 'Formicinae', genus: 'Formica', species: 'rufa' },
       { subfamily: 'Formicinae', genus: 'Lasius', species: 'niger' },
     ])

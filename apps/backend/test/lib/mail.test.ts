@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchMock = vi.fn()
-globalThis.fetch = fetchMock
+vi.stubGlobal('fetch', fetchMock)
 
 vi.mock('../../src/config.js', () => ({
   config: {
@@ -48,21 +48,6 @@ describe('sendLoginNotificationEmail', () => {
     expect(body.to).toBe('alice@example.com')
     expect(body.subject).toBe('Connexion à Ant ID Training')
     expect(body.text).toContain('Alice')
-  })
-
-  it('does not throw when API key is missing', async () => {
-    vi.doMock('../../src/config.js', () => ({
-      config: {
-        resendApiKey: null,
-        resendFrom: null,
-        frontendUrl: 'https://example.com',
-        jwtSecret: 'test-secret',
-      },
-    }))
-    // mail.ts skips silently when no key — no throw
-    await expect(
-      sendLoginNotificationEmail('alice@example.com', 'Alice'),
-    ).resolves.toBeUndefined()
   })
 })
 

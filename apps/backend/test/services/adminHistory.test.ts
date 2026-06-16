@@ -8,17 +8,8 @@ import {
   listAdminHistoryEvents,
 } from '../../src/services/adminHistory.js'
 
-// Extend prismaMocks with adminHistoryEvent mock
-const adminHistoryMock = {
-  create: vi.fn(),
-  findMany: vi.fn(),
-}
-;(prismaMocks as any).adminHistoryEvent = adminHistoryMock
-
 beforeEach(() => {
   resetSharedMocks()
-  adminHistoryMock.create.mockReset()
-  adminHistoryMock.findMany.mockReset()
 })
 
 describe('createAdminHistoryEvent', () => {
@@ -34,14 +25,14 @@ describe('createAdminHistoryEvent', () => {
       entityId: null,
       createdAt: new Date(),
     }
-    adminHistoryMock.create.mockResolvedValue(event)
+    prismaMocks.adminHistoryEvent.create.mockResolvedValue(event)
 
     const result = await createAdminHistoryEvent({
       action: 'Test action',
       detail: 'Test detail',
     })
 
-    expect(adminHistoryMock.create).toHaveBeenCalledWith(
+    expect(prismaMocks.adminHistoryEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           action: 'Test action',
@@ -55,7 +46,7 @@ describe('createAdminHistoryEvent', () => {
   })
 
   it('passes explicit tone and actor info', async () => {
-    adminHistoryMock.create.mockResolvedValue({
+    prismaMocks.adminHistoryEvent.create.mockResolvedValue({
       id: 'e2',
       action: 'Delete',
       detail: 'something',
@@ -77,7 +68,7 @@ describe('createAdminHistoryEvent', () => {
       entityId: 'e1',
     })
 
-    expect(adminHistoryMock.create).toHaveBeenCalledWith(
+    expect(prismaMocks.adminHistoryEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           tone: 'ERROR',
@@ -91,7 +82,7 @@ describe('createAdminHistoryEvent', () => {
 
 describe('listAdminHistoryEvents', () => {
   it('returns mapped events in lowercase tone', async () => {
-    adminHistoryMock.findMany.mockResolvedValue([
+    prismaMocks.adminHistoryEvent.findMany.mockResolvedValue([
       {
         id: 'e1',
         action: 'Created',
@@ -114,15 +105,15 @@ describe('listAdminHistoryEvents', () => {
   })
 
   it('clamps limit between 1 and 200', async () => {
-    adminHistoryMock.findMany.mockResolvedValue([])
+    prismaMocks.adminHistoryEvent.findMany.mockResolvedValue([])
 
     await listAdminHistoryEvents(999)
-    expect(adminHistoryMock.findMany).toHaveBeenCalledWith(
+    expect(prismaMocks.adminHistoryEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 200 }),
     )
 
     await listAdminHistoryEvents(0)
-    expect(adminHistoryMock.findMany).toHaveBeenCalledWith(
+    expect(prismaMocks.adminHistoryEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 1 }),
     )
   })

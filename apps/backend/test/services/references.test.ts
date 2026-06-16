@@ -11,23 +11,8 @@ import {
   referenceSchema,
 } from '../../src/services/references.js'
 
-const referenceMock = {
-  findMany: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-}
-const taxonMock = { count: vi.fn() }
-;(prismaMocks as any).reference = referenceMock
-;(prismaMocks as any).taxon = taxonMock
-
 beforeEach(() => {
   resetSharedMocks()
-  referenceMock.findMany.mockReset()
-  referenceMock.create.mockReset()
-  referenceMock.update.mockReset()
-  referenceMock.delete.mockReset()
-  taxonMock.count.mockReset()
 })
 
 const baseRef = {
@@ -99,7 +84,7 @@ describe('referenceSchema', () => {
 
 describe('listReferences', () => {
   it('returns all references ordered', async () => {
-    referenceMock.findMany.mockResolvedValue([baseRef])
+    prismaMocks.reference.findMany.mockResolvedValue([baseRef])
     const result = await listReferences()
     expect(result).toHaveLength(1)
     expect(result[0].title).toBe('Ref Title')
@@ -108,8 +93,8 @@ describe('listReferences', () => {
 
 describe('createReference', () => {
   it('creates reference without taxons', async () => {
-    taxonMock.count.mockResolvedValue(0)
-    referenceMock.create.mockResolvedValue(baseRef)
+    prismaMocks.taxon.count.mockResolvedValue(0)
+    prismaMocks.reference.create.mockResolvedValue(baseRef)
 
     const result = await createReference({
       title: 'Ref Title',
@@ -120,12 +105,12 @@ describe('createReference', () => {
       taxonIds: [],
     })
 
-    expect(referenceMock.create).toHaveBeenCalled()
+    expect(prismaMocks.reference.create).toHaveBeenCalled()
     expect(result.id).toBe('r1')
   })
 
   it('throws 400 when taxon ids are invalid', async () => {
-    taxonMock.count.mockResolvedValue(1)
+    prismaMocks.taxon.count.mockResolvedValue(1)
 
     await expect(
       createReference({
@@ -140,8 +125,8 @@ describe('createReference', () => {
   })
 
   it('connects taxons when provided and valid', async () => {
-    taxonMock.count.mockResolvedValue(1)
-    referenceMock.create.mockResolvedValue(baseRef)
+    prismaMocks.taxon.count.mockResolvedValue(1)
+    prismaMocks.reference.create.mockResolvedValue(baseRef)
 
     await createReference({
       title: 'Ref',
@@ -152,7 +137,7 @@ describe('createReference', () => {
       taxonIds: ['t1'],
     })
 
-    expect(referenceMock.create).toHaveBeenCalledWith(
+    expect(prismaMocks.reference.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           taxons: { connect: [{ id: 't1' }] },
@@ -164,8 +149,8 @@ describe('createReference', () => {
 
 describe('updateReference', () => {
   it('updates reference', async () => {
-    taxonMock.count.mockResolvedValue(0)
-    referenceMock.update.mockResolvedValue(baseRef)
+    prismaMocks.taxon.count.mockResolvedValue(0)
+    prismaMocks.reference.update.mockResolvedValue(baseRef)
 
     const result = await updateReference('r1', {
       title: 'Updated',
@@ -176,7 +161,7 @@ describe('updateReference', () => {
       taxonIds: [],
     })
 
-    expect(referenceMock.update).toHaveBeenCalledWith(
+    expect(prismaMocks.reference.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'r1' } }),
     )
     expect(result.id).toBe('r1')
@@ -185,9 +170,11 @@ describe('updateReference', () => {
 
 describe('deleteReference', () => {
   it('deletes reference by id', async () => {
-    referenceMock.delete.mockResolvedValue(baseRef)
+    prismaMocks.reference.delete.mockResolvedValue(baseRef)
     const result = await deleteReference('r1')
-    expect(referenceMock.delete).toHaveBeenCalledWith({ where: { id: 'r1' } })
+    expect(prismaMocks.reference.delete).toHaveBeenCalledWith({
+      where: { id: 'r1' },
+    })
     expect(result.id).toBe('r1')
   })
 })

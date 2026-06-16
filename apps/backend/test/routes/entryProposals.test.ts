@@ -1,14 +1,7 @@
 import express from 'express'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   decryptSensitiveText: vi.fn((v: string) => v),
@@ -62,83 +55,46 @@ vi.mock('sharp', () => ({
   })),
 }))
 
-const entryProposalMock = {
-  findMany: vi.fn(),
-  findUnique: vi.fn(),
-  count: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-}
-const suggestionMock = { findMany: vi.fn(), count: vi.fn() }
-;(prismaMocks as any).entryProposal = entryProposalMock
-;(prismaMocks as any).suggestion = suggestionMock
-
 import { entryProposalsRouter } from '../../src/routes/entryProposals.js'
 import { optionalAuth } from '../../src/middleware/auth.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
+const { getBaseUrl } = createTestServer(
+  '/api/entry-proposals',
+  entryProposalsRouter,
+  [optionalAuth as express.RequestHandler],
+)
 
 function authHeader(role: 'USER' | 'ADMIN' = 'USER') {
-  return {
-    'x-test-user': JSON.stringify({ userId: 'user-1', role }),
-  }
+  return { 'x-test-user': JSON.stringify({ userId: 'user-1', role }) }
 }
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use(optionalAuth)
-  app.use('/api/entry-proposals', entryProposalsRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(
-  async () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((err) => (err ? reject(err) : resolve())),
-    ),
-)
 
 beforeEach(() => {
   resetSharedMocks()
-  entryProposalMock.findMany.mockReset()
-  entryProposalMock.findUnique.mockReset()
-  entryProposalMock.count.mockReset()
-  entryProposalMock.create.mockReset()
-  suggestionMock.findMany.mockReset()
-  suggestionMock.count.mockReset()
   mocks.recordAdminAudit.mockReset()
 })
 
 describe('GET /api/entry-proposals/my-contributions', () => {
   it('returns 401 when not authenticated', async () => {
-    const res = await fetch(`${baseUrl}/api/entry-proposals/my-contributions`)
+    const res = await fetch(
+      `${getBaseUrl()}/api/entry-proposals/my-contributions`,
+    )
     expect(res.status).toBe(401)
   })
 
   it('returns proposals and suggestions for authenticated user', async () => {
-    entryProposalMock.findMany.mockResolvedValue([
+    prismaMocks.entryProposal.findMany.mockResolvedValue([
       { id: 'p1', photoCredit: 'Alice', images: [] },
     ])
-    suggestionMock.findMany.mockResolvedValue([
+    prismaMocks.suggestion.findMany.mockResolvedValue([
       { id: 's1', name: null, email: null, message: 'test' },
     ])
 
-    const res = await fetch(`${baseUrl}/api/entry-proposals/my-contributions`, {
-      headers: authHeader(),
-    })
+    const res = await fetch(
+      `${getBaseUrl()}/api/entry-proposals/my-contributions`,
+      {
+        headers: authHeader(),
+      },
+    )
 
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -149,15 +105,15 @@ describe('GET /api/entry-proposals/my-contributions', () => {
 
 describe('GET /api/entry-proposals/user-counts', () => {
   it('returns 401 when not authenticated', async () => {
-    const res = await fetch(`${baseUrl}/api/entry-proposals/user-counts`)
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/user-counts`)
     expect(res.status).toBe(401)
   })
 
   it('returns counts and limits', async () => {
-    entryProposalMock.count.mockResolvedValue(3)
-    suggestionMock.count.mockResolvedValue(1)
+    prismaMocks.entryProposal.count.mockResolvedValue(3)
+    prismaMocks.suggestion.count.mockResolvedValue(1)
 
-    const res = await fetch(`${baseUrl}/api/entry-proposals/user-counts`, {
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/user-counts`, {
       headers: authHeader(),
     })
 
@@ -172,10 +128,10 @@ describe('GET /api/entry-proposals/user-counts', () => {
   })
 
   it('sets canPropose to false when at limit', async () => {
-    entryProposalMock.count.mockResolvedValue(20)
-    suggestionMock.count.mockResolvedValue(0)
+    prismaMocks.entryProposal.count.mockResolvedValue(20)
+    prismaMocks.suggestion.count.mockResolvedValue(0)
 
-    const res = await fetch(`${baseUrl}/api/entry-proposals/user-counts`, {
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/user-counts`, {
       headers: authHeader(),
     })
 

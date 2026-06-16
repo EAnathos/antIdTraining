@@ -3,9 +3,6 @@ import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
 
-const taxonLevelProfileMock = { findMany: vi.fn() }
-;(prismaMocks as any).taxonLevelProfile = taxonLevelProfileMock
-
 import {
   getTaxonLevelProfile,
   getTaxonLevelProfileCache,
@@ -15,7 +12,6 @@ import {
 
 beforeEach(() => {
   resetSharedMocks()
-  taxonLevelProfileMock.findMany.mockReset()
   invalidateTaxonLevelProfileCache()
 })
 
@@ -44,7 +40,7 @@ const sampleProfiles = [
 
 describe('getTaxonLevelProfileCache', () => {
   it('builds a Map keyed by level:value:genus', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     const profiles = await getTaxonLevelProfileCache()
 
@@ -54,28 +50,28 @@ describe('getTaxonLevelProfileCache', () => {
   })
 
   it('caches results on second call', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     await getTaxonLevelProfileCache()
     await getTaxonLevelProfileCache()
 
-    expect(taxonLevelProfileMock.findMany).toHaveBeenCalledTimes(1)
+    expect(prismaMocks.taxonLevelProfile.findMany).toHaveBeenCalledTimes(1)
   })
 
   it('refetches after invalidation', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     await getTaxonLevelProfileCache()
     invalidateTaxonLevelProfileCache()
     await getTaxonLevelProfileCache()
 
-    expect(taxonLevelProfileMock.findMany).toHaveBeenCalledTimes(2)
+    expect(prismaMocks.taxonLevelProfile.findMany).toHaveBeenCalledTimes(2)
   })
 })
 
 describe('getTaxonLevelProfile', () => {
   it('returns profile by level/value/genus', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     const profile = await getTaxonLevelProfile('SPECIES', 'rufa', 'Formica')
 
@@ -84,7 +80,7 @@ describe('getTaxonLevelProfile', () => {
   })
 
   it('returns null for unknown profile', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     const profile = await getTaxonLevelProfile('SPECIES', 'unknown', null)
 
@@ -94,7 +90,7 @@ describe('getTaxonLevelProfile', () => {
 
 describe('resolveTaxonWorkerSize', () => {
   it('returns species worker size when species+genus match', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue(sampleProfiles)
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue(sampleProfiles)
 
     const size = await resolveTaxonWorkerSize({
       species: 'rufa',
@@ -106,7 +102,9 @@ describe('resolveTaxonWorkerSize', () => {
   })
 
   it('falls back to genus size when species profile missing', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue([sampleProfiles[1]])
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue([
+      sampleProfiles[1],
+    ])
 
     const size = await resolveTaxonWorkerSize({
       species: 'unknown',
@@ -118,7 +116,7 @@ describe('resolveTaxonWorkerSize', () => {
   })
 
   it('returns null when no matching profile at any level', async () => {
-    taxonLevelProfileMock.findMany.mockResolvedValue([])
+    prismaMocks.taxonLevelProfile.findMany.mockResolvedValue([])
 
     const size = await resolveTaxonWorkerSize({
       subfamily: 'Unknowninae',

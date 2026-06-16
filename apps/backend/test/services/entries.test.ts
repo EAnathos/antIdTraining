@@ -8,9 +8,6 @@ vi.mock('../../src/lib/taxonSizes.js', () => ({
 
 import { resolveEntryTaxonSelection } from '../../src/services/entries.js'
 
-const taxonMock = { findFirst: vi.fn() }
-;(prismaMocks as any).taxon = taxonMock
-
 const baseInput = {
   taxonLevel: 'GENUS' as const,
   taxonValue: 'Formica',
@@ -22,12 +19,11 @@ const baseInput = {
 
 beforeEach(() => {
   resetSharedMocks()
-  taxonMock.findFirst.mockReset()
 })
 
 describe('resolveEntryTaxonSelection — SUBFAMILY', () => {
   it('returns null when subfamily not found', async () => {
-    taxonMock.findFirst.mockResolvedValue(null)
+    prismaMocks.taxon.findFirst.mockResolvedValue(null)
 
     const result = await resolveEntryTaxonSelection({
       ...baseInput,
@@ -39,7 +35,7 @@ describe('resolveEntryTaxonSelection — SUBFAMILY', () => {
   })
 
   it('resolves subfamily taxon', async () => {
-    taxonMock.findFirst.mockResolvedValue({
+    prismaMocks.taxon.findFirst.mockResolvedValue({
       id: 't1',
       subfamily: 'Formicinae',
       genus: 'Formica',
@@ -64,7 +60,7 @@ describe('resolveEntryTaxonSelection — SUBFAMILY', () => {
 
 describe('resolveEntryTaxonSelection — GENUS', () => {
   it('returns null when genus not found', async () => {
-    taxonMock.findFirst.mockResolvedValue(null)
+    prismaMocks.taxon.findFirst.mockResolvedValue(null)
 
     const result = await resolveEntryTaxonSelection({
       ...baseInput,
@@ -76,7 +72,7 @@ describe('resolveEntryTaxonSelection — GENUS', () => {
   })
 
   it('resolves genus taxon', async () => {
-    taxonMock.findFirst.mockResolvedValue({
+    prismaMocks.taxon.findFirst.mockResolvedValue({
       id: 't2',
       subfamily: 'Formicinae',
       genus: 'Formica',
@@ -110,7 +106,7 @@ describe('resolveEntryTaxonSelection — SPECIES', () => {
   })
 
   it('returns null when species not found in DB', async () => {
-    taxonMock.findFirst.mockResolvedValue(null)
+    prismaMocks.taxon.findFirst.mockResolvedValue(null)
 
     const result = await resolveEntryTaxonSelection({
       ...baseInput,
@@ -122,7 +118,7 @@ describe('resolveEntryTaxonSelection — SPECIES', () => {
   })
 
   it('resolves species taxon by "Genus species" value', async () => {
-    taxonMock.findFirst.mockResolvedValue({
+    prismaMocks.taxon.findFirst.mockResolvedValue({
       id: 't3',
       subfamily: 'Formicinae',
       genus: 'Formica',
@@ -144,7 +140,7 @@ describe('resolveEntryTaxonSelection — SPECIES', () => {
   })
 
   it('uses explicit taxonGenus when provided', async () => {
-    taxonMock.findFirst.mockResolvedValue({
+    prismaMocks.taxon.findFirst.mockResolvedValue({
       id: 't4',
       subfamily: 'Formicinae',
       genus: 'Formica',

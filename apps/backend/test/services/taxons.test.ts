@@ -23,24 +23,6 @@ vi.mock('../../src/lib/gameEntryCache.js', () => ({
 vi.mock('../../src/lib/taxonSizes.js', () => ({
   buildTaxonSizeMaps: mocks.buildTaxonSizeMaps,
 }))
-;(prismaMocks as any).taxon = {
-  findMany: vi.fn(),
-  findUnique: vi.fn(),
-  findFirst: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-}
-;(prismaMocks as any).taxonLevelProfile = {
-  findUnique: vi.fn(),
-  findFirst: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-}
-;(prismaMocks as any).taxonConfusion = {
-  deleteMany: vi.fn(),
-  createMany: vi.fn(),
-}
 
 import {
   listSubfamilies,
@@ -54,18 +36,6 @@ import {
 
 beforeEach(() => {
   resetSharedMocks()
-  ;(prismaMocks as any).taxon.findMany.mockReset()
-  ;(prismaMocks as any).taxon.findUnique.mockReset()
-  ;(prismaMocks as any).taxon.findFirst.mockReset()
-  ;(prismaMocks as any).taxon.create.mockReset()
-  ;(prismaMocks as any).taxon.update.mockReset()
-  ;(prismaMocks as any).taxon.delete.mockReset()
-  ;(prismaMocks as any).taxonLevelProfile.findUnique.mockReset()
-  ;(prismaMocks as any).taxonLevelProfile.findFirst.mockReset()
-  ;(prismaMocks as any).taxonLevelProfile.create.mockReset()
-  ;(prismaMocks as any).taxonLevelProfile.update.mockReset()
-  ;(prismaMocks as any).taxonConfusion.deleteMany.mockReset()
-  ;(prismaMocks as any).taxonConfusion.createMany.mockReset()
   mocks.getTaxonCatalog.mockReset()
   mocks.invalidateTaxonCatalogCache.mockReset()
   mocks.invalidateTaxonLevelProfileCache.mockReset()
@@ -89,7 +59,7 @@ describe('listGenera', () => {
   })
 
   it('returns distinct genera for a given subfamily', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue([
+    prismaMocks.taxon.findMany.mockResolvedValue([
       { genus: 'Formica' },
       { genus: 'Lasius' },
     ])
@@ -105,7 +75,7 @@ describe('listSpecies', () => {
   })
 
   it('returns species strings for a given genus', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue([
+    prismaMocks.taxon.findMany.mockResolvedValue([
       { species: 'rufa' },
       { species: 'polyctena' },
     ])
@@ -121,7 +91,7 @@ describe('listSubgenera', () => {
   })
 
   it('returns subgenera for a genus', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue([
+    prismaMocks.taxon.findMany.mockResolvedValue([
       { subgenus: 'Serviformica' },
       { subgenus: null },
     ])
@@ -137,7 +107,7 @@ describe('listSpeciesGroups', () => {
   })
 
   it('returns non-null species groups', async () => {
-    ;(prismaMocks as any).taxon.findMany.mockResolvedValue([
+    prismaMocks.taxon.findMany.mockResolvedValue([
       { speciesGroup: 'rufa' },
       { speciesGroup: null },
     ])
@@ -161,7 +131,7 @@ describe('getSpeciesMetadata', () => {
   })
 
   it('returns subgenus and speciesGroup from matched taxon', async () => {
-    ;(prismaMocks as any).taxon.findFirst.mockResolvedValue({
+    prismaMocks.taxon.findFirst.mockResolvedValue({
       subgenus: 'Serviformica',
       speciesGroup: 'rufa',
     })
@@ -171,7 +141,7 @@ describe('getSpeciesMetadata', () => {
   })
 
   it('returns nulls when no match found', async () => {
-    ;(prismaMocks as any).taxon.findFirst.mockResolvedValue(null)
+    prismaMocks.taxon.findFirst.mockResolvedValue(null)
 
     const result = await getSpeciesMetadata('Formica', 'unknown')
     expect(result).toEqual({ subgenus: null, speciesGroup: null })
@@ -180,11 +150,11 @@ describe('getSpeciesMetadata', () => {
 
 describe('deleteTaxon', () => {
   it('deletes taxon and invalidates caches', async () => {
-    ;(prismaMocks as any).taxon.delete.mockResolvedValue({ id: 't1' })
+    prismaMocks.taxon.delete.mockResolvedValue({ id: 't1' })
 
     const result = await deleteTaxon('t1')
 
-    expect((prismaMocks as any).taxon.delete).toHaveBeenCalledWith({
+    expect(prismaMocks.taxon.delete).toHaveBeenCalledWith({
       where: { id: 't1' },
     })
     expect(result).toEqual({ id: 't1' })

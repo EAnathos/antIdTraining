@@ -1,14 +1,6 @@
-import express from 'express'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prismaMocks, resetSharedMocks } from '../utils/sharedMocks'
+import { createTestServer } from '../utils/testServer.js'
 
 const mocks = vi.hoisted(() => ({
   decryptSensitiveText: vi.fn((v: string) => v),
@@ -27,50 +19,15 @@ vi.mock('../../src/lib/gameEntryCache.js', () => ({
   invalidateGameEntryCacheSafely: mocks.invalidateGameEntryCacheSafely,
 }))
 
-const entryProposalMock = {
-  findMany: vi.fn(),
-  findUnique: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-}
-;(prismaMocks as any).entryProposal = entryProposalMock
-
 import { adminProposalsRouter } from '../../src/routes/adminProposals.js'
-import { errorHandler } from '../../src/middleware/error.js'
 
-let server: ReturnType<express.Express['listen']>
-let baseUrl = ''
-
-beforeAll(async () => {
-  const app = express()
-  app.use(express.json())
-  app.use('/api/admin/proposals', adminProposalsRouter)
-  app.use(errorHandler)
-
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address()
-      if (address && typeof address === 'object') {
-        baseUrl = `http://127.0.0.1:${address.port}`
-      }
-      resolve()
-    })
-  })
-})
-
-afterAll(
-  async () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((err) => (err ? reject(err) : resolve())),
-    ),
+const { getBaseUrl } = createTestServer(
+  '/api/admin/proposals',
+  adminProposalsRouter,
 )
 
 beforeEach(() => {
   resetSharedMocks()
-  entryProposalMock.findMany.mockReset()
-  entryProposalMock.findUnique.mockReset()
-  entryProposalMock.update.mockReset()
-  entryProposalMock.delete.mockReset()
   mocks.recordAdminAudit.mockReset()
   mocks.invalidateGameEntryCacheSafely.mockReset()
 })
@@ -101,20 +58,20 @@ const baseProposal = {
 
 describe('GET /api/admin/proposals', () => {
   it('returns all proposals', async () => {
-    entryProposalMock.findMany.mockResolvedValue([baseProposal])
+    prismaMocks.entryProposal.findMany.mockResolvedValue([baseProposal])
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals`)
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals`)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toHaveLength(1)
   })
 
   it('filters by status when provided', async () => {
-    entryProposalMock.findMany.mockResolvedValue([])
+    prismaMocks.entryProposal.findMany.mockResolvedValue([])
 
-    await fetch(`${baseUrl}/api/admin/proposals?status=PENDING`)
+    await fetch(`${getBaseUrl()}/api/admin/proposals?status=PENDING`)
 
-    expect(entryProposalMock.findMany).toHaveBeenCalledWith(
+    expect(prismaMocks.entryProposal.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ status: 'PENDING' }),
       }),
@@ -122,11 +79,11 @@ describe('GET /api/admin/proposals', () => {
   })
 
   it('filters by userId when provided', async () => {
-    entryProposalMock.findMany.mockResolvedValue([])
+    prismaMocks.entryProposal.findMany.mockResolvedValue([])
 
-    await fetch(`${baseUrl}/api/admin/proposals?userId=u1`)
+    await fetch(`${getBaseUrl()}/api/admin/proposals?userId=u1`)
 
-    expect(entryProposalMock.findMany).toHaveBeenCalledWith(
+    expect(prismaMocks.entryProposal.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ userId: 'u1' }),
       }),
@@ -136,9 +93,9 @@ describe('GET /api/admin/proposals', () => {
 
 describe('PUT /api/admin/proposals/:id — reject', () => {
   it('returns 404 when proposal not found', async () => {
-    entryProposalMock.findUnique.mockResolvedValue(null)
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(null)
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ decision: 'REJECT' }),
@@ -147,14 +104,14 @@ describe('PUT /api/admin/proposals/:id — reject', () => {
   })
 
   it('rejects proposal and returns REJECTED status', async () => {
-    entryProposalMock.findUnique.mockResolvedValue(baseProposal)
-    entryProposalMock.update.mockResolvedValue({
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(baseProposal)
+    prismaMocks.entryProposal.update.mockResolvedValue({
       ...baseProposal,
       status: 'REJECTED',
     })
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -166,7 +123,7 @@ describe('PUT /api/admin/proposals/:id — reject', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.status).toBe('REJECTED')
-    expect(entryProposalMock.update).toHaveBeenCalledWith(
+    expect(prismaMocks.entryProposal.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'p1' },
         data: expect.objectContaining({
@@ -178,7 +135,7 @@ describe('PUT /api/admin/proposals/:id — reject', () => {
   })
 
   it('returns 400 for invalid decision', async () => {
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ decision: 'MAYBE' }),
@@ -189,19 +146,19 @@ describe('PUT /api/admin/proposals/:id — reject', () => {
 
 describe('PUT /api/admin/proposals/:id — accept', () => {
   it('accepts proposal, creates entry, invalidates cache', async () => {
-    entryProposalMock.findUnique.mockResolvedValue(baseProposal)
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(baseProposal)
     prismaMocks.observationEntry.create.mockResolvedValue({
       ...baseProposal,
       id: 'entry-1',
       images: [],
     })
-    entryProposalMock.update.mockResolvedValue({
+    prismaMocks.entryProposal.update.mockResolvedValue({
       ...baseProposal,
       status: 'ACCEPTED',
     })
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ decision: 'ACCEPT' }),
@@ -217,39 +174,39 @@ describe('PUT /api/admin/proposals/:id — accept', () => {
 
 describe('DELETE /api/admin/proposals/:id', () => {
   it('returns 404 when not found', async () => {
-    entryProposalMock.findUnique.mockResolvedValue(null)
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(null)
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'DELETE',
     })
     expect(res.status).toBe(404)
   })
 
   it('returns 400 when proposal is still PENDING', async () => {
-    entryProposalMock.findUnique.mockResolvedValue({
+    prismaMocks.entryProposal.findUnique.mockResolvedValue({
       ...baseProposal,
       status: 'PENDING',
     })
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'DELETE',
     })
     expect(res.status).toBe(400)
   })
 
   it('deletes a REJECTED proposal and returns 204', async () => {
-    entryProposalMock.findUnique.mockResolvedValue({
+    prismaMocks.entryProposal.findUnique.mockResolvedValue({
       ...baseProposal,
       status: 'REJECTED',
     })
-    entryProposalMock.delete.mockResolvedValue(undefined)
+    prismaMocks.entryProposal.delete.mockResolvedValue(undefined)
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
-    const res = await fetch(`${baseUrl}/api/admin/proposals/p1`, {
+    const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'DELETE',
     })
     expect(res.status).toBe(204)
-    expect(entryProposalMock.delete).toHaveBeenCalledWith({
+    expect(prismaMocks.entryProposal.delete).toHaveBeenCalledWith({
       where: { id: 'p1' },
     })
   })
