@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const apiMocks = vi.hoisted(() => ({
@@ -540,29 +534,6 @@ describe('TaxonsPage', () => {
         (_, element) => element?.textContent === 'Espèce : rufibarbis',
       ),
     ).toBeInTheDocument()
-  })
-
-  it('opens mobile secondary detail modal with tribe, subgenus and species group', async () => {
-    render(<TaxonsPage />)
-
-    await screen.findByText('Taxons enregistrés')
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: "Voir Tribu, Sous-genre et Groupe d'espèce",
-      }),
-    )
-
-    const dialog = screen.getByRole('dialog', { name: 'Détails du taxon' })
-    expect(within(dialog).getByText('Lasiini')).toBeInTheDocument()
-    expect(within(dialog).getByText('(Serviformica)')).toBeInTheDocument()
-    expect(within(dialog).getByText('rufibarbis group')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
-
-    expect(
-      screen.queryByRole('dialog', { name: 'Détails du taxon' }),
-    ).not.toBeInTheDocument()
   })
 
   it('shows empty state when no taxons are returned', async () => {

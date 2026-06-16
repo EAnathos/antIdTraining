@@ -477,7 +477,7 @@ function TreeView({
         style={{
           width: '100%',
           height: Math.min(svgHeight + 20, 540),
-          overflow: 'hidden',
+          overflow: 'clip',
           touchAction: 'none',
           cursor: 'grab',
         }}
@@ -741,7 +741,7 @@ export function TaxonsPage() {
     'all' | 'invasive' | 'non-invasive'
   >('all')
   const [treeMode, setTreeMode] = useState(false)
-  const [mobileRowDetail, setMobileRowDetail] = useState<Taxon | null>(null)
+
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -1259,16 +1259,13 @@ export function TaxonsPage() {
                       Groupe d'espèce
                     </th>
                     <th className="table-head-sticky">Espèce</th>
-                    {!showExtraColumns && (
-                      <th className="table-head-sticky sm:hidden" />
-                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {topSpacerHeight > 0 && (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={6}
                         style={{ height: `${topSpacerHeight}px` }}
                       />
                     </tr>
@@ -1439,25 +1436,13 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        {!showExtraColumns && (
-                          <td className="sm:hidden p-2 text-center">
-                            <button
-                              type="button"
-                              aria-label="Voir Tribu, Sous-genre et Groupe d'espèce"
-                              className="rounded-full text-[color:var(--app-text-soft)] hover:text-[color:var(--app-primary)] text-base leading-none px-1"
-                              onClick={() => setMobileRowDetail(taxon)}
-                            >
-                              ⋯
-                            </button>
-                          </td>
-                        )}
                       </tr>
                     )
                   })}
                   {bottomSpacerHeight > 0 && (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={6}
                         style={{ height: `${bottomSpacerHeight}px` }}
                       />
                     </tr>
@@ -1465,7 +1450,7 @@ export function TaxonsPage() {
                   {taxons.length === 0 && (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={6}
                         className="p-4 text-center text-[color:var(--app-text-soft)]"
                       >
                         Aucun taxon trouvé.
@@ -1693,62 +1678,6 @@ export function TaxonsPage() {
                 </>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {mobileRowDetail && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:hidden"
-          onClick={() => setMobileRowDetail(null)}
-        >
-          <div
-            role="dialog"
-            aria-label="Détails du taxon"
-            className="w-full rounded-t-2xl bg-[color:var(--app-surface)] p-5 space-y-3 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-[color:var(--app-text)]">
-                {mobileRowDetail.genus ? (
-                  <em>{mobileRowDetail.genus}</em>
-                ) : null}{' '}
-                {mobileRowDetail.species ? (
-                  <em>{mobileRowDetail.species}</em>
-                ) : (
-                  (mobileRowDetail.subfamily ?? '—')
-                )}
-              </p>
-              <button
-                type="button"
-                className="ui-button ui-button--secondary text-sm"
-                onClick={() => setMobileRowDetail(null)}
-              >
-                Fermer
-              </button>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="font-medium text-[color:var(--app-text-soft)]">
-                Tribu
-              </dt>
-              <dd className="text-[color:var(--app-text-muted)]">
-                {mobileRowDetail.tribe || '—'}
-              </dd>
-              <dt className="font-medium text-[color:var(--app-text-soft)]">
-                Sous-genre
-              </dt>
-              <dd className="text-[color:var(--app-text-muted)] italic">
-                {mobileRowDetail.subgenus
-                  ? `(${mobileRowDetail.subgenus})`
-                  : '—'}
-              </dd>
-              <dt className="font-medium text-[color:var(--app-text-soft)]">
-                Groupe d'espèce
-              </dt>
-              <dd className="text-[color:var(--app-text-muted)]">
-                {mobileRowDetail.speciesGroup || '—'}
-              </dd>
-            </dl>
           </div>
         </div>
       )}
