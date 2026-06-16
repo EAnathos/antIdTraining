@@ -77,7 +77,6 @@ export function AuthPage() {
   return (
     <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-6 p-6">
       <div className="space-y-2">
-        <span className="ui-chip ui-chip--accent">Compte joueur</span>
         <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
           Connexion
         </h2>

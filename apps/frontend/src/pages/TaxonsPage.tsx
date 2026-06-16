@@ -163,8 +163,6 @@ function TreeView({
   const activePointers = useRef<Map<number, { x: number; y: number }>>(
     new Map(),
   )
-  const pinchStartDist = useRef<number | null>(null)
-  const pinchStartScale = useRef<number>(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const MARGIN = 16
 
@@ -266,37 +264,14 @@ function TreeView({
       dragging.current = true
       hasDragged.current = false
       lastPos.current = { x: e.clientX, y: e.clientY }
-    } else if (activePointers.current.size === 2) {
+    } else {
       dragging.current = false
-      const pts = [...activePointers.current.values()]
-      const dx = pts[1].x - pts[0].x
-      const dy = pts[1].y - pts[0].y
-      pinchStartDist.current = Math.hypot(dx, dy)
-      pinchStartScale.current = scale
     }
   }
   function onPointerMove(e: React.PointerEvent) {
     activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     const cw = containerRef.current?.clientWidth ?? 400
     const ch = containerRef.current?.clientHeight ?? 400
-
-    if (activePointers.current.size === 2) {
-      const pts = [...activePointers.current.values()]
-      const dx = pts[1].x - pts[0].x
-      const dy = pts[1].y - pts[0].y
-      const dist = Math.hypot(dx, dy)
-      if (pinchStartDist.current !== null && pinchStartDist.current > 0) {
-        const nextScale = Math.max(
-          0.2,
-          Math.min(
-            3,
-            pinchStartScale.current * (dist / pinchStartDist.current),
-          ),
-        )
-        setScale(nextScale)
-      }
-      return
-    }
 
     if (!dragging.current || !lastPos.current) return
     const dx = e.clientX - lastPos.current.x
@@ -317,9 +292,7 @@ function TreeView({
     if (activePointers.current.size === 0) {
       dragging.current = false
       lastPos.current = null
-      pinchStartDist.current = null
     } else if (activePointers.current.size === 1) {
-      pinchStartDist.current = null
       dragging.current = true
       const remaining = [...activePointers.current.values()][0]
       lastPos.current = { x: remaining.x, y: remaining.y }
@@ -963,7 +936,9 @@ export function TaxonsPage() {
   )
 
   return (
-    <section className="surface-panel surface-panel--solid p-6">
+    <section
+      className={`surface-panel surface-panel--solid p-6${treeMode ? ' overflow-hidden' : ''}`}
+    >
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
