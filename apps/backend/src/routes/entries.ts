@@ -13,6 +13,7 @@ import { AppError } from '../lib/errors.js'
 import {
   deleteUploadFilesForImageUrl,
   ensureUploadsDir,
+  ENTRY_RESPONSIVE_IMAGE_WIDTHS,
   resolveUploadFilePath,
 } from '../lib/imageFiles.js'
 import {
@@ -32,7 +33,6 @@ function publicEntry<T extends { photoCredit: string }>(entry: T): T {
   }
 }
 
-const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 const VALID_IMAGE_MIMETYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -135,7 +135,7 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
       throw new AppError(400, 'Image trop grande (maximum 8000x8000 px).')
     }
 
-    for (const width of RESPONSIVE_IMAGE_WIDTHS) {
+    for (const width of ENTRY_RESPONSIVE_IMAGE_WIDTHS) {
       const outputFileName =
         width === 1600 ? baseFileName : `${fileId}-${width}.webp`
       const outputPath = resolveUploadFilePath(outputFileName)

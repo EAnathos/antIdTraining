@@ -91,10 +91,13 @@ function createApiClient(
 
     let response: Response
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30_000)
       response = await fetch(fullUrl.toString(), {
         method,
         credentials: 'include',
         headers,
+        signal: controller.signal,
         body:
           body && !(body instanceof FormData)
             ? JSON.stringify(body)
@@ -102,6 +105,7 @@ function createApiClient(
               ? body
               : undefined,
       })
+      clearTimeout(timeoutId)
     } catch {
       const networkError = new Error(
         'Réseau indisponible ou serveur injoignable.',
