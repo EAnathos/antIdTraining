@@ -327,7 +327,7 @@ export function GamePage() {
         </span>
       </div>
 
-      <div className="grid gap-2 md:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-3">
         <button
           className={`rounded-xl border p-3 text-left transition-colors ${level === 'easy' ? 'border-[color:var(--app-primary)] bg-[color:var(--app-primary-soft)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface)]'}`}
           onClick={() => handleLevelChange('easy')}

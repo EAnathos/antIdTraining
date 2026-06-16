@@ -1,4 +1,8 @@
 @layer base {
+  html {
+    overflow-x: clip;
+  }
+
   :root {
     color-scheme: light;
     --app-bg: #f6f7fb;

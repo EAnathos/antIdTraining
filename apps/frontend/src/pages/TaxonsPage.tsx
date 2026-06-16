@@ -160,6 +160,9 @@ function TreeView({
   const dragging = useRef(false)
   const hasDragged = useRef(false)
   const lastPos = useRef<{ x: number; y: number } | null>(null)
+  const activePointers = useRef<Map<number, { x: number; y: number }>>(
+    new Map(),
+  )
   const containerRef = useRef<HTMLDivElement>(null)
   const MARGIN = 16
 
@@ -255,18 +258,25 @@ function TreeView({
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    dragging.current = true
-    hasDragged.current = false
     ;(e.target as Element).setPointerCapture(e.pointerId)
-    lastPos.current = { x: e.clientX, y: e.clientY }
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (activePointers.current.size === 1) {
+      dragging.current = true
+      hasDragged.current = false
+      lastPos.current = { x: e.clientX, y: e.clientY }
+    } else {
+      dragging.current = false
+    }
   }
   function onPointerMove(e: React.PointerEvent) {
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const cw = containerRef.current?.clientWidth ?? 400
+    const ch = containerRef.current?.clientHeight ?? 400
+
     if (!dragging.current || !lastPos.current) return
     const dx = e.clientX - lastPos.current.x
     const dy = e.clientY - lastPos.current.y
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true
-    const cw = containerRef.current?.clientWidth ?? 400
-    const ch = containerRef.current?.clientHeight ?? 400
     const sw = svgWidth * scale
     const sh = svgHeight * scale
     setTx((v) =>
@@ -277,9 +287,16 @@ function TreeView({
     )
     lastPos.current = { x: e.clientX, y: e.clientY }
   }
-  function onPointerUp() {
-    dragging.current = false
-    lastPos.current = null
+  function onPointerUp(e: React.PointerEvent) {
+    activePointers.current.delete(e.pointerId)
+    if (activePointers.current.size === 0) {
+      dragging.current = false
+      lastPos.current = null
+    } else if (activePointers.current.size === 1) {
+      dragging.current = true
+      const remaining = [...activePointers.current.values()][0]
+      lastPos.current = { x: remaining.x, y: remaining.y }
+    }
   }
   function onWheel(e: React.WheelEvent) {
     e.preventDefault()
@@ -289,6 +306,14 @@ function TreeView({
 
   const svgWidth = 8 + 7 * COL_W + NODE_W + 20
   const allExpanded = collapsed.size === 0
+
+  // Auto-fit initial scale to container width on mount
+  useEffect(() => {
+    const cw = containerRef.current?.clientWidth
+    if (!cw) return
+    const fit = Math.min(1, (cw - MARGIN * 2) / svgWidth)
+    if (fit < 1) setScale(parseFloat(fit.toFixed(2)))
+  }, [svgWidth])
 
   // Re-clamp translation whenever scale or tree height changes
   useEffect(() => {
@@ -325,8 +350,8 @@ function TreeView({
         }}
       >
         <p style={{ fontSize: 12, color: 'var(--app-text-soft)', margin: 0 }}>
-          Cliquez sur un nœud pour voir le détail — le bouton +/− pour étendre
-          ou réduire. Molette pour zoomer, glisser pour naviguer.
+          Appuyez sur un nœud pour voir le détail — le bouton +/− pour étendre
+          ou réduire. Molette ou pincement pour zoomer, glisser pour naviguer.
         </p>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
@@ -425,7 +450,7 @@ function TreeView({
         style={{
           width: '100%',
           height: Math.min(svgHeight + 20, 540),
-          overflow: 'hidden',
+          overflow: 'clip',
           touchAction: 'none',
           cursor: 'grab',
         }}
@@ -678,6 +703,7 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [showExtraColumns, setShowExtraColumns] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -688,6 +714,7 @@ export function TaxonsPage() {
     'all' | 'invasive' | 'non-invasive'
   >('all')
   const [treeMode, setTreeMode] = useState(false)
+
   const requestIdRef = useRef(0)
   const tableContainerRef = useRef<HTMLDivElement | null>(null)
   const [tableScrollTop, setTableScrollTop] = useState(0)
@@ -909,7 +936,9 @@ export function TaxonsPage() {
   )
 
   return (
-    <section className="surface-panel surface-panel--solid p-6">
+    <section
+      className={`surface-panel surface-panel--solid p-6${treeMode ? ' overflow-hidden' : ''}`}
+    >
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
@@ -935,6 +964,21 @@ export function TaxonsPage() {
               </span>
             )}
           </button>
+
+          {!treeMode && (
+            <button
+              type="button"
+              onClick={() => setShowExtraColumns((v) => !v)}
+              title={
+                showExtraColumns
+                  ? 'Masquer les colonnes secondaires'
+                  : "Afficher tribu, sous-genre et groupe d'espèce"
+              }
+              className="sm:hidden ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            >
+              {showExtraColumns ? '−' : '+'}
+            </button>
+          )}
 
           <button
             type="button"
@@ -1077,89 +1121,91 @@ export function TaxonsPage() {
       {!isLoadingTaxons && (
         <>
           {treeMode ? (
-            <div className="mt-4">
-              <TreeView
-                root={buildTreeFromTaxons(filteredTaxons)}
-                onNodeClick={(node, coords) => {
-                  // find representative taxon for the node or its descendants
-                  function findTaxon(n: TreeNode | undefined): Taxon | null {
-                    if (!n) return null
-                    if (n.taxon) return n.taxon
-                    if (!n.children) return null
-                    for (const c of n.children) {
-                      const r = findTaxon(c)
-                      if (r) return r
+            <div className="mt-4 tree-landscape-wrap">
+              <div className="tree-landscape-inner">
+                <TreeView
+                  root={buildTreeFromTaxons(filteredTaxons)}
+                  onNodeClick={(node, coords) => {
+                    // find representative taxon for the node or its descendants
+                    function findTaxon(n: TreeNode | undefined): Taxon | null {
+                      if (!n) return null
+                      if (n.taxon) return n.taxon
+                      if (!n.children) return null
+                      for (const c of n.children) {
+                        const r = findTaxon(c)
+                        if (r) return r
+                      }
+                      return null
                     }
-                    return null
-                  }
 
-                  const rep = node.taxon ?? findTaxon(node)
-                  if (!rep) return
+                    const rep = node.taxon ?? findTaxon(node)
+                    if (!rep) return
 
-                  if (node.depth === 1) {
-                    openSelectedDetail(
-                      rep,
-                      'subfamily',
-                      node.name,
-                      rep.levelDetails.subfamily,
-                      coords,
-                    )
-                  } else if (node.depth === 2) {
-                    // Tribe: map to subfamily detail (no tribe-level detail available)
-                    openSelectedDetail(
-                      rep,
-                      'subfamily',
-                      node.name,
-                      rep.levelDetails.subfamily,
-                      coords,
-                    )
-                  } else if (node.depth === 3) {
-                    openSelectedDetail(
-                      rep,
-                      'genus',
-                      node.name,
-                      rep.levelDetails.genus,
-                      coords,
-                    )
-                  } else if (node.depth === 4) {
-                    openSelectedDetail(
-                      rep,
-                      'subgenus',
-                      node.name,
-                      rep.levelDetails.subgenus ?? {
-                        description: null,
-                        sizeWorker: null,
-                        sizeQueen: null,
-                        sizeMale: null,
-                        criteria: [],
-                      },
-                      coords,
-                    )
-                  } else if (node.depth === 5) {
-                    openSelectedDetail(
-                      rep,
-                      'speciesGroup',
-                      node.name,
-                      rep.levelDetails.speciesGroup ?? {
-                        description: null,
-                        sizeWorker: null,
-                        sizeQueen: null,
-                        sizeMale: null,
-                        criteria: [],
-                      },
-                      coords,
-                    )
-                  } else {
-                    openSelectedDetail(
-                      rep,
-                      'species',
-                      rep.species,
-                      rep.levelDetails.species,
-                      coords,
-                    )
-                  }
-                }}
-              />
+                    if (node.depth === 1) {
+                      openSelectedDetail(
+                        rep,
+                        'subfamily',
+                        node.name,
+                        rep.levelDetails.subfamily,
+                        coords,
+                      )
+                    } else if (node.depth === 2) {
+                      // Tribe: map to subfamily detail (no tribe-level detail available)
+                      openSelectedDetail(
+                        rep,
+                        'subfamily',
+                        node.name,
+                        rep.levelDetails.subfamily,
+                        coords,
+                      )
+                    } else if (node.depth === 3) {
+                      openSelectedDetail(
+                        rep,
+                        'genus',
+                        node.name,
+                        rep.levelDetails.genus,
+                        coords,
+                      )
+                    } else if (node.depth === 4) {
+                      openSelectedDetail(
+                        rep,
+                        'subgenus',
+                        node.name,
+                        rep.levelDetails.subgenus ?? {
+                          description: null,
+                          sizeWorker: null,
+                          sizeQueen: null,
+                          sizeMale: null,
+                          criteria: [],
+                        },
+                        coords,
+                      )
+                    } else if (node.depth === 5) {
+                      openSelectedDetail(
+                        rep,
+                        'speciesGroup',
+                        node.name,
+                        rep.levelDetails.speciesGroup ?? {
+                          description: null,
+                          sizeWorker: null,
+                          sizeQueen: null,
+                          sizeMale: null,
+                          criteria: [],
+                        },
+                        coords,
+                      )
+                    } else {
+                      openSelectedDetail(
+                        rep,
+                        'species',
+                        rep.species,
+                        rep.levelDetails.species,
+                        coords,
+                      )
+                    }
+                  }}
+                />
+              </div>
             </div>
           ) : (
             <div
@@ -1173,10 +1219,22 @@ export function TaxonsPage() {
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
-                    <th className="table-head-sticky">Tribu</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Tribu
+                    </th>
                     <th className="table-head-sticky">Genre</th>
-                    <th className="table-head-sticky">Sous-genre</th>
-                    <th className="table-head-sticky">Groupe d'espèce</th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Sous-genre
+                    </th>
+                    <th
+                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                    >
+                      Groupe d'espèce
+                    </th>
                     <th className="table-head-sticky">Espèce</th>
                   </tr>
                 </thead>
@@ -1236,7 +1294,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={tribeVal}
                         >
                           {tribeVal}
@@ -1267,7 +1325,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={subgenusVal}
                         >
                           {subgenus && subgenusDetail ? (
@@ -1300,7 +1358,7 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
+                          className={`taxons-extra-col max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={speciesGroupVal}
                         >
                           {speciesGroup && speciesGroupDetail ? (
