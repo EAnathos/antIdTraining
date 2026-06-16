@@ -40,7 +40,7 @@ export function SuggestionsPanel({
 }: Props) {
   const [tab, setTab] = useState<'suggestions' | 'proposals'>('suggestions')
   const [filter, setFilter] = useState<
-    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED' | string
+    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED'
   >('ALL')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
@@ -56,7 +56,7 @@ export function SuggestionsPanel({
 
   const filteredSuggestions = useMemo(() => {
     if (filter === 'ALL') return suggestions
-    return suggestions.filter((s) => s.status === (filter as any))
+    return suggestions.filter((s) => s.status === filter)
   }, [suggestions, filter])
 
   const filteredProposals = useMemo(() => {

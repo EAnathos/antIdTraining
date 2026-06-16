@@ -6,6 +6,7 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url))
 export const uploadsDir = path.resolve(currentDir, '../../uploads')
 
 export const RESPONSIVE_IMAGE_WIDTHS = [480, 960] as const
+export const ENTRY_RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 
 export function ensureUploadsDir() {
   if (!fs.existsSync(uploadsDir)) {
