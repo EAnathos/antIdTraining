@@ -1223,7 +1223,7 @@ export function TaxonsPage() {
                 setTableScrollTop(event.currentTarget.scrollTop)
               }
             >
-              <table className="w-full text-left text-sm">
+              <table className="field-table text-left text-sm">
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
