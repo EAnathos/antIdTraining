@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
-import { optionalAuth } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/auth.js'
 import {
   decryptSensitiveText,
   encryptSensitiveText,
@@ -44,29 +44,26 @@ const suggestionSchema = z.object({
 
 suggestionsRouter.post(
   '/',
-  optionalAuth,
+  requireAuth,
   asyncHandler(async (req, res) => {
     const parsed = suggestionSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
     }
 
-    // Check suggestion limit for authenticated users
-    if (req.user) {
-      const suggestionCount = await prisma.suggestion.count({
-        where: { userId: req.user.userId },
-      })
-      if (suggestionCount >= MAX_SUGGESTIONS_PER_USER) {
-        throw new AppError(
-          400,
-          `Limite de ${MAX_SUGGESTIONS_PER_USER} suggestions atteinte.`,
-        )
-      }
+    const suggestionCount = await prisma.suggestion.count({
+      where: { userId: req.user!.userId },
+    })
+    if (suggestionCount >= MAX_SUGGESTIONS_PER_USER) {
+      throw new AppError(
+        400,
+        `Limite de ${MAX_SUGGESTIONS_PER_USER} suggestions atteinte.`,
+      )
     }
 
     const created = await prisma.suggestion.create({
       data: {
-        userId: req.user?.userId ?? null,
+        userId: req.user!.userId,
         name: parsed.data.name
           ? (encryptSensitiveText(parsed.data.name) ?? parsed.data.name)
           : null,
