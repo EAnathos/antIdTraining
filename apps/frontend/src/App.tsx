@@ -51,6 +51,19 @@ const ContributionPage = lazy(() =>
 const AboutPage = lazy(() =>
   import('./pages/AboutPage').then((module) => ({ default: module.default })),
 )
+const MentionsLegalesPage = lazy(() =>
+  import('./pages/MentionsLegalesPage').then((module) => ({
+    default: module.default,
+  })),
+)
+const PolitiqueConfidentialitePage = lazy(() =>
+  import('./pages/PolitiqueConfidentialitePage').then((module) => ({
+    default: module.default,
+  })),
+)
+const CguPage = lazy(() =>
+  import('./pages/CguPage').then((module) => ({ default: module.default })),
+)
 
 function App() {
   return (
@@ -79,6 +92,12 @@ function App() {
             element={<Navigate to="/connexion" replace />}
           />
           <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+          <Route
+            path="/politique-de-confidentialite"
+            element={<PolitiqueConfidentialitePage />}
+          />
+          <Route path="/cgu" element={<CguPage />} />
         </Routes>
       </Suspense>
     </AppShell>

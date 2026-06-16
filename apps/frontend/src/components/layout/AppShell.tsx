@@ -327,6 +327,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </a>
           </div>
 
+          <div className="app-footer__content app-footer__content--inline">
+            <NavLink to="/mentions-legales" className="app-footer__link">
+              Mentions légales
+            </NavLink>
+            <span className="app-footer__separator" aria-hidden="true">
+              •
+            </span>
+            <NavLink
+              to="/politique-de-confidentialite"
+              className="app-footer__link"
+            >
+              Politique de confidentialité
+            </NavLink>
+            <span className="app-footer__separator" aria-hidden="true">
+              •
+            </span>
+            <NavLink to="/cgu" className="app-footer__link">
+              CGU
+            </NavLink>
+          </div>
+
           <div className="app-footer__bottom">
             <p className="app-footer__copyright">© 2025–2026 Ant ID Training</p>
           </div>
