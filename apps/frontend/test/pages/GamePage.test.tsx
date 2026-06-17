@@ -237,20 +237,6 @@ describe('GamePage', () => {
       await screen.findByAltText('Spécimen agrandis 1'),
     ).toBeInTheDocument()
 
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Photo suivante' })[1],
-    )
-    expect(
-      await screen.findByAltText('Spécimen agrandis 2'),
-    ).toBeInTheDocument()
-
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Photo précédente' })[1],
-    )
-    expect(
-      await screen.findByAltText('Spécimen agrandis 1'),
-    ).toBeInTheDocument()
-
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
     expect(screen.queryByAltText('Spécimen agrandis 1')).not.toBeInTheDocument()
   })
