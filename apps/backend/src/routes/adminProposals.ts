@@ -108,7 +108,7 @@ adminProposalsRouter.put(
 
       // Update proposal status
       await prisma.entryProposal.update({
-        where: { id: id },
+        where: { id },
         data: {
           status: 'ACCEPTED',
           processedAt: new Date(),
@@ -132,7 +132,7 @@ adminProposalsRouter.put(
         parsed.data.rejectionMessage || "Rejeté par l'administrateur."
 
       await prisma.entryProposal.update({
-        where: { id: id },
+        where: { id },
         data: {
           status: 'REJECTED',
           rejectionMessage,
@@ -174,7 +174,7 @@ adminProposalsRouter.delete(
     }
 
     await prisma.entryProposal.delete({
-      where: { id: id },
+      where: { id },
     })
 
     await recordAdminAudit(req, {

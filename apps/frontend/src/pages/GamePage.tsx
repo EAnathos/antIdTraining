@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
 import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
@@ -68,12 +68,9 @@ export function GamePage() {
   } | null>(null)
   const [sessionScore, setSessionScore] = useState(0)
   const fullscreenTouchStartX = useRef<number | null>(null)
-  const isConnected = useMemo(
-    () =>
-      typeof window !== 'undefined' &&
-      !!window.localStorage.getItem('antidtraining-auth-token'),
-    [],
-  )
+  const isConnected =
+    typeof window !== 'undefined' &&
+    !!window.localStorage.getItem('antidtraining-auth-token')
 
   useEffect(() => {
     let cancelled = false

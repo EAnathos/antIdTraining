@@ -7,8 +7,7 @@ export function getReferenceHref(reference: ReferenceItem) {
 
   if (
     reference.type === 'MYRMECOLOGY' &&
-    !reference.url.startsWith('http://') &&
-    !reference.url.startsWith('https://')
+    !/^https?:\/\//i.test(reference.url)
   ) {
     return `https://doi.org/${reference.url}`
   }

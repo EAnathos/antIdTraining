@@ -4,7 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import { decryptSensitiveText } from '../lib/encryption.js'
+import { publicSuggestion } from '../lib/suggestionFormatters.js'
 
 export const adminSuggestionsRouter = Router()
 
@@ -17,20 +17,6 @@ const updateSchema = z.object({
     .trim()
     .optional(),
 })
-
-function publicSuggestion<
-  T extends { name: string | null; email: string | null; user?: unknown },
->(suggestion: T): T {
-  return {
-    ...suggestion,
-    name: suggestion.name
-      ? (decryptSensitiveText(suggestion.name) ?? suggestion.name)
-      : suggestion.name,
-    email: suggestion.email
-      ? (decryptSensitiveText(suggestion.email) ?? suggestion.email)
-      : suggestion.email,
-  }
-}
 
 adminSuggestionsRouter.get(
   '/',
