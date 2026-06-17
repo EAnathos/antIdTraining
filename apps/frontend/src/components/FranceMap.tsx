@@ -17,12 +17,12 @@ const MAP_DATA = getDepartmentMapData()
 
 function getDepartmentStyle(isSelected: boolean, readonly: boolean) {
   if (isSelected) {
-    return 'fill-indigo-600 stroke-indigo-800'
+    return 'fill-[var(--app-primary)] stroke-[var(--app-primary-strong)]'
   }
 
   return readonly
-    ? 'fill-slate-100 stroke-slate-300'
-    : 'fill-white stroke-slate-300 hover:fill-indigo-50 hover:stroke-indigo-500'
+    ? 'fill-[var(--app-surface-muted)] stroke-[var(--app-border)]'
+    : 'fill-[var(--app-surface-strong)] stroke-[var(--app-border)] hover:fill-[var(--app-primary-soft)] hover:stroke-[var(--app-primary)]'
 }
 
 export function FranceMap({

@@ -83,16 +83,19 @@ export async function buildServiceHealthReport(dependencies: {
   database: Pick<PrismaClient, '$queryRaw'>
   redis: { ping(): Promise<string> }
 }): Promise<ServiceHealthReport> {
-  const startedAt = Date.now()
   const timestamp = new Date().toISOString()
 
-  const [databaseResult, redisResult] = await Promise.allSettled([
+  const dbStart = Date.now()
+  const databaseResult = await Promise.allSettled([
     dependencies.database.$queryRaw`SELECT 1`,
-    dependencies.redis.ping(),
-  ])
+  ]).then((r) => r[0])
+  const databaseLatency = Date.now() - dbStart
 
-  const databaseLatency = Date.now() - startedAt
-  const redisLatency = Date.now() - startedAt
+  const redisStart = Date.now()
+  const redisResult = await Promise.allSettled([
+    dependencies.redis.ping(),
+  ]).then((r) => r[0])
+  const redisLatency = Date.now() - redisStart
 
   const database =
     databaseResult.status === 'fulfilled'

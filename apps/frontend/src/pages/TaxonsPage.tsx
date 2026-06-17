@@ -704,6 +704,14 @@ export function TaxonsPage() {
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [showExtraColumns, setShowExtraColumns] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: portrait)')
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setShowExtraColumns(false)
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -936,9 +944,7 @@ export function TaxonsPage() {
   )
 
   return (
-    <section
-      className={`surface-panel surface-panel--solid p-6${treeMode ? ' overflow-hidden' : ''}`}
-    >
+    <section className="surface-panel surface-panel--solid p-6 overflow-hidden">
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
@@ -959,7 +965,7 @@ export function TaxonsPage() {
               {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
             </span>
             {activeFiltersCount > 0 && (
-              <span className="absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--app-primary)] text-xs text-[color:var(--app-text-inverse)]">
+              <span className="absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-sm bg-[color:var(--app-primary)] text-xs text-[color:var(--app-text-inverse)]">
                 {activeFiltersCount}
               </span>
             )}
@@ -1210,12 +1216,35 @@ export function TaxonsPage() {
           ) : (
             <div
               ref={tableContainerRef}
-              className="-mx-6 mt-4 max-h-[65vh] overflow-auto rounded-lg border border-[color:var(--app-border)]"
+              className="mt-4 max-h-[65vh] w-full min-w-0 overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]"
               onScroll={(event) =>
                 setTableScrollTop(event.currentTarget.scrollTop)
               }
             >
-              <table className="w-full text-left text-sm">
+              <table className="field-table text-left text-sm">
+                {/* colgroup is the single source of truth for column widths.
+                    With table-layout:fixed these widths never change regardless
+                    of content, filtering, sorting, or virtual-scroll reflows. */}
+                <colgroup>
+                  <col style={{ width: '16%' }} /> {/* Sous-famille */}
+                  <col
+                    style={{ width: '12%' }}
+                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
+                  />{' '}
+                  {/* Tribu */}
+                  <col style={{ width: '17%' }} /> {/* Genre */}
+                  <col
+                    style={{ width: '14%' }}
+                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
+                  />{' '}
+                  {/* Sous-genre */}
+                  <col
+                    style={{ width: '17%' }}
+                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
+                  />{' '}
+                  {/* Groupe d'espèce */}
+                  <col style={{ width: '24%' }} /> {/* Espèce */}
+                </colgroup>
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
@@ -1240,7 +1269,7 @@ export function TaxonsPage() {
                 </thead>
                 <tbody>
                   {topSpacerHeight > 0 && (
-                    <tr>
+                    <tr className="taxon-spacer">
                       <td
                         colSpan={6}
                         style={{ height: `${topSpacerHeight}px` }}
@@ -1268,13 +1297,10 @@ export function TaxonsPage() {
                         key={taxon.id}
                         className="border-b border-[color:var(--app-border)]"
                       >
-                        <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={subfamilyVal}
-                        >
+                        <td className="taxon-td" title={subfamilyVal}>
                           {isClickable(subfamilyVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
+                              className="taxon-td-btn"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1294,18 +1320,15 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className={`taxons-extra-col max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={tribeVal}
                         >
                           {tribeVal}
                         </td>
-                        <td
-                          className="max-w-[160px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={genusVal}
-                        >
+                        <td className="taxon-td" title={genusVal}>
                           {isClickable(genusVal) ? (
                             <button
-                              className="max-w-[160px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
+                              className="taxon-td-btn"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1325,13 +1348,13 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className={`taxons-extra-col max-w-[140px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={subgenusVal}
                         >
                           {subgenus && subgenusDetail ? (
                             isClickable(subgenusVal) ? (
                               <button
-                                className="max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
+                                className="taxon-td-btn"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1358,13 +1381,13 @@ export function TaxonsPage() {
                           )}
                         </td>
                         <td
-                          className={`taxons-extra-col max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
+                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
                           title={speciesGroupVal}
                         >
                           {speciesGroup && speciesGroupDetail ? (
                             isClickable(speciesGroupVal) ? (
                               <button
-                                className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
+                                className="taxon-td-btn"
                                 type="button"
                                 onClick={() =>
                                   openSelectedDetail(
@@ -1388,13 +1411,10 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className="max-w-[180px] whitespace-nowrap p-2 text-ellipsis overflow-hidden"
-                          title={speciesVal}
-                        >
+                        <td className="taxon-td" title={speciesVal}>
                           {isClickable(speciesVal) ? (
                             <button
-                              className="max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis text-[color:var(--app-primary)] underline underline-offset-2"
+                              className="taxon-td-btn"
                               type="button"
                               onClick={() =>
                                 openSelectedDetail(
@@ -1417,7 +1437,7 @@ export function TaxonsPage() {
                     )
                   })}
                   {bottomSpacerHeight > 0 && (
-                    <tr>
+                    <tr className="taxon-spacer">
                       <td
                         colSpan={6}
                         style={{ height: `${bottomSpacerHeight}px` }}

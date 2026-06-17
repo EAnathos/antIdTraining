@@ -40,7 +40,7 @@ export function SuggestionsPanel({
 }: Props) {
   const [tab, setTab] = useState<'suggestions' | 'proposals'>('suggestions')
   const [filter, setFilter] = useState<
-    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED' | string
+    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED'
   >('ALL')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
@@ -56,7 +56,7 @@ export function SuggestionsPanel({
 
   const filteredSuggestions = useMemo(() => {
     if (filter === 'ALL') return suggestions
-    return suggestions.filter((s) => s.status === (filter as any))
+    return suggestions.filter((s) => s.status === filter)
   }, [suggestions, filter])
 
   const filteredProposals = useMemo(() => {
@@ -538,7 +538,7 @@ export function SuggestionsPanel({
           >
             <button
               type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-[color:var(--app-surface)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
+              className="absolute -right-2 -top-2 rounded-sm bg-[color:var(--app-surface)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
               onClick={() => setPreview(null)}
             >
               Fermer
@@ -546,7 +546,7 @@ export function SuggestionsPanel({
 
             <button
               type="button"
-              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -left-14 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() =>
                 setPreview((current) =>
                   !current || current.images.length <= 1
@@ -578,7 +578,7 @@ export function SuggestionsPanel({
 
             <button
               type="button"
-              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
+              className="absolute -right-14 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() =>
                 setPreview((current) =>
                   !current || current.images.length <= 1

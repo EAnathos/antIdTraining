@@ -12,6 +12,7 @@ import { AppError } from '../lib/errors.js'
 import {
   deleteUploadFilesForImageUrl,
   ensureUploadsDir,
+  ENTRY_RESPONSIVE_IMAGE_WIDTHS,
   resolveUploadFilePath,
 } from '../lib/imageFiles.js'
 import {
@@ -23,7 +24,6 @@ import { recordAdminAudit } from '../lib/adminAudit.js'
 
 ensureUploadsDir()
 
-const RESPONSIVE_IMAGE_WIDTHS = [1600, 960, 480] as const
 const MAX_PROPOSALS_PER_USER = 20
 const MAX_SUGGESTIONS_PER_USER = 10
 
@@ -132,7 +132,7 @@ async function optimizeAndSaveImage(file: Express.Multer.File, index: number) {
   const savedPaths: string[] = []
 
   try {
-    for (const width of RESPONSIVE_IMAGE_WIDTHS) {
+    for (const width of ENTRY_RESPONSIVE_IMAGE_WIDTHS) {
       const outputFileName =
         width === 1600 ? baseFileName : `${fileId}-${width}.webp`
       const outputPath = resolveUploadFilePath(outputFileName)

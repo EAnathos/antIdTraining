@@ -925,7 +925,7 @@ export function EntriesCrudPanel({
           >
             <button
               type="button"
-              className="absolute -right-2 -top-2 rounded-full bg-[color:var(--app-surface)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
+              className="absolute -right-2 -top-2 rounded-sm bg-[color:var(--app-surface)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
               onClick={() => setPreviewImage(null)}
             >
               Fermer
@@ -933,7 +933,7 @@ export function EntriesCrudPanel({
 
             <button
               type="button"
-              className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] p-1.5 text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14 sm:px-3 sm:py-2 sm:text-lg"
+              className="absolute left-1 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface)] p-1.5 text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14 sm:px-3 sm:py-2 sm:text-lg"
               onClick={showPreviousPreviewImage}
               disabled={previewImage.images.length <= 1}
               aria-label="Image précédente"
@@ -954,7 +954,7 @@ export function EntriesCrudPanel({
 
             <button
               type="button"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface)] p-1.5 text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14 sm:px-3 sm:py-2 sm:text-lg"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface)] p-1.5 text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14 sm:px-3 sm:py-2 sm:text-lg"
               onClick={showNextPreviewImage}
               disabled={previewImage.images.length <= 1}
               aria-label="Image suivante"

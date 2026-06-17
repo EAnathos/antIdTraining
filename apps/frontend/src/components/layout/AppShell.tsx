@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       root.setAttribute('data-theme', resolvedTheme)
       root.style.colorScheme = resolvedTheme
 
-      const themeColor = resolvedTheme === 'dark' ? '#020617' : '#f6f7fb'
+      const themeColor = resolvedTheme === 'dark' ? '#0d1a12' : '#faf7f2'
       const themeMeta = document.querySelector("meta[name='theme-color']")
       themeMeta?.setAttribute('content', themeColor)
     }
@@ -230,8 +230,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <h1 className="app-brand__title">Ant ID Training</h1>
             <p className="app-brand__subtitle">
-              Plateforme d'entraînement à l'identification des fourmis de France
-              métropolitaine
+              Plateforme d'entraînement à l'identification des fourmis
             </p>
           </NavLink>
 

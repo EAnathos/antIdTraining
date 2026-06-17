@@ -334,10 +334,10 @@ export function ProfilePage() {
               <img
                 src={resolveImageUrl(profile.avatar)}
                 alt={profile.username || 'Avatar'}
-                className="w-24 h-24 rounded-full object-cover ring-2 ring-var(--app-primary)"
+                className="w-24 h-24 rounded-full object-cover ring-2 ring-[color:var(--app-primary)]"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[color:var(--app-primary)] to-[color:var(--app-primary-strong)] flex items-center justify-center text-[color:var(--app-text-inverse)] text-2xl font-bold">
                 {profile?.username?.charAt(0).toUpperCase() || '?'}
               </div>
             )}
