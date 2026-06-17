@@ -20,7 +20,10 @@ import {
   decryptSensitiveText,
   encryptSensitiveText,
 } from '../lib/encryption.js'
-import { resolveEntryTaxonSelection } from '../services/entries.js'
+import {
+  resolveEntryTaxonSelection,
+  type EntryTaxonSelection,
+} from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 
@@ -70,6 +73,22 @@ const entrySchema = z.object({
   size: z.string().max(100, 'Taille trop longue').trim().optional().nullable(),
   caste: z.enum(['WORKER', 'QUEEN', 'MALE']),
 })
+
+type EntryData = z.infer<typeof entrySchema>
+
+function buildEntryData(data: EntryData, taxonSelection: EntryTaxonSelection) {
+  return {
+    ...taxonSelection,
+    caste: data.caste,
+    size: data.size?.trim() || taxonSelection.size || undefined,
+    department: data.department,
+    observedAt: data.observedAt,
+    biotope: data.biotope,
+    photoCredit: encryptSensitiveText(data.photoCredit) ?? data.photoCredit,
+    subgenus: data.subgenus ?? undefined,
+    speciesGroup: data.speciesGroup ?? undefined,
+  }
+}
 
 export const entriesRouter = Router()
 
@@ -259,20 +278,8 @@ entriesRouter.post(
       }),
     )
 
-    const createData: Prisma.ObservationEntryUncheckedCreateInput = {
-      ...taxonSelection,
-      caste: parsed.data.caste,
-      size:
-        parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
-      department: parsed.data.department,
-      observedAt: parsed.data.observedAt,
-      biotope: parsed.data.biotope,
-      photoCredit:
-        encryptSensitiveText(parsed.data.photoCredit) ??
-        parsed.data.photoCredit,
-      subgenus: parsed.data.subgenus ?? undefined,
-      speciesGroup: parsed.data.speciesGroup ?? undefined,
-    }
+    const createData: Prisma.ObservationEntryUncheckedCreateInput =
+      buildEntryData(parsed.data, taxonSelection)
 
     const created = await prisma.observationEntry.create({
       data: {
@@ -314,20 +321,8 @@ entriesRouter.put(
       throw new AppError(400, 'Taxon introuvable pour ce niveau.')
     }
 
-    const updateData: Prisma.ObservationEntryUncheckedUpdateInput = {
-      ...taxonSelection,
-      caste: parsed.data.caste,
-      size:
-        parsed.data.size?.trim() || (taxonSelection as any).size || undefined,
-      department: parsed.data.department,
-      observedAt: parsed.data.observedAt,
-      biotope: parsed.data.biotope,
-      photoCredit:
-        encryptSensitiveText(parsed.data.photoCredit) ??
-        parsed.data.photoCredit,
-      subgenus: parsed.data.subgenus ?? undefined,
-      speciesGroup: parsed.data.speciesGroup ?? undefined,
-    }
+    const updateData: Prisma.ObservationEntryUncheckedUpdateInput =
+      buildEntryData(parsed.data, taxonSelection)
 
     const updated = await prisma.observationEntry.update({
       where: { id: req.params.id as string },

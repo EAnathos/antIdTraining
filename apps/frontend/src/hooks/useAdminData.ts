@@ -178,15 +178,6 @@ export function useAdminData(
     [token, onUnauthorized],
   )
 
-  function isUnauthorizedError(error: unknown) {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'status' in error &&
-      (error as { status?: number }).status === 401
-    )
-  }
-
   function resolveAdminErrorMessage(error: unknown, fallbackMessage: string) {
     const status =
       typeof error === 'object' && error !== null && 'status' in error
@@ -216,9 +207,7 @@ export function useAdminData(
           .map((value) => value.trim())
           .filter(Boolean)
 
-    return Array.from(
-      new Set(values.map((value) => value.trim()).filter(Boolean)),
-    )
+    return Array.from(new Set(values))
   }
 
   function serializeLevelDetail(
@@ -335,13 +324,7 @@ export function useAdminData(
       await loadAdminData()
       setMessage(successMessage)
     } catch (error) {
-      if (isUnauthorizedError(error)) {
-        const resolvedMessage = resolveAdminErrorMessage(error, failureMessage)
-        setMessage(resolvedMessage)
-        return
-      }
-      const resolvedMessage = resolveAdminErrorMessage(error, failureMessage)
-      setMessage(resolvedMessage)
+      setMessage(resolveAdminErrorMessage(error, failureMessage))
     }
   }
 
@@ -361,12 +344,6 @@ export function useAdminData(
 
   useEffect(() => {
     void loadAdminData().catch((error) => {
-      if (isUnauthorizedError(error)) {
-        setMessage(
-          resolveAdminErrorMessage(error, 'Impossible de charger les données.'),
-        )
-        return
-      }
       setMessage(
         resolveAdminErrorMessage(error, 'Impossible de charger les données.'),
       )

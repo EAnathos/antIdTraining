@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { getResponsiveImageProps } from '../../lib/image'
 import type { Entry } from '../../types/models'
 import { AdminIconButton, EditIcon, TrashIcon } from './AdminIconButton'
-import { resolveImageUrl } from './imageHelpers'
+import { resolveImageUrl } from '../../lib/imageUrl'
 import { parseDepartmentInput } from './entriesHelpers'
 
 const departmentOptions = [

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { ReferenceItem } from '../types/models'
+import { getReferenceHref } from '../lib/referenceUtils'
 
 type ReferenceSection = {
   title: string
@@ -11,22 +12,6 @@ const referenceSections: ReferenceSection[] = [
   { title: 'Sites web', type: 'WEBSITE' },
   { title: 'Références myrmécologistes', type: 'MYRMECOLOGY' },
 ]
-
-function getReferenceHref(reference: ReferenceItem) {
-  if (!reference.url) {
-    return null
-  }
-
-  if (
-    reference.type === 'MYRMECOLOGY' &&
-    !reference.url.startsWith('http://') &&
-    !reference.url.startsWith('https://')
-  ) {
-    return `https://doi.org/${reference.url}`
-  }
-
-  return reference.url
-}
 
 export function ReferencesPage() {
   const [references, setReferences] = useState<ReferenceItem[]>([])

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { EntryProposal } from '../../types/models'
-import { backendOrigin } from '../../lib/api'
 import { getResponsiveImageProps } from '../../lib/image'
+import { resolveImageUrl } from '../../lib/imageUrl'
 
 type Props = {
   proposals: EntryProposal[]
@@ -24,15 +24,6 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
     index: number
     alt: string
   } | null>(null)
-
-  function resolveImageUrl(imageUrl: string) {
-    if (!imageUrl) return imageUrl
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl
-    }
-
-    return `${backendOrigin}${imageUrl}`
-  }
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return proposals

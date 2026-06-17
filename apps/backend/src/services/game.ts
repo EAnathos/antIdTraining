@@ -21,15 +21,8 @@ export const validateGameAnswerSchema = z.object({
       species: z.string().max(255, 'Trop long').trim().optional(),
     })
     .default({}),
-  answer: z
-    .object({
-      subfamily: z.string().max(255, 'Trop long').trim().optional(),
-      genus: z.string().max(255, 'Trop long').trim().optional(),
-      species: z.string().max(255, 'Trop long').trim().optional(),
-    })
-    .default({}),
   entryId: cuidSchema.optional(),
-  sessionId: cuidSchema.optional(),
+  sessionId: cuidSchema,
 })
 
 function normalizeGameLevel(value: unknown): GameLevel {
@@ -71,14 +64,6 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
     candidates.filter((candidate) => candidate !== answer),
   ).slice(0, Math.max(maxChoices - 1, 0))
   return uniqueShuffled([answer, ...wrongChoices])
-}
-
-async function resolveEntrySize(entry: {
-  species?: string | null
-  genus?: string | null
-  subfamily: string
-}) {
-  return resolveTaxonWorkerSize(entry)
 }
 
 function applyGameFilters(
@@ -166,30 +151,24 @@ async function recordSessionProgress(
   pointsDelta: number,
   finalCorrect?: boolean,
 ) {
-  const operations: Promise<unknown>[] = []
-
   if (finalCorrect !== undefined) {
-    operations.push(
-      prisma.gameSession.updateMany({
-        where: { id: sessionId, finalCorrect: null },
-        data: {
-          finalCorrect,
-          validatedAt: new Date(),
-        },
-      }),
-    )
-  }
-
-  if (userId) {
-    operations.push(
-      prisma.user.update({
+    // Atomic: credit points only if the session is actually finalized now (not a replay)
+    const result = await prisma.gameSession.updateMany({
+      where: { id: sessionId, finalCorrect: null },
+      data: { finalCorrect, validatedAt: new Date() },
+    })
+    if (result.count > 0 && userId) {
+      await prisma.user.update({
         where: { id: userId },
         data: { points: { increment: pointsDelta } },
-      }),
-    )
+      })
+    }
+  } else if (userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { points: { increment: pointsDelta } },
+    })
   }
-
-  await Promise.all(operations)
 }
 
 function buildQuestionDetails(entry: {
@@ -262,9 +241,7 @@ const GAME_LEVEL_CONFIGS = {
       entries: GameEntry[],
       allTaxons: Array<{ subfamily: string }>,
       userId?: string | null,
-    ): Promise<
-      GameQuestionBase & { choices: string[]; answer: { subfamily: string } }
-    > => {
+    ): Promise<GameQuestionBase & { choices: string[] }> => {
       const availableSubfamilies = uniqueShuffled(
         allTaxons.map((t) => t.subfamily),
       )
@@ -288,10 +265,9 @@ const GAME_LEVEL_CONFIGS = {
         prompt: 'Identifier la sous-famille',
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices,
-        answer: { subfamily: entry.subfamily },
       }
     },
   },
@@ -307,7 +283,6 @@ const GAME_LEVEL_CONFIGS = {
     ): Promise<
       GameQuestionBase & {
         choices: { subfamily: string[]; genus: string[] }
-        answer: { subfamily: string; genus: string | null }
       }
     > => {
       const choices = buildTaxonChoices(entry, allTaxons)
@@ -321,15 +296,11 @@ const GAME_LEVEL_CONFIGS = {
         prompt: 'Identifier la sous-famille puis le genre',
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices: {
           subfamily: choices.subfamilyChoices,
           genus: choices.genusChoices,
-        },
-        answer: {
-          subfamily: entry.subfamily,
-          genus: entry.genus,
         },
       }
     },
@@ -349,11 +320,6 @@ const GAME_LEVEL_CONFIGS = {
     ): Promise<
       GameQuestionBase & {
         choices: { subfamily: string[]; genus: string[]; species: string[] }
-        answer: {
-          subfamily: string
-          genus: string | null
-          species: string | null
-        }
       }
     > => {
       const choices = buildTaxonChoices(entry, allTaxons)
@@ -367,17 +333,12 @@ const GAME_LEVEL_CONFIGS = {
         prompt: "Identifier la sous-famille, le genre et l'espèce",
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices: {
           subfamily: choices.subfamilyChoices,
           genus: choices.genusChoices,
           species: choices.speciesChoices,
-        },
-        answer: {
-          subfamily: entry.subfamily,
-          genus: entry.genus,
-          species: entry.species,
         },
       }
     },
@@ -424,42 +385,43 @@ export async function getGameQuestion(
 
 export async function validateGameAnswer(
   input: z.infer<typeof validateGameAnswerSchema>,
+  authenticatedUserId?: string | null,
 ) {
-  const { level, selected, answer, entryId, sessionId } = input
+  const { level, selected, entryId, sessionId } = input
 
-  if (!entryId && !answer?.subfamily) {
-    throw new AppError(
-      400,
-      'Le champ entryId est requis pour valider la réponse.',
-    )
-  }
+  const session = await prisma.gameSession.findUnique({
+    where: { id: sessionId },
+    include: { entry: true },
+  })
 
-  const entry = entryId
-    ? await prisma.observationEntry.findUnique({
-        where: { id: entryId },
-      })
-    : null
-
-  if (entryId && !entry) {
-    throw new AppError(404, 'Entrée introuvable pour cette question.')
-  }
-
-  const session = sessionId
-    ? await prisma.gameSession.findUnique({
-        where: { id: sessionId },
-      })
-    : null
-
-  if (sessionId && !session) {
+  if (!session) {
     throw new AppError(404, 'Session de jeu introuvable.')
   }
 
-  const shouldPersistProgress = !!session
+  if (
+    authenticatedUserId &&
+    session.userId &&
+    session.userId !== authenticatedUserId
+  ) {
+    throw new AppError(403, 'Cette session ne vous appartient pas.')
+  }
+
+  if (session.finalCorrect !== null) {
+    throw new AppError(409, 'Cette session a déjà été validée.')
+  }
+
+  if (!session.entry) {
+    throw new AppError(404, 'Entrée introuvable pour cette question.')
+  }
+
+  if (entryId && entryId !== session.entryId) {
+    throw new AppError(400, "L'entryId ne correspond pas à la session.")
+  }
 
   const resolvedAnswer = {
-    subfamily: entry?.subfamily ?? answer?.subfamily,
-    genus: entry?.genus ?? answer?.genus,
-    species: entry?.species ?? answer?.species,
+    subfamily: session.entry.subfamily,
+    genus: session.entry.genus,
+    species: session.entry.species,
   }
 
   const subfamilyProfile = resolvedAnswer.subfamily
@@ -483,7 +445,7 @@ export async function validateGameAnswer(
     },
   }
 
-  const identificationSize = await resolveEntrySize({
+  const identificationSize = await resolveTaxonWorkerSize({
     species: resolvedAnswer.species ?? null,
     genus: resolvedAnswer.genus ?? null,
     subfamily: resolvedAnswer.subfamily ?? '',
@@ -491,113 +453,83 @@ export async function validateGameAnswer(
 
   const subfamilyOk = selected.subfamily === resolvedAnswer.subfamily
   if (!subfamilyOk) {
-    if (shouldPersistProgress) {
-      await recordSessionProgress(
-        session!.id,
-        session.userId,
-        getScoreDelta('subfamily', false),
-        false,
-      )
-    }
+    await recordSessionProgress(
+      session.id,
+      session.userId,
+      getScoreDelta('subfamily', false),
+      false,
+    )
     return {
       correct: false,
       reason: 'Sous-famille incorrecte',
-      identification: {
-        ...identification,
-        size: identificationSize ?? null,
-      },
+      identification: { ...identification, size: identificationSize ?? null },
     }
   }
 
   if (level === 'easy') {
-    if (shouldPersistProgress) {
-      await recordSessionProgress(
-        session!.id,
-        session.userId,
-        getScoreDelta('subfamily', true),
-        session.level === 'EASY' ? true : undefined,
-      )
-    }
+    await recordSessionProgress(
+      session.id,
+      session.userId,
+      getScoreDelta('subfamily', true),
+      session.level === 'EASY' ? true : undefined,
+    )
     return {
       correct: true,
-      identification: {
-        ...identification,
-        size: identificationSize ?? null,
-      },
+      identification: { ...identification, size: identificationSize ?? null },
     }
   }
 
   const genusOk = selected.genus === resolvedAnswer.genus
   if (!genusOk) {
-    if (shouldPersistProgress) {
-      await recordSessionProgress(
-        session!.id,
-        session.userId,
-        getScoreDelta('genus', false),
-        false,
-      )
-    }
+    await recordSessionProgress(
+      session.id,
+      session.userId,
+      getScoreDelta('genus', false),
+      false,
+    )
     return {
       correct: false,
       reason: 'Genre incorrect',
-      identification: {
-        ...identification,
-        size: identificationSize ?? null,
-      },
+      identification: { ...identification, size: identificationSize ?? null },
     }
   }
 
   if (level === 'medium') {
-    if (shouldPersistProgress) {
-      await recordSessionProgress(
-        session!.id,
-        session.userId,
-        getScoreDelta('genus', true),
-        true,
-      )
-    }
+    await recordSessionProgress(
+      session.id,
+      session.userId,
+      getScoreDelta('genus', true),
+      true,
+    )
     return {
       correct: true,
-      identification: {
-        ...identification,
-        size: identificationSize ?? null,
-      },
+      identification: { ...identification, size: identificationSize ?? null },
     }
   }
 
   const speciesOk = selected.species === resolvedAnswer.species
   if (!speciesOk) {
-    if (shouldPersistProgress) {
-      await recordSessionProgress(
-        session!.id,
-        session.userId,
-        getScoreDelta('species', false),
-        false,
-      )
-    }
+    await recordSessionProgress(
+      session.id,
+      session.userId,
+      getScoreDelta('species', false),
+      false,
+    )
     return {
       correct: false,
       reason: 'Espèce incorrecte',
-      identification: {
-        ...identification,
-        size: identificationSize ?? null,
-      },
+      identification: { ...identification, size: identificationSize ?? null },
     }
   }
 
-  if (shouldPersistProgress) {
-    await recordSessionProgress(
-      session!.id,
-      session.userId,
-      getScoreDelta('species', true),
-      true,
-    )
-  }
+  await recordSessionProgress(
+    session.id,
+    session.userId,
+    getScoreDelta('species', true),
+    true,
+  )
   return {
     correct: true,
-    identification: {
-      ...identification,
-      size: identificationSize ?? null,
-    },
+    identification: { ...identification, size: identificationSize ?? null },
   }
 }

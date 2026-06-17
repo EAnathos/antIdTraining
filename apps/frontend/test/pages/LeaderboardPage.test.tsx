@@ -61,7 +61,7 @@ describe('LeaderboardPage', () => {
 
     await screen.findByText('Classement')
     expect(screen.getByText(/Vos points actuels :/)).toBeInTheDocument()
-    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(screen.getAllByText('Alice')[0]).toBeInTheDocument()
     expect(screen.getAllByText('240').length).toBeGreaterThan(0)
   })
 
@@ -84,7 +84,7 @@ describe('LeaderboardPage', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Aucun joueur classé pour le moment.'),
+        screen.getAllByText('Aucun joueur classé pour le moment.')[0],
       ).toBeInTheDocument()
     })
   })

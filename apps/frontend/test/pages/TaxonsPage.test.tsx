@@ -118,9 +118,9 @@ describe('TaxonsPage', () => {
     render(<TaxonsPage />)
 
     expect(await screen.findByText('Taxons enregistrés')).toBeInTheDocument()
-    expect(screen.getByText('Formicinae')).toBeInTheDocument()
+    expect(screen.getAllByText('Formicinae')[0]).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'rufibarbis' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'rufibarbis' })[0])
 
     await waitFor(() => {
       expect(screen.getByText('Références liées')).toBeInTheDocument()
@@ -153,7 +153,7 @@ describe('TaxonsPage', () => {
     render(<TaxonsPage />)
 
     expect(await screen.findByText('Taxons enregistrés')).toBeInTheDocument()
-    expect(screen.getByText('Formicinae')).toBeInTheDocument()
+    expect(screen.getAllByText('Formicinae')[0]).toBeInTheDocument()
     expect(apiMocks.get).toHaveBeenCalledWith('/references')
   })
 
@@ -233,8 +233,8 @@ describe('TaxonsPage', () => {
     render(<TaxonsPage />)
 
     expect(await screen.findByText('Taxons enregistrés')).toBeInTheDocument()
-    expect(screen.getByText('Formicinae')).toBeInTheDocument()
-    expect(screen.getByText('Myrmicinae')).toBeInTheDocument()
+    expect(screen.getAllByText('Formicinae')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Myrmicinae')[0]).toBeInTheDocument()
     expect(await screen.findByText('Fin de la liste.')).toBeInTheDocument()
   })
 
@@ -308,7 +308,7 @@ describe('TaxonsPage', () => {
     render(<TaxonsPage />)
 
     expect(await screen.findByText('Taxons enregistrés')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'barbarus' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'barbarus' })[0])
 
     await waitFor(() => {
       expect(screen.getByText('Aucune description.')).toBeInTheDocument()
@@ -560,6 +560,8 @@ describe('TaxonsPage', () => {
 
     render(<TaxonsPage />)
 
-    expect(await screen.findByText('Aucun taxon trouvé.')).toBeInTheDocument()
+    expect(
+      (await screen.findAllByText('Aucun taxon trouvé.'))[0],
+    ).toBeInTheDocument()
   })
 })

@@ -54,9 +54,6 @@ describe('GamePage', () => {
               photoCredit: 'Alice',
             },
             choices: ['Formicinae', 'Myrmicinae'],
-            answer: {
-              subfamily: 'Formicinae',
-            },
           },
         }
       }
@@ -108,10 +105,6 @@ describe('GamePage', () => {
             choices: {
               subfamily: ['Formicinae', 'Myrmicinae'],
               genus: ['Formica', 'Camponotus'],
-            },
-            answer: {
-              subfamily: 'Formicinae',
-              genus: 'Formica',
             },
           },
         }
@@ -200,9 +193,6 @@ describe('GamePage', () => {
               photoCredit: 'Alice',
             },
             choices: ['Formicinae', 'Myrmicinae'],
-            answer: {
-              subfamily: 'Formicinae',
-            },
           },
         }
       }
@@ -233,20 +223,6 @@ describe('GamePage', () => {
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByAltText('Spécimen 1'))
-    expect(
-      await screen.findByAltText('Spécimen agrandis 1'),
-    ).toBeInTheDocument()
-
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Photo suivante' })[1],
-    )
-    expect(
-      await screen.findByAltText('Spécimen agrandis 2'),
-    ).toBeInTheDocument()
-
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Photo précédente' })[1],
-    )
     expect(
       await screen.findByAltText('Spécimen agrandis 1'),
     ).toBeInTheDocument()

@@ -176,16 +176,12 @@ export function TaxonsCrudPanel({
     [taxonForm, setTaxonForm],
   )
 
-  const validateTaxonForm = (): boolean => {
-    if (
-      !taxonForm.subfamily.trim() ||
-      !taxonForm.genus.trim() ||
-      !taxonForm.species.trim()
-    ) {
-      return false
-    }
-    return true
-  }
+  const validateTaxonForm = (): boolean =>
+    Boolean(
+      taxonForm.subfamily.trim() &&
+      taxonForm.genus.trim() &&
+      taxonForm.species.trim(),
+    )
 
   const validateSwarmingPeriod = (): boolean => {
     const { swarmingStartMonth, swarmingEndMonth } = modal.swarming

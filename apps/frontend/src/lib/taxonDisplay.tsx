@@ -1,9 +1,4 @@
-import type { Taxon } from '../types/models'
-
-type TaxonNameParts = Pick<
-  Taxon,
-  'genus' | 'subgenus' | 'species' | 'speciesGroup'
->
+import type { TaxonNameParts } from './taxonDisplayUtils'
 
 export function ScientificTaxonName({ taxon }: { taxon: TaxonNameParts }) {
   return (

@@ -8,6 +8,7 @@ import type {
 } from '../types/models'
 import { FranceMap } from '../components/FranceMap'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
+import { getReferenceHref } from '../lib/referenceUtils'
 
 function TreeIcon({ className }: { className?: string }) {
   return (
@@ -632,22 +633,6 @@ const monthLabels = [
   'Décembre',
 ] as const
 
-function getReferenceHref(reference: ReferenceItem) {
-  if (!reference.url) {
-    return null
-  }
-
-  if (
-    reference.type === 'MYRMECOLOGY' &&
-    !reference.url.startsWith('http://') &&
-    !reference.url.startsWith('https://')
-  ) {
-    return `https://doi.org/${reference.url}`
-  }
-
-  return reference.url
-}
-
 function getTaxonsCacheKey(query: string) {
   return `${TAXONS_CACHE_PREFIX}${encodeURIComponent(query.trim().toLowerCase())}`
 }
@@ -703,15 +688,6 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-  const [showExtraColumns, setShowExtraColumns] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(orientation: portrait)')
-    const handler = (e: MediaQueryListEvent) => {
-      if (e.matches) setShowExtraColumns(false)
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -847,7 +823,7 @@ export function TaxonsPage() {
     }
   }, [loadAllTaxons])
 
-  async function openSelectedDetail(
+  function openSelectedDetail(
     taxon: Taxon,
     level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species',
     value: string,
@@ -948,18 +924,18 @@ export function TaxonsPage() {
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <input
-          className="ui-input h-10 min-w-[260px] flex-1"
+          className="ui-input h-10 w-full min-w-0 sm:flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Recherche (sous-famille, genre, espèce...)"
         />
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             type="button"
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="relative ml-2 mt-0 inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            className="relative inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             <span>
               {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
@@ -971,21 +947,6 @@ export function TaxonsPage() {
             )}
           </button>
 
-          {!treeMode && (
-            <button
-              type="button"
-              onClick={() => setShowExtraColumns((v) => !v)}
-              title={
-                showExtraColumns
-                  ? 'Masquer les colonnes secondaires'
-                  : "Afficher tribu, sous-genre et groupe d'espèce"
-              }
-              className="sm:hidden ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
-            >
-              {showExtraColumns ? '−' : '+'}
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => setTreeMode((v) => !v)}
@@ -994,7 +955,7 @@ export function TaxonsPage() {
                 ? 'Basculer en vue tableau'
                 : 'Basculer en vue arborescente'
             }
-            className="ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            className="rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             {treeMode ? <TableIcon /> : <TreeIcon />}
           </button>
@@ -1227,43 +1188,19 @@ export function TaxonsPage() {
                     of content, filtering, sorting, or virtual-scroll reflows. */}
                 <colgroup>
                   <col style={{ width: '16%' }} /> {/* Sous-famille */}
-                  <col
-                    style={{ width: '12%' }}
-                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
-                  />{' '}
-                  {/* Tribu */}
+                  <col style={{ width: '12%' }} /> {/* Tribu */}
                   <col style={{ width: '17%' }} /> {/* Genre */}
-                  <col
-                    style={{ width: '14%' }}
-                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
-                  />{' '}
-                  {/* Sous-genre */}
-                  <col
-                    style={{ width: '17%' }}
-                    className={showExtraColumns ? '' : 'hidden sm:table-column'}
-                  />{' '}
-                  {/* Groupe d'espèce */}
+                  <col style={{ width: '14%' }} /> {/* Sous-genre */}
+                  <col style={{ width: '17%' }} /> {/* Groupe d'espèce */}
                   <col style={{ width: '24%' }} /> {/* Espèce */}
                 </colgroup>
                 <thead className="table-head-row">
                   <tr className="table-head-row">
                     <th className="table-head-sticky">Sous-famille</th>
-                    <th
-                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                    >
-                      Tribu
-                    </th>
+                    <th className="table-head-sticky">Tribu</th>
                     <th className="table-head-sticky">Genre</th>
-                    <th
-                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                    >
-                      Sous-genre
-                    </th>
-                    <th
-                      className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                    >
-                      Groupe d'espèce
-                    </th>
+                    <th className="table-head-sticky">Sous-genre</th>
+                    <th className="table-head-sticky">Groupe d'espèce</th>
                     <th className="table-head-sticky">Espèce</th>
                   </tr>
                 </thead>
@@ -1319,10 +1256,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                          title={tribeVal}
-                        >
+                        <td className="taxon-td" title={tribeVal}>
                           {tribeVal}
                         </td>
                         <td className="taxon-td" title={genusVal}>
@@ -1347,10 +1281,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                          title={subgenusVal}
-                        >
+                        <td className="taxon-td" title={subgenusVal}>
                           {subgenus && subgenusDetail ? (
                             isClickable(subgenusVal) ? (
                               <button
@@ -1380,10 +1311,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                          title={speciesGroupVal}
-                        >
+                        <td className="taxon-td" title={speciesGroupVal}>
                           {speciesGroup && speciesGroupDetail ? (
                             isClickable(speciesGroupVal) ? (
                               <button
@@ -1569,16 +1497,10 @@ export function TaxonsPage() {
                   </p>
                   {selectedDetail.taxon.swarmingStartMonth &&
                   selectedDetail.taxon.swarmingEndMonth ? (
-                    (() => {
-                      const startMonth = selectedDetail.taxon.swarmingStartMonth
-                      const endMonth = selectedDetail.taxon.swarmingEndMonth
-                      return (
-                        <p className="mt-2 text-[color:var(--app-text-muted)]">
-                          {monthLabels[startMonth - 1]} à{' '}
-                          {monthLabels[endMonth - 1]}
-                        </p>
-                      )
-                    })()
+                    <p className="mt-2 text-[color:var(--app-text-muted)]">
+                      {monthLabels[selectedDetail.taxon.swarmingStartMonth - 1]}{' '}
+                      à {monthLabels[selectedDetail.taxon.swarmingEndMonth - 1]}
+                    </p>
                   ) : (
                     <p className="mt-2 text-[color:var(--app-text-muted)]">
                       Aucune période d'essaimage renseignée.
@@ -1655,21 +1577,19 @@ export function TaxonsPage() {
                   </p>
                   <div className="mt-1">
                     {(() => {
-                      const raw = (selectedDetail.taxon.distribution
-                        ?.departments ?? []) as unknown[]
-                      const codes = raw.filter(
-                        (c) => typeof c === 'string',
-                      ) as FrenchDepartmentCode[]
-
-                      if (codes.length === 0) {
-                        return (
-                          <p className="mt-1 text-[color:var(--app-text-muted)]">
-                            Aucune aire de répartition renseignée.
-                          </p>
-                        )
-                      }
-
-                      return <FranceMap selectedDepartments={codes} readonly />
+                      const codes = (
+                        (selectedDetail.taxon.distribution?.departments ??
+                          []) as unknown[]
+                      ).filter(
+                        (c): c is FrenchDepartmentCode => typeof c === 'string',
+                      )
+                      return codes.length === 0 ? (
+                        <p className="mt-1 text-[color:var(--app-text-muted)]">
+                          Aucune aire de répartition renseignée.
+                        </p>
+                      ) : (
+                        <FranceMap selectedDepartments={codes} readonly />
+                      )
                     })()}
                   </div>
                 </>

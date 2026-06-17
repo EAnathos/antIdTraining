@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { EntryProposal, Suggestion } from '../../types/models'
 import { getResponsiveImageProps } from '../../lib/image'
-import { resolveImageUrl } from './imageHelpers'
+import { resolveImageUrl } from '../../lib/imageUrl'
 
 type Props = {
   suggestions: Suggestion[]

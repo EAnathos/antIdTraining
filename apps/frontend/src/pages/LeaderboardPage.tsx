@@ -70,8 +70,7 @@ export function LeaderboardPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        const cancelled = { value: false }
-        void fetchData(cancelled)
+        void fetchData({ value: false })
       }
     }
 
@@ -84,8 +83,7 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     const handlePointsChanged = () => {
-      const cancelled = { value: false }
-      void fetchData(cancelled)
+      void fetchData({ value: false })
     }
 
     window.addEventListener(
@@ -127,25 +125,32 @@ export function LeaderboardPage() {
       {error && <p className="ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="overflow-x-auto">
-          <table className="field-table min-w-full text-sm">
+        <div className="overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
+          <table className="field-table text-sm">
+            <colgroup>
+              <col style={{ width: '3rem' }} />
+              <col />
+              <col
+                className="hidden sm:table-column"
+                style={{ width: '6rem' }}
+              />
+              <col
+                className="hidden sm:table-column"
+                style={{ width: '9rem' }}
+              />
+              <col style={{ width: '6rem' }} />
+            </colgroup>
             <thead>
-              <tr className="bg-[color:var(--app-surface-muted)]">
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  Joueur
-                </th>
-                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+              <tr>
+                <th className="table-head-sticky">#</th>
+                <th className="table-head-sticky">Joueur</th>
+                <th className="table-head-sticky hidden sm:table-cell">
                   Parties
                 </th>
-                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+                <th className="table-head-sticky hidden sm:table-cell">
                   Bonnes réponses
                 </th>
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  Points
-                </th>
+                <th className="table-head-sticky">Points</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--app-border)]">
@@ -158,28 +163,28 @@ export function LeaderboardPage() {
                       : 'bg-[color:var(--app-surface)]'
                   }
                 >
-                  <td className="px-4 py-3 font-medium text-[color:var(--app-text)]">
+                  <td className="taxon-td font-medium text-[color:var(--app-text)]">
                     {index + 1}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="taxon-td">
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedUsername(item.username)
                         setModalOpen(true)
                       }}
-                      className="cursor-pointer text-[color:var(--app-text)] hover:text-[color:var(--app-primary)] hover:underline"
+                      className="taxon-td-btn"
                     >
                       {item.username}
                     </button>
                   </td>
-                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
+                  <td className="taxon-td hidden sm:table-cell text-[color:var(--app-text-muted)]">
                     {item.gamesPlayed}
                   </td>
-                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
+                  <td className="taxon-td hidden sm:table-cell text-[color:var(--app-text-muted)]">
                     {item.correctCount}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-[color:var(--app-text)]">
+                  <td className="taxon-td font-semibold text-[color:var(--app-text)]">
                     {item.points}
                   </td>
                 </tr>

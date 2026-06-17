@@ -120,7 +120,6 @@ export type GameQuestion = {
   choices:
     | string[]
     | { subfamily: string[]; genus?: string[]; species?: string[] }
-  answer: { subfamily?: string; genus?: string; species?: string }
 }
 
 export type GameLevelStats = {
