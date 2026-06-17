@@ -54,9 +54,6 @@ describe('GamePage', () => {
               photoCredit: 'Alice',
             },
             choices: ['Formicinae', 'Myrmicinae'],
-            answer: {
-              subfamily: 'Formicinae',
-            },
           },
         }
       }
@@ -108,10 +105,6 @@ describe('GamePage', () => {
             choices: {
               subfamily: ['Formicinae', 'Myrmicinae'],
               genus: ['Formica', 'Camponotus'],
-            },
-            answer: {
-              subfamily: 'Formicinae',
-              genus: 'Formica',
             },
           },
         }
@@ -200,9 +193,6 @@ describe('GamePage', () => {
               photoCredit: 'Alice',
             },
             choices: ['Formicinae', 'Myrmicinae'],
-            answer: {
-              subfamily: 'Formicinae',
-            },
           },
         }
       }

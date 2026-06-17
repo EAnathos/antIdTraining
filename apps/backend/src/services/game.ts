@@ -254,9 +254,7 @@ const GAME_LEVEL_CONFIGS = {
       entries: GameEntry[],
       allTaxons: Array<{ subfamily: string }>,
       userId?: string | null,
-    ): Promise<
-      GameQuestionBase & { choices: string[]; answer: { subfamily: string } }
-    > => {
+    ): Promise<GameQuestionBase & { choices: string[] }> => {
       const availableSubfamilies = uniqueShuffled(
         allTaxons.map((t) => t.subfamily),
       )
@@ -283,7 +281,6 @@ const GAME_LEVEL_CONFIGS = {
           size: await resolveTaxonWorkerSize(entry),
         },
         choices,
-        answer: { subfamily: entry.subfamily },
       }
     },
   },
@@ -299,7 +296,6 @@ const GAME_LEVEL_CONFIGS = {
     ): Promise<
       GameQuestionBase & {
         choices: { subfamily: string[]; genus: string[] }
-        answer: { subfamily: string; genus: string | null }
       }
     > => {
       const choices = buildTaxonChoices(entry, allTaxons)
@@ -319,10 +315,6 @@ const GAME_LEVEL_CONFIGS = {
           subfamily: choices.subfamilyChoices,
           genus: choices.genusChoices,
         },
-        answer: {
-          subfamily: entry.subfamily,
-          genus: entry.genus,
-        },
       }
     },
   },
@@ -341,11 +333,6 @@ const GAME_LEVEL_CONFIGS = {
     ): Promise<
       GameQuestionBase & {
         choices: { subfamily: string[]; genus: string[]; species: string[] }
-        answer: {
-          subfamily: string
-          genus: string | null
-          species: string | null
-        }
       }
     > => {
       const choices = buildTaxonChoices(entry, allTaxons)
@@ -365,11 +352,6 @@ const GAME_LEVEL_CONFIGS = {
           subfamily: choices.subfamilyChoices,
           genus: choices.genusChoices,
           species: choices.speciesChoices,
-        },
-        answer: {
-          subfamily: entry.subfamily,
-          genus: entry.genus,
-          species: entry.species,
         },
       }
     },
