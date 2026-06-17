@@ -1271,10 +1271,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className="taxon-td"
-                          title={tribeVal}
-                        >
+                        <td className="taxon-td" title={tribeVal}>
                           {tribeVal}
                         </td>
                         <td className="taxon-td" title={genusVal}>
@@ -1299,10 +1296,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className="taxon-td"
-                          title={subgenusVal}
-                        >
+                        <td className="taxon-td" title={subgenusVal}>
                           {subgenus && subgenusDetail ? (
                             isClickable(subgenusVal) ? (
                               <button
@@ -1332,10 +1326,7 @@ export function TaxonsPage() {
                             </span>
                           )}
                         </td>
-                        <td
-                          className="taxon-td"
-                          title={speciesGroupVal}
-                        >
+                        <td className="taxon-td" title={speciesGroupVal}>
                           {speciesGroup && speciesGroupDetail ? (
                             isClickable(speciesGroupVal) ? (
                               <button
