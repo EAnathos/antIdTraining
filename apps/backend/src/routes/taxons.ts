@@ -19,6 +19,16 @@ import { recordAdminAudit } from '../lib/adminAudit.js'
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
 
+function formatTaxonLabel(taxon: {
+  subfamily: string
+  genus?: string | null
+  species?: string | null
+}) {
+  return [taxon.subfamily, taxon.genus, taxon.species]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 publicTaxonsRouter.get(
   '/subfamilies',
   asyncHandler(async (_req, res) => {
@@ -91,12 +101,9 @@ adminTaxonsRouter.post(
     }
 
     const created = await createTaxon(parsed.data)
-    const taxonLabel = [created.subfamily, created.genus, created.species]
-      .filter(Boolean)
-      .join(' · ')
     await recordAdminAudit(req, {
       action: 'Taxon créé',
-      detail: taxonLabel,
+      detail: formatTaxonLabel(created),
       tone: 'SUCCESS',
       entityType: 'taxon',
       entityId: created.id,
@@ -115,12 +122,9 @@ adminTaxonsRouter.put(
     }
 
     const updated = await updateTaxon(req.params.id as string, parsed.data)
-    const taxonLabel = [updated.subfamily, updated.genus, updated.species]
-      .filter(Boolean)
-      .join(' · ')
     await recordAdminAudit(req, {
       action: 'Taxon modifié',
-      detail: taxonLabel,
+      detail: formatTaxonLabel(updated),
       tone: 'INFO',
       entityType: 'taxon',
       entityId: updated.id,

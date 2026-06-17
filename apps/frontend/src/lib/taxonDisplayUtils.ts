@@ -1,6 +1,6 @@
 import type { Taxon } from '../types/models'
 
-type TaxonNameParts = Pick<
+export type TaxonNameParts = Pick<
   Taxon,
   'genus' | 'subgenus' | 'species' | 'speciesGroup'
 >

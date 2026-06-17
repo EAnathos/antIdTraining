@@ -44,7 +44,26 @@ function resolveSpeciesSelection(input: EntryInput) {
   return parseSpeciesTaxonValue(input.taxonValue)
 }
 
-export async function resolveEntryTaxonSelection(input: EntryInput) {
+function resolveSize(
+  manualSize: string | null | undefined,
+  profileSize: string | null,
+): string | null {
+  return (manualSize && manualSize.trim()) || profileSize || null
+}
+
+export type EntryTaxonSelection = {
+  taxonId: string | null
+  taxonLevel: 'SUBFAMILY' | 'GENUS' | 'SPECIES'
+  taxonValue: string
+  subfamily: string
+  genus: string | null
+  species: string | null
+  size: string | null
+}
+
+export async function resolveEntryTaxonSelection(
+  input: EntryInput,
+): Promise<EntryTaxonSelection | null> {
   if (input.taxonLevel === 'SUBFAMILY') {
     const match = await prisma.taxon.findFirst({
       where: {
@@ -64,8 +83,7 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       { subfamily: match.subfamily, genus: null, species: null },
       input.caste,
     )
-    const sizeValue =
-      (input.size && input.size.trim()) || sizeFromProfile || null
+    const sizeValue = resolveSize(input.size, sizeFromProfile)
 
     return {
       taxonId: null,
@@ -97,8 +115,7 @@ export async function resolveEntryTaxonSelection(input: EntryInput) {
       { subfamily: match.subfamily, genus: match.genus, species: null },
       input.caste,
     )
-    const sizeValue =
-      (input.size && input.size.trim()) || sizeFromProfile || null
+    const sizeValue = resolveSize(input.size, sizeFromProfile)
 
     return {
       taxonId: match.id,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
 import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
@@ -58,7 +58,6 @@ export function GamePage() {
   const [subfamilyValidation, setSubfamilyValidation] =
     useState<GameValidation | null>(null)
   const [mediumStep, setMediumStep] = useState<MediumStep>('subfamily')
-  const [stepFeedback, setStepFeedback] = useState('')
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [subfamilyOptions, setSubfamilyOptions] = useState<string[]>([])
@@ -66,13 +65,15 @@ export function GamePage() {
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{
     url: string
-    index: number
   } | null>(null)
   const [sessionScore, setSessionScore] = useState(0)
   const fullscreenTouchStartX = useRef<number | null>(null)
-  const isConnected =
-    typeof window !== 'undefined' &&
-    !!window.localStorage.getItem('antidtraining-auth-token')
+  const isConnected = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      !!window.localStorage.getItem('antidtraining-auth-token'),
+    [],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -100,16 +101,11 @@ export function GamePage() {
     setSelectedGenus('')
     setResult(null)
     setSubfamilyValidation(null)
-    setStepFeedback('')
     setMediumStep('subfamily')
     setCurrentImageIndex(0)
     setDynamicGenusOptions([])
     setImageLoadFailed(false)
     setFullscreenImage(null)
-  }
-
-  function applyScoreDelta(points: number) {
-    setSessionScore((current) => current + points)
   }
 
   function getScoreDelta(
@@ -137,72 +133,37 @@ export function GamePage() {
   }
 
   async function loadQuestion() {
+    resetGameState()
     setIsLoadingQuestion(true)
     try {
       const { data } = await api.get<GameQuestion>('/game/question', {
         params: { level },
       })
       setQuestion(data)
-      setSelectedSubfamily('')
-      setSelectedGenus('')
-      setResult(null)
-      setSubfamilyValidation(null)
-      setStepFeedback('')
-      setMediumStep('subfamily')
-      setCurrentImageIndex(0)
-      setDynamicGenusOptions([])
-      setImageLoadFailed(false)
     } finally {
       setIsLoadingQuestion(false)
     }
   }
 
   function goToPreviousImage() {
-    if (
-      !question ||
-      !Array.isArray(question.images) ||
-      question.images.length <= 1
-    )
-      return
+    if (!question || question.images.length <= 1) return
     setImageLoadFailed(false)
-    setCurrentImageIndex((index) => {
-      const nextIndex =
-        (index - 1 + question.images.length) % question.images.length
-      setFullscreenImage({ url: question.images[nextIndex], index: nextIndex })
-      return nextIndex
-    })
+    setCurrentImageIndex(
+      (index) => (index - 1 + question.images.length) % question.images.length,
+    )
   }
 
   function goToNextImage() {
-    if (
-      !question ||
-      !Array.isArray(question.images) ||
-      question.images.length <= 1
-    )
-      return
+    if (!question || question.images.length <= 1) return
     setImageLoadFailed(false)
-    setCurrentImageIndex((index) => {
-      const nextIndex = (index + 1) % question.images.length
-      setFullscreenImage({ url: question.images[nextIndex], index: nextIndex })
-      return nextIndex
-    })
+    setCurrentImageIndex((index) => (index + 1) % question.images.length)
   }
 
   useEffect(() => {
-    if (
-      !question ||
-      !Array.isArray(question.images) ||
-      question.images.length <= 1
-    ) {
-      return
-    }
+    if (!question || question.images.length <= 1) return
 
-    const currentImageUrl = `${backendOrigin}${question.images[currentImageIndex]}`
     const previousImageUrl = `${backendOrigin}${question.images[(currentImageIndex - 1 + question.images.length) % question.images.length]}`
     const nextImageUrl = `${backendOrigin}${question.images[(currentImageIndex + 1) % question.images.length]}`
-
-    const preloadCurrent = new Image()
-    preloadCurrent.src = currentImageUrl
 
     const preloadPrevious = new Image()
     preloadPrevious.src = previousImageUrl
@@ -249,7 +210,7 @@ export function GamePage() {
       })
 
       if (data.correct) {
-        applyScoreDelta(getScoreDelta('subfamily', true))
+        setSessionScore((s) => s + getScoreDelta('subfamily', true))
         try {
           const { data: generaData } = await api.get<string[]>(
             '/taxons/genera',
@@ -266,14 +227,12 @@ export function GamePage() {
 
         setSelectedGenus('')
         setSubfamilyValidation(data)
-        setStepFeedback('')
         setMediumStep('genus')
         return
       }
 
       setSubfamilyValidation(null)
-      applyScoreDelta(getScoreDelta('subfamily', false))
-      setStepFeedback('')
+      setSessionScore((s) => s + getScoreDelta('subfamily', false))
       setMediumStep('done')
       setResult(data)
       return
@@ -294,10 +253,11 @@ export function GamePage() {
     })
     if (level === 'medium') {
       setMediumStep('done')
-      setStepFeedback('')
     }
-    applyScoreDelta(
-      getScoreDelta(level === 'medium' ? 'genus' : 'subfamily', data.correct),
+    setSessionScore(
+      (s) =>
+        s +
+        getScoreDelta(level === 'medium' ? 'genus' : 'subfamily', data.correct),
     )
     setResult(data)
   }
@@ -311,8 +271,8 @@ export function GamePage() {
         >
           Lancer un niveau
         </h2>
-        <span className="game-score-badge">
-          Score de la session&nbsp;: {sessionScore}
+        <span className="game-score-badge whitespace-nowrap">
+          Score de la session : {sessionScore}
         </span>
       </div>
       <div className="game-card__body space-y-4">
@@ -377,7 +337,7 @@ export function GamePage() {
                   type="button"
                   onClick={goToPreviousImage}
                   disabled={question.images.length <= 1}
-                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-2 text-[color:var(--app-text)] shadow-md transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
                   aria-label="Photo précédente"
                 >
                   <svg
@@ -399,7 +359,6 @@ export function GamePage() {
                   onClick={() =>
                     setFullscreenImage({
                       url: question.images[currentImageIndex],
-                      index: currentImageIndex,
                     })
                   }
                   className="absolute right-2 top-2 z-10 rounded-lg bg-[color:var(--app-surface-strong)]/90 px-2 py-1 text-sm text-[color:var(--app-text)] shadow-sm hover:bg-[color:var(--app-surface-strong)] sm:right-12"
@@ -443,7 +402,6 @@ export function GamePage() {
                       onClick={() =>
                         setFullscreenImage({
                           url: question.images[currentImageIndex],
-                          index: currentImageIndex,
                         })
                       }
                     />
@@ -454,7 +412,7 @@ export function GamePage() {
                   type="button"
                   onClick={goToNextImage}
                   disabled={question.images.length <= 1}
-                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-2 text-[color:var(--app-text)] shadow-md transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30"
                   aria-label="Photo suivante"
                 >
                   <svg
@@ -583,12 +541,6 @@ export function GamePage() {
               </label>
             )}
 
-            {stepFeedback && (
-              <p className="font-medium text-[color:var(--app-text)]">
-                {stepFeedback}
-              </p>
-            )}
-
             {!result && (
               <button
                 className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
@@ -709,112 +661,61 @@ export function GamePage() {
           </div>
         )}
       </div>
-      {/* end game-card__body */}
 
-      {fullscreenImage &&
-        (() => {
-          const images = question?.images ?? []
+      {fullscreenImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div
+            className="relative"
+            onClick={(event) => event.stopPropagation()}
+            onTouchStart={(event) => {
+              if (event.touches.length === 1) {
+                fullscreenTouchStartX.current = event.touches[0].clientX
+              }
+            }}
+            onTouchEnd={(event) => {
+              if (
+                fullscreenTouchStartX.current === null ||
+                event.changedTouches.length === 0
+              ) {
+                return
+              }
 
-          return (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+              const deltaX =
+                event.changedTouches[0].clientX - fullscreenTouchStartX.current
+              if (Math.abs(deltaX) > 50) {
+                if (deltaX < 0) {
+                  goToNextImage()
+                } else {
+                  goToPreviousImage()
+                }
+              }
+
+              fullscreenTouchStartX.current = null
+            }}
+          >
+            <button
+              type="button"
+              className="absolute right-2 top-2 rounded-sm bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow hover:bg-[color:var(--app-surface-muted)]"
               onClick={() => setFullscreenImage(null)}
+              aria-label="Fermer"
             >
-              <div
-                className="relative"
-                onClick={(event) => event.stopPropagation()}
-                onTouchStart={(event) => {
-                  if (event.touches.length === 1) {
-                    fullscreenTouchStartX.current = event.touches[0].clientX
-                  }
-                }}
-                onTouchEnd={(event) => {
-                  if (
-                    fullscreenTouchStartX.current === null ||
-                    event.changedTouches.length === 0
-                  ) {
-                    return
-                  }
+              ✕
+            </button>
 
-                  const deltaX =
-                    event.changedTouches[0].clientX -
-                    fullscreenTouchStartX.current
-                  if (Math.abs(deltaX) > 50) {
-                    if (deltaX < 0) {
-                      goToNextImage()
-                    } else {
-                      goToPreviousImage()
-                    }
-                  }
-
-                  fullscreenTouchStartX.current = null
-                }}
-              >
-                {images.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
-                      aria-label="Photo précédente"
-                      onClick={goToPreviousImage}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m15 18-6-6 6-6" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
-                      aria-label="Photo suivante"
-                      onClick={goToNextImage}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </button>
-                  </>
-                )}
-
-                <button
-                  type="button"
-                  className="absolute right-2 top-2 rounded-sm bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow hover:bg-[color:var(--app-surface-muted)]"
-                  onClick={() => setFullscreenImage(null)}
-                  aria-label="Fermer"
-                >
-                  ✕
-                </button>
-
-                <img
-                  {...getResponsiveImageProps(fullscreenImage.url, {
-                    sizes: '(max-width: 768px) 95vw, 80vw',
-                  })}
-                  alt={`Spécimen agrandis ${fullscreenImage.index + 1}`}
-                  className="max-h-[90vh] max-w-[90vw] rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] object-contain"
-                  decoding="async"
-                />
-              </div>
-            </div>
-          )
-        })()}
+            <img
+              {...getResponsiveImageProps(fullscreenImage.url, {
+                sizes: '(max-width: 768px) 95vw, 80vw',
+              })}
+              alt={`Spécimen agrandis ${currentImageIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] object-contain"
+              decoding="async"
+            />
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { resolveImageUrl } from '../lib/imageUrl'
@@ -111,10 +111,21 @@ function formatMemberSince(createdAt: string | null | undefined) {
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const token =
-    typeof window !== 'undefined'
-      ? window.localStorage.getItem('antidtraining-auth-token')
-      : null
+  const token = useMemo(
+    () =>
+      typeof window !== 'undefined'
+        ? window.localStorage.getItem('antidtraining-auth-token')
+        : null,
+    [],
+  )
+
+  const authApi = useMemo(
+    () =>
+      api.create({
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }),
+    [token],
+  )
   const [profile, setProfile] = useState<AuthMeResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -142,9 +153,6 @@ export function ProfilePage() {
       return
     }
 
-    const authApi = api.create({
-      headers: { Authorization: `Bearer ${token}` },
-    })
     authApi
       .get<AuthMeResponse>('/auth/me')
       .then((response) => {
@@ -162,7 +170,7 @@ export function ProfilePage() {
       .finally(() => {
         setLoading(false)
       })
-  }, [token])
+  }, [token, authApi])
 
   async function handleSaveProfile() {
     if (!token || !profile) return
@@ -171,9 +179,6 @@ export function ProfilePage() {
     setSuccessMessage('')
 
     try {
-      const authApi = api.create({
-        headers: { Authorization: `Bearer ${token}` },
-      })
       const updated = await authApi.patch<AuthMeResponse>('/auth/profile', {
         avatar: avatar || null,
         bio: bio || null,
@@ -202,9 +207,6 @@ export function ProfilePage() {
     setError('')
 
     try {
-      const authApi = api.create({
-        headers: { Authorization: `Bearer ${token}` },
-      })
       const form = new FormData()
       form.append('avatar', file)
       const updated = await authApi.post<AuthMeResponse>('/auth/avatar', form)
@@ -229,9 +231,6 @@ export function ProfilePage() {
     setError('')
 
     try {
-      const authApi = api.create({
-        headers: { Authorization: `Bearer ${token}` },
-      })
       await authApi.post('/auth/password-reset-request')
       setPasswordResetConfirm(false)
       setSuccessMessage(
@@ -253,9 +252,6 @@ export function ProfilePage() {
     if (!token || !deleteConfirm) return
 
     try {
-      const authApi = api.create({
-        headers: { Authorization: `Bearer ${token}` },
-      })
       await authApi.post('/auth/delete-account')
       window.localStorage.removeItem('antidtraining-auth-token')
       window.localStorage.removeItem('antidtraining-auth-role')

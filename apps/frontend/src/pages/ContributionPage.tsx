@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { api, backendOrigin } from '../lib/api'
+import { api } from '../lib/api'
+import { resolveImageUrl } from '../lib/imageUrl'
 import { getResponsiveImageProps } from '../lib/image'
 import type { EntryProposal, Suggestion } from '../types/models'
 
@@ -218,16 +219,6 @@ export function ContributionPage() {
     [token],
   )
 
-  function resolveImageUrl(imageUrl: string) {
-    if (!imageUrl) return imageUrl
-
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl
-    }
-
-    return `${backendOrigin}${imageUrl}`
-  }
-
   function patchEntryForm(patch: Partial<EntryForm>) {
     setEntryForm({ ...entryForm, ...patch })
   }
@@ -350,48 +341,38 @@ export function ContributionPage() {
     }
   }, [entryForm.genus])
 
-  const load = useMemo(
-    () => async () => {
-      if (!token) return
-      setLoading(true)
-      try {
-        const [contribRes, countsRes] = await Promise.all([
-          authApi.get<{
-            proposals: EntryProposal[]
-            suggestions: Suggestion[]
-          }>('/entry-proposals/my-contributions'),
-          authApi.get<{
-            proposalCount: number
-            proposalLimit: number
-            suggestionCount: number
-            suggestionLimit: number
-          }>('/entry-proposals/user-counts'),
-        ])
-        setProposals(contribRes.data.proposals)
-        setSuggestions(contribRes.data.suggestions)
-        setCounts(countsRes.data)
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : 'Impossible de charger les contributions.',
-        )
-      } finally {
-        setLoading(false)
-      }
-    },
-    [authApi, token],
-  )
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  useEffect(() => {
-    if (view !== 'contributions') {
-      return
+  const load = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const [contribRes, countsRes] = await Promise.all([
+        authApi.get<{
+          proposals: EntryProposal[]
+          suggestions: Suggestion[]
+        }>('/entry-proposals/my-contributions'),
+        authApi.get<{
+          proposalCount: number
+          proposalLimit: number
+          suggestionCount: number
+          suggestionLimit: number
+        }>('/entry-proposals/user-counts'),
+      ])
+      setProposals(contribRes.data.proposals)
+      setSuggestions(contribRes.data.suggestions)
+      setCounts(countsRes.data)
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible de charger les contributions.',
+      )
+    } finally {
+      setLoading(false)
     }
+  }, [authApi, token])
 
+  useEffect(() => {
+    if (view !== 'contributions') return
     void load()
   }, [view, load])
 

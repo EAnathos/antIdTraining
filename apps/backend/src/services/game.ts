@@ -73,14 +73,6 @@ function buildChoices<T>(answer: T, candidates: T[], maxChoices: number) {
   return uniqueShuffled([answer, ...wrongChoices])
 }
 
-async function resolveEntrySize(entry: {
-  species?: string | null
-  genus?: string | null
-  subfamily: string
-}) {
-  return resolveTaxonWorkerSize(entry)
-}
-
 function applyGameFilters(
   entries: GameEntry[],
   filters?: { departments?: string[]; swarmingMonths?: number[] },
@@ -288,7 +280,7 @@ const GAME_LEVEL_CONFIGS = {
         prompt: 'Identifier la sous-famille',
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices,
         answer: { subfamily: entry.subfamily },
@@ -321,7 +313,7 @@ const GAME_LEVEL_CONFIGS = {
         prompt: 'Identifier la sous-famille puis le genre',
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices: {
           subfamily: choices.subfamilyChoices,
@@ -367,7 +359,7 @@ const GAME_LEVEL_CONFIGS = {
         prompt: "Identifier la sous-famille, le genre et l'espèce",
         details: {
           ...buildQuestionDetails(entry),
-          size: await resolveEntrySize(entry),
+          size: await resolveTaxonWorkerSize(entry),
         },
         choices: {
           subfamily: choices.subfamilyChoices,
@@ -483,7 +475,7 @@ export async function validateGameAnswer(
     },
   }
 
-  const identificationSize = await resolveEntrySize({
+  const identificationSize = await resolveTaxonWorkerSize({
     species: resolvedAnswer.species ?? null,
     genus: resolvedAnswer.genus ?? null,
     subfamily: resolvedAnswer.subfamily ?? '',
