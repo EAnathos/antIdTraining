@@ -55,6 +55,7 @@ gameRouter.get(
 
 gameRouter.post(
   '/validate',
+  optionalAuth,
   asyncHandler(async (req, res) => {
     await enforceIpRateLimit(
       'game:validate',
@@ -69,7 +70,10 @@ gameRouter.post(
       throw parsed.error
     }
 
-    const result = await validateGameAnswer(parsed.data)
+    const result = await validateGameAnswer(
+      parsed.data,
+      req.user?.userId ?? null,
+    )
     return res.json(result)
   }),
 )
