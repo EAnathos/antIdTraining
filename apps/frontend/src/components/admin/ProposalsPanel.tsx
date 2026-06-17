@@ -88,8 +88,13 @@ export function ProposalsPanel({ proposals, setProposalStatus }: Props) {
                 <p className="text-xs text-[color:var(--app-text-muted)]">
                   De: {p.user?.username ?? 'Inconnu'}
                 </p>
-                <p className="mt-2 text-xs text-[color:var(--app-text-muted)]">
-                  {p.biotope}
+                <p className="mt-2 text-xs">
+                  <span className="font-semibold text-[color:var(--app-text)]">
+                    Biotope :
+                  </span>{' '}
+                  <span className="text-[color:var(--app-text)]">
+                    {p.biotope}
+                  </span>
                 </p>
                 <p className="text-xs text-[color:var(--app-text-soft)]">
                   {new Date(p.createdAt).toLocaleString()}

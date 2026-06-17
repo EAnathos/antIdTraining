@@ -3,6 +3,110 @@ import type { EntryProposal, Suggestion } from '../../types/models'
 import { getResponsiveImageProps } from '../../lib/image'
 import { resolveImageUrl } from '../../lib/imageUrl'
 
+const DEPARTMENT_NAMES: Record<string, string> = {
+  '01': 'Ain',
+  '02': 'Aisne',
+  '03': 'Allier',
+  '04': 'Alpes-de-Haute-Provence',
+  '05': 'Hautes-Alpes',
+  '06': 'Alpes-Maritimes',
+  '07': 'Ardèche',
+  '08': 'Ardennes',
+  '09': 'Ariège',
+  '10': 'Aube',
+  '11': 'Aude',
+  '12': 'Aveyron',
+  '13': 'Bouches-du-Rhône',
+  '14': 'Calvados',
+  '15': 'Cantal',
+  '16': 'Charente',
+  '17': 'Charente-Maritime',
+  '18': 'Cher',
+  '19': 'Corrèze',
+  '21': "Côte-d'Or",
+  '22': "Côtes-d'Armor",
+  '23': 'Creuse',
+  '24': 'Dordogne',
+  '25': 'Doubs',
+  '26': 'Drôme',
+  '27': 'Eure',
+  '28': 'Eure-et-Loir',
+  '29': 'Finistère',
+  '2A': 'Corse-du-Sud',
+  '2B': 'Haute-Corse',
+  '30': 'Gard',
+  '31': 'Haute-Garonne',
+  '32': 'Gers',
+  '33': 'Gironde',
+  '34': 'Hérault',
+  '35': 'Ille-et-Vilaine',
+  '36': 'Indre',
+  '37': 'Indre-et-Loire',
+  '38': 'Isère',
+  '39': 'Jura',
+  '40': 'Landes',
+  '41': 'Loir-et-Cher',
+  '42': 'Loire',
+  '43': 'Haute-Loire',
+  '44': 'Loire-Atlantique',
+  '45': 'Loiret',
+  '46': 'Lot',
+  '47': 'Lot-et-Garonne',
+  '48': 'Lozère',
+  '49': 'Maine-et-Loire',
+  '50': 'Manche',
+  '51': 'Marne',
+  '52': 'Haute-Marne',
+  '53': 'Mayenne',
+  '54': 'Meurthe-et-Moselle',
+  '55': 'Meuse',
+  '56': 'Morbihan',
+  '57': 'Moselle',
+  '58': 'Nièvre',
+  '59': 'Nord',
+  '60': 'Oise',
+  '61': 'Orne',
+  '62': 'Pas-de-Calais',
+  '63': 'Puy-de-Dôme',
+  '64': 'Pyrénées-Atlantiques',
+  '65': 'Hautes-Pyrénées',
+  '66': 'Pyrénées-Orientales',
+  '67': 'Bas-Rhin',
+  '68': 'Haut-Rhin',
+  '69': 'Rhône',
+  '70': 'Haute-Saône',
+  '71': 'Saône-et-Loire',
+  '72': 'Sarthe',
+  '73': 'Savoie',
+  '74': 'Haute-Savoie',
+  '75': 'Paris',
+  '76': 'Seine-Maritime',
+  '77': 'Seine-et-Marne',
+  '78': 'Yvelines',
+  '79': 'Deux-Sèvres',
+  '80': 'Somme',
+  '81': 'Tarn',
+  '82': 'Tarn-et-Garonne',
+  '83': 'Var',
+  '84': 'Vaucluse',
+  '85': 'Vendée',
+  '86': 'Vienne',
+  '87': 'Haute-Vienne',
+  '88': 'Vosges',
+  '89': 'Yonne',
+  '90': 'Territoire de Belfort',
+  '91': 'Essonne',
+  '92': 'Hauts-de-Seine',
+  '93': 'Seine-Saint-Denis',
+  '94': 'Val-de-Marne',
+  '95': "Val-d'Oise",
+  '971': 'Guadeloupe',
+  '972': 'Martinique',
+  '973': 'Guyane',
+  '974': 'La Réunion',
+  '976': 'Mayotte',
+}
+
 type Props = {
   suggestions: Suggestion[]
   setSuggestionStatus: (
@@ -297,43 +401,28 @@ export function SuggestionsPanel({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">
-                      {p.user?.username ?? 'Utilisateur'}
-                    </p>
-                    <p className="text-xs text-[color:var(--app-text-soft)]">
-                      {p.taxonLevel}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--app-primary)]">
-                    Proposition d’entrée
+                  <p className="font-medium">
+                    {p.user?.username ?? 'Utilisateur'}
                   </p>
                   <p className="text-sm text-[color:var(--app-text)]">
-                    {p.taxonValue}
+                    {[
+                      p.subfamily,
+                      p.genus,
+                      p.subgenus,
+                      p.speciesGroup,
+                      p.species,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
-                  {p.subfamily && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">
-                      Subfamily: {p.subfamily}
-                    </p>
-                  )}
-                  {p.genus && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">
-                      Genus: {p.genus}
-                    </p>
-                  )}
-                  {p.species && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">
-                      Species: {p.species}
-                    </p>
-                  )}
-                  {p.size && (
-                    <p className="text-xs text-[color:var(--app-text-muted)]">
-                      Size: {p.size}
-                    </p>
-                  )}
                   {p.caste && (
                     <p className="text-xs text-[color:var(--app-text-muted)]">
-                      Caste: {p.caste}
+                      Caste : {p.caste}
+                    </p>
+                  )}
+                  {p.biotope && (
+                    <p className="text-xs text-[color:var(--app-text-muted)]">
+                      Biotope : {p.biotope}
                     </p>
                   )}
                   {p.rejectionMessage && (
@@ -401,14 +490,14 @@ export function SuggestionsPanel({
                     </div>
                   )}
                   <p className="mt-2 text-xs text-[color:var(--app-text-muted)]">
-                    {p.department} •{' '}
-                    {new Date(p.observedAt).toLocaleDateString()}
+                    {(() => {
+                      const code = p.department.padStart(2, '0')
+                      const name =
+                        DEPARTMENT_NAMES[code] ?? DEPARTMENT_NAMES[p.department]
+                      return name ? `${code} – ${name}` : code
+                    })()}{' '}
+                    - {new Date(p.observedAt).toLocaleDateString()}
                   </p>
-                  {p.images.length > 0 && (
-                    <p className="mt-1 text-xs text-[color:var(--app-text-soft)]">
-                      {p.images.length} image(s)
-                    </p>
-                  )}
                   <p className="mt-2 text-xs text-[color:var(--app-text-soft)]">
                     {new Date(p.createdAt).toLocaleString()}
                   </p>

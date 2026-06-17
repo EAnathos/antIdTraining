@@ -192,7 +192,13 @@ export function ContributionPage() {
   const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
   const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
-  const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntryForm)
+  const [entryForm, setEntryForm] = useState<EntryForm>(() => ({
+    ...emptyEntryForm,
+    photoCredit:
+      typeof window !== 'undefined'
+        ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
+        : '',
+  }))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [proposalPreview, setProposalPreview] = useState<{
     images: string[]
@@ -410,6 +416,12 @@ export function ContributionPage() {
     setIsSubmitting(true)
 
     try {
+      if (!entryFiles || entryFiles.length === 0) {
+        setMessage('Au moins une photo est requise.')
+        setIsSubmitting(false)
+        return
+      }
+
       const formData = new FormData()
       const taxonLevel = entryForm.species
         ? 'SPECIES'
@@ -443,7 +455,7 @@ export function ContributionPage() {
 
       await authApi.post('/entry-proposals', formData)
 
-      setEntryForm(emptyEntryForm)
+      setEntryForm({ ...emptyEntryForm, photoCredit: username })
       setEntryFiles(null)
       await load()
       setView('contributions')
@@ -749,17 +761,25 @@ export function ContributionPage() {
                 onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
                 required
               />
+              <div className="space-y-1">
+                <textarea
+                  className="ui-input min-h-[80px] resize-y"
+                  placeholder="Biotope (ex: forêt mixte, prairie sèche...)"
+                  value={entryForm.biotope}
+                  maxLength={50}
+                  onChange={(e) => patchEntryForm({ biotope: e.target.value })}
+                  required
+                />
+                <p className="text-right text-xs text-[color:var(--app-text-soft)]">
+                  {entryForm.biotope.length}/50
+                </p>
+              </div>
               <input
                 className="ui-input"
-                placeholder="Biotope"
-                value={entryForm.biotope}
-                onChange={(e) => patchEntryForm({ biotope: e.target.value })}
-                required
-              />
-              <input
-                className="ui-input"
-                placeholder="Crédit photo"
+                placeholder="Crédit photo (votre pseudo par défaut)"
                 value={entryForm.photoCredit}
+                minLength={3}
+                required
                 onChange={(e) =>
                   patchEntryForm({ photoCredit: e.target.value })
                 }
@@ -770,10 +790,11 @@ export function ContributionPage() {
                   type="file"
                   accept="image/*"
                   multiple
+                  required
                   onChange={(e) => setEntryFiles(e.target.files)}
                 />
                 <p className="text-xs text-[color:var(--app-text-soft)]">
-                  Images: 8 Mo max par fichier (jusqu'à 3).
+                  Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3).
                 </p>
               </div>
             </div>

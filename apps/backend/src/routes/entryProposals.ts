@@ -50,7 +50,7 @@ const proposalSchema = z.object({
   biotope: z
     .string()
     .min(3, 'Biotope trop court')
-    .max(1000, 'Biotope trop long')
+    .max(50, 'Biotope trop long (50 caractères max)')
     .trim(),
   photoCredit: z
     .string()
@@ -279,6 +279,9 @@ entryProposalsRouter.post(
     }
 
     const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    if (files.length === 0) {
+      throw new AppError(400, 'Au moins une photo est requise.')
+    }
     const optimizedFileNames = await Promise.all(
       files.map(async (file, index) => {
         const result = await optimizeAndSaveImage(file, index)
