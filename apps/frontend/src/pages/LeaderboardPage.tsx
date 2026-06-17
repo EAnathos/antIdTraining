@@ -127,8 +127,8 @@ export function LeaderboardPage() {
       {error && <p className="ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="overflow-x-auto rounded-lg border border-[color:var(--app-border)]">
-          <table className="min-w-full divide-y divide-[color:var(--app-border)] text-sm">
+        <div className="overflow-x-auto">
+          <table className="field-table min-w-full text-sm">
             <thead>
               <tr className="bg-[color:var(--app-surface-muted)]">
                 <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
