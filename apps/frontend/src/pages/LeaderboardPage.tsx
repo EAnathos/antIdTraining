@@ -100,7 +100,7 @@ export function LeaderboardPage() {
   }, [])
 
   return (
-    <section className="surface-panel surface-panel--solid space-y-4 p-6 overflow-hidden">
+    <section className="surface-panel surface-panel--solid min-w-0 space-y-4 p-6 overflow-hidden">
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Classement
       </h2>
