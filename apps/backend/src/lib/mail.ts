@@ -1,8 +1,17 @@
 import { config } from '../config.js'
 import { logger } from './logger.js'
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 type ResendMessage = {
-  from: string
+  from?: string
   to: string
   subject: string
   text: string
@@ -53,22 +62,21 @@ export async function sendLoginNotificationEmail(
   email: string,
   username: string,
 ) {
+  const safeUsername = escapeHtml(username)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
       subject: 'Connexion à Ant ID Training',
       text: [
         `Bonjour ${username},`,
         '',
-        'Une connexion à votre compte Ant ID Training vient d’être effectuée.',
-        'Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.',
+        "Une connexion à votre compte Ant ID Training vient d'être effectuée.",
+        "Si vous n'êtes pas à l'origine de cette connexion, changez votre mot de passe.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
-      <p>Une connexion à votre compte Ant ID Training vient d’être effectuée.</p>
-      <p>Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.</p>
+      <p>Bonjour ${safeUsername},</p>
+      <p>Une connexion à votre compte Ant ID Training vient d'être effectuée.</p>
+      <p>Si vous n'êtes pas à l'origine de cette connexion, changez votre mot de passe.</p>
     `,
     },
     'Email de connexion',
@@ -82,14 +90,13 @@ export async function sendVerificationEmail(
 ) {
   if (!config.resendApiKey) {
     throw new Error(
-      'RESEND_API_KEY non configurée, impossible d’envoyer le code de vérification',
+      "RESEND_API_KEY non configurée, impossible d'envoyer le code de vérification",
     )
   }
 
+  const safeUsername = escapeHtml(username)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
       subject: 'Validez votre adresse e-mail',
       text: [
@@ -98,13 +105,13 @@ export async function sendVerificationEmail(
         `Voici votre code de vérification : ${code}`,
         '',
         'Ce code expire dans 15 minutes.',
-        'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.',
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
-      <p>Voici votre code de vérification : <strong>${code}</strong></p>
+      <p>Bonjour ${safeUsername},</p>
+      <p>Voici votre code de vérification : <strong>${escapeHtml(code)}</strong></p>
       <p>Ce code expire dans 15 minutes.</p>
-      <p>Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.</p>
+      <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
     },
     'Email de vérification',
@@ -126,23 +133,22 @@ export async function sendPasswordResetEmail(
     token,
   )}`
 
+  const safeUsername = escapeHtml(username)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
       subject: 'Réinitialisez votre mot de passe',
       text: [
         `Bonjour ${username},`,
         '',
-        `Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :`,
+        'Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :',
         '',
         resetUrl,
         '',
         "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
+      <p>Bonjour ${safeUsername},</p>
       <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
       <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>

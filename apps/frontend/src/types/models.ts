@@ -112,6 +112,7 @@ export type GameQuestion = {
   prompt: string
   details?: {
     size: string | null
+    caste: string | null
     department: string
     observedAt: string
     biotope: string
