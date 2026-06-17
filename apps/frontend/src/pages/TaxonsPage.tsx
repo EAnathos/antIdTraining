@@ -703,15 +703,6 @@ export function TaxonsPage() {
   const [hasMoreTaxons, setHasMoreTaxons] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-  const [showExtraColumns, setShowExtraColumns] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(orientation: portrait)')
-    const handler = (e: MediaQueryListEvent) => {
-      if (e.matches) setShowExtraColumns(false)
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
   const [selectedDepartments, setSelectedDepartments] = useState<
     FrenchDepartmentCode[]
   >([])
@@ -948,18 +939,18 @@ export function TaxonsPage() {
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Taxons enregistrés
       </h2>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <input
-          className="ui-input h-10 min-w-[260px] flex-1"
+          className="ui-input h-10 w-full min-w-0 sm:flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Recherche (sous-famille, genre, espèce...)"
         />
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             type="button"
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="relative ml-2 mt-0 inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            className="relative inline-flex items-center gap-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             <span>
               {showAdvancedOptions ? 'Masquer' : 'Options supplémentaires'}
@@ -971,21 +962,6 @@ export function TaxonsPage() {
             )}
           </button>
 
-          {!treeMode && (
-            <button
-              type="button"
-              onClick={() => setShowExtraColumns((v) => !v)}
-              title={
-                showExtraColumns
-                  ? 'Masquer les colonnes secondaires'
-                  : "Afficher tribu, sous-genre et groupe d'espèce"
-              }
-              className="sm:hidden ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] px-3 py-2 text-sm font-medium text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
-            >
-              {showExtraColumns ? '−' : '+'}
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => setTreeMode((v) => !v)}
@@ -994,7 +970,7 @@ export function TaxonsPage() {
                 ? 'Basculer en vue tableau'
                 : 'Basculer en vue arborescente'
             }
-            className="ml-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
+            className="rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-2 text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-muted)]"
           >
             {treeMode ? <TableIcon /> : <TreeIcon />}
           </button>
@@ -1214,25 +1190,184 @@ export function TaxonsPage() {
               </div>
             </div>
           ) : (
-            <>
-              {/* Mobile card view (< 640px) */}
-              <div className="mt-4 flex flex-col gap-2 sm:hidden">
-                {filteredTaxons.length === 0 ? (
-                  <p className="p-4 text-center text-sm text-[color:var(--app-text-soft)]">
-                    Aucun taxon trouvé.
-                  </p>
-                ) : (
-                  filteredTaxons.map((taxon) => {
-                    const subfamilyVal = taxon.subfamily || null
-                    const genusVal = taxon.genus || null
-                    const speciesVal = taxon.species || null
+            <div
+              ref={tableContainerRef}
+              className="mt-4 max-h-[65vh] w-full min-w-0 overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]"
+              onScroll={(event) =>
+                setTableScrollTop(event.currentTarget.scrollTop)
+              }
+            >
+              <table className="field-table text-left text-sm">
+                {/* colgroup is the single source of truth for column widths.
+                    With table-layout:fixed these widths never change regardless
+                    of content, filtering, sorting, or virtual-scroll reflows. */}
+                <colgroup>
+                  <col style={{ width: '16%' }} /> {/* Sous-famille */}
+                  <col style={{ width: '12%' }} /> {/* Tribu */}
+                  <col style={{ width: '17%' }} /> {/* Genre */}
+                  <col style={{ width: '14%' }} /> {/* Sous-genre */}
+                  <col style={{ width: '17%' }} /> {/* Groupe d'espèce */}
+                  <col style={{ width: '24%' }} /> {/* Espèce */}
+                </colgroup>
+                <thead className="table-head-row">
+                  <tr className="table-head-row">
+                    <th className="table-head-sticky">Sous-famille</th>
+                    <th className="table-head-sticky">Tribu</th>
+                    <th className="table-head-sticky">Genre</th>
+                    <th className="table-head-sticky">Sous-genre</th>
+                    <th className="table-head-sticky">Groupe d'espèce</th>
+                    <th className="table-head-sticky">Espèce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topSpacerHeight > 0 && (
+                    <tr className="taxon-spacer">
+                      <td
+                        colSpan={6}
+                        style={{ height: `${topSpacerHeight}px` }}
+                      />
+                    </tr>
+                  )}
+                  {visibleTaxons.map((taxon) => {
+                    const subgenus = taxon.subgenus
+                    const speciesGroup = taxon.speciesGroup
+                    const subgenusDetail = taxon.levelDetails.subgenus
+                    const speciesGroupDetail = taxon.levelDetails.speciesGroup
+
+                    const subfamilyVal = taxon.subfamily || '-'
+                    const tribeVal = taxon.tribe || '-'
+                    const genusVal = taxon.genus || '-'
+                    const subgenusVal = subgenus || '-'
+                    const speciesGroupVal = speciesGroup || '-'
+                    const speciesVal = taxon.species || '-'
+
+                    const isClickable = (v: string) =>
+                      v && v !== '-' && v !== '—'
+
                     return (
-                      <div key={taxon.id} className="taxon-card">
-                        <div className="taxon-card__species">
-                          {speciesVal ? (
+                      <tr
+                        key={taxon.id}
+                        className="border-b border-[color:var(--app-border)]"
+                      >
+                        <td className="taxon-td" title={subfamilyVal}>
+                          {isClickable(subfamilyVal) ? (
                             <button
-                              type="button"
                               className="taxon-td-btn"
+                              type="button"
+                              onClick={() =>
+                                openSelectedDetail(
+                                  taxon,
+                                  'subfamily',
+                                  taxon.subfamily,
+                                  taxon.levelDetails.subfamily,
+                                )
+                              }
+                            >
+                              {subfamilyVal}
+                            </button>
+                          ) : (
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {subfamilyVal}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="taxon-td"
+                          title={tribeVal}
+                        >
+                          {tribeVal}
+                        </td>
+                        <td className="taxon-td" title={genusVal}>
+                          {isClickable(genusVal) ? (
+                            <button
+                              className="taxon-td-btn"
+                              type="button"
+                              onClick={() =>
+                                openSelectedDetail(
+                                  taxon,
+                                  'genus',
+                                  taxon.genus,
+                                  taxon.levelDetails.genus,
+                                )
+                              }
+                            >
+                              <em>{genusVal}</em>
+                            </button>
+                          ) : (
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {genusVal}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="taxon-td"
+                          title={subgenusVal}
+                        >
+                          {subgenus && subgenusDetail ? (
+                            isClickable(subgenusVal) ? (
+                              <button
+                                className="taxon-td-btn"
+                                type="button"
+                                onClick={() =>
+                                  openSelectedDetail(
+                                    taxon,
+                                    'subgenus',
+                                    subgenus,
+                                    subgenusDetail,
+                                  )
+                                }
+                              >
+                                ({subgenusVal})
+                              </button>
+                            ) : (
+                              <span className="text-[color:var(--app-text-soft)]">
+                                ({subgenusVal})
+                              </span>
+                            )
+                          ) : subgenus ? (
+                            `(${subgenus})`
+                          ) : (
+                            <span className="text-[color:var(--app-text-soft)]">
+                              -
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="taxon-td"
+                          title={speciesGroupVal}
+                        >
+                          {speciesGroup && speciesGroupDetail ? (
+                            isClickable(speciesGroupVal) ? (
+                              <button
+                                className="taxon-td-btn"
+                                type="button"
+                                onClick={() =>
+                                  openSelectedDetail(
+                                    taxon,
+                                    'speciesGroup',
+                                    speciesGroup,
+                                    speciesGroupDetail,
+                                  )
+                                }
+                              >
+                                {speciesGroupVal}
+                              </button>
+                            ) : (
+                              <span className="text-[color:var(--app-text-soft)]">
+                                {speciesGroupVal}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[color:var(--app-text-soft)]">
+                              {speciesGroupVal}
+                            </span>
+                          )}
+                        </td>
+                        <td className="taxon-td" title={speciesVal}>
+                          {isClickable(speciesVal) ? (
+                            <button
+                              className="taxon-td-btn"
+                              type="button"
                               onClick={() =>
                                 openSelectedDetail(
                                   taxon,
@@ -1246,307 +1381,34 @@ export function TaxonsPage() {
                             </button>
                           ) : (
                             <span className="text-[color:var(--app-text-soft)]">
-                              —
+                              {speciesVal}
                             </span>
                           )}
-                        </div>
-                        <div className="taxon-card__meta">
-                          {genusVal && (
-                            <button
-                              type="button"
-                              className="taxon-card__meta-btn"
-                              onClick={() =>
-                                openSelectedDetail(
-                                  taxon,
-                                  'genus',
-                                  taxon.genus,
-                                  taxon.levelDetails.genus,
-                                )
-                              }
-                            >
-                              <em>{genusVal}</em>
-                            </button>
-                          )}
-                          {genusVal && subfamilyVal && (
-                            <span className="taxon-card__dot">·</span>
-                          )}
-                          {subfamilyVal && (
-                            <button
-                              type="button"
-                              className="taxon-card__meta-btn"
-                              onClick={() =>
-                                openSelectedDetail(
-                                  taxon,
-                                  'subfamily',
-                                  taxon.subfamily,
-                                  taxon.levelDetails.subfamily,
-                                )
-                              }
-                            >
-                              {subfamilyVal}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-
-              {/* Desktop table view (≥ 640px) */}
-              <div className="hidden sm:block">
-                <div
-                  ref={tableContainerRef}
-                  className="mt-4 max-h-[65vh] w-full min-w-0 overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]"
-                  onScroll={(event) =>
-                    setTableScrollTop(event.currentTarget.scrollTop)
-                  }
-                >
-                  <table className="field-table text-left text-sm">
-                    {/* colgroup is the single source of truth for column widths.
-                    With table-layout:fixed these widths never change regardless
-                    of content, filtering, sorting, or virtual-scroll reflows. */}
-                    <colgroup>
-                      <col style={{ width: '16%' }} /> {/* Sous-famille */}
-                      <col
-                        style={{ width: '12%' }}
-                        className={
-                          showExtraColumns ? '' : 'hidden sm:table-column'
-                        }
-                      />{' '}
-                      {/* Tribu */}
-                      <col style={{ width: '17%' }} /> {/* Genre */}
-                      <col
-                        style={{ width: '14%' }}
-                        className={
-                          showExtraColumns ? '' : 'hidden sm:table-column'
-                        }
-                      />{' '}
-                      {/* Sous-genre */}
-                      <col
-                        style={{ width: '17%' }}
-                        className={
-                          showExtraColumns ? '' : 'hidden sm:table-column'
-                        }
-                      />{' '}
-                      {/* Groupe d'espèce */}
-                      <col style={{ width: '24%' }} /> {/* Espèce */}
-                    </colgroup>
-                    <thead className="table-head-row">
-                      <tr className="table-head-row">
-                        <th className="table-head-sticky">Sous-famille</th>
-                        <th
-                          className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                        >
-                          Tribu
-                        </th>
-                        <th className="table-head-sticky">Genre</th>
-                        <th
-                          className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                        >
-                          Sous-genre
-                        </th>
-                        <th
-                          className={`table-head-sticky taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                        >
-                          Groupe d'espèce
-                        </th>
-                        <th className="table-head-sticky">Espèce</th>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {topSpacerHeight > 0 && (
-                        <tr className="taxon-spacer">
-                          <td
-                            colSpan={6}
-                            style={{ height: `${topSpacerHeight}px` }}
-                          />
-                        </tr>
-                      )}
-                      {visibleTaxons.map((taxon) => {
-                        const subgenus = taxon.subgenus
-                        const speciesGroup = taxon.speciesGroup
-                        const subgenusDetail = taxon.levelDetails.subgenus
-                        const speciesGroupDetail =
-                          taxon.levelDetails.speciesGroup
-
-                        const subfamilyVal = taxon.subfamily || '-'
-                        const tribeVal = taxon.tribe || '-'
-                        const genusVal = taxon.genus || '-'
-                        const subgenusVal = subgenus || '-'
-                        const speciesGroupVal = speciesGroup || '-'
-                        const speciesVal = taxon.species || '-'
-
-                        const isClickable = (v: string) =>
-                          v && v !== '-' && v !== '—'
-
-                        return (
-                          <tr
-                            key={taxon.id}
-                            className="border-b border-[color:var(--app-border)]"
-                          >
-                            <td className="taxon-td" title={subfamilyVal}>
-                              {isClickable(subfamilyVal) ? (
-                                <button
-                                  className="taxon-td-btn"
-                                  type="button"
-                                  onClick={() =>
-                                    openSelectedDetail(
-                                      taxon,
-                                      'subfamily',
-                                      taxon.subfamily,
-                                      taxon.levelDetails.subfamily,
-                                    )
-                                  }
-                                >
-                                  {subfamilyVal}
-                                </button>
-                              ) : (
-                                <span className="text-[color:var(--app-text-soft)]">
-                                  {subfamilyVal}
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                              title={tribeVal}
-                            >
-                              {tribeVal}
-                            </td>
-                            <td className="taxon-td" title={genusVal}>
-                              {isClickable(genusVal) ? (
-                                <button
-                                  className="taxon-td-btn"
-                                  type="button"
-                                  onClick={() =>
-                                    openSelectedDetail(
-                                      taxon,
-                                      'genus',
-                                      taxon.genus,
-                                      taxon.levelDetails.genus,
-                                    )
-                                  }
-                                >
-                                  <em>{genusVal}</em>
-                                </button>
-                              ) : (
-                                <span className="text-[color:var(--app-text-soft)]">
-                                  {genusVal}
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                              title={subgenusVal}
-                            >
-                              {subgenus && subgenusDetail ? (
-                                isClickable(subgenusVal) ? (
-                                  <button
-                                    className="taxon-td-btn"
-                                    type="button"
-                                    onClick={() =>
-                                      openSelectedDetail(
-                                        taxon,
-                                        'subgenus',
-                                        subgenus,
-                                        subgenusDetail,
-                                      )
-                                    }
-                                  >
-                                    ({subgenusVal})
-                                  </button>
-                                ) : (
-                                  <span className="text-[color:var(--app-text-soft)]">
-                                    ({subgenusVal})
-                                  </span>
-                                )
-                              ) : subgenus ? (
-                                `(${subgenus})`
-                              ) : (
-                                <span className="text-[color:var(--app-text-soft)]">
-                                  -
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className={`taxon-td taxons-extra-col${showExtraColumns ? '' : ' hidden sm:table-cell'}`}
-                              title={speciesGroupVal}
-                            >
-                              {speciesGroup && speciesGroupDetail ? (
-                                isClickable(speciesGroupVal) ? (
-                                  <button
-                                    className="taxon-td-btn"
-                                    type="button"
-                                    onClick={() =>
-                                      openSelectedDetail(
-                                        taxon,
-                                        'speciesGroup',
-                                        speciesGroup,
-                                        speciesGroupDetail,
-                                      )
-                                    }
-                                  >
-                                    {speciesGroupVal}
-                                  </button>
-                                ) : (
-                                  <span className="text-[color:var(--app-text-soft)]">
-                                    {speciesGroupVal}
-                                  </span>
-                                )
-                              ) : (
-                                <span className="text-[color:var(--app-text-soft)]">
-                                  {speciesGroupVal}
-                                </span>
-                              )}
-                            </td>
-                            <td className="taxon-td" title={speciesVal}>
-                              {isClickable(speciesVal) ? (
-                                <button
-                                  className="taxon-td-btn"
-                                  type="button"
-                                  onClick={() =>
-                                    openSelectedDetail(
-                                      taxon,
-                                      'species',
-                                      taxon.species,
-                                      taxon.levelDetails.species,
-                                    )
-                                  }
-                                >
-                                  <em>{speciesVal}</em>
-                                </button>
-                              ) : (
-                                <span className="text-[color:var(--app-text-soft)]">
-                                  {speciesVal}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                      {bottomSpacerHeight > 0 && (
-                        <tr className="taxon-spacer">
-                          <td
-                            colSpan={6}
-                            style={{ height: `${bottomSpacerHeight}px` }}
-                          />
-                        </tr>
-                      )}
-                      {taxons.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            className="p-4 text-center text-[color:var(--app-text-soft)]"
-                          >
-                            Aucun taxon trouvé.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
+                    )
+                  })}
+                  {bottomSpacerHeight > 0 && (
+                    <tr className="taxon-spacer">
+                      <td
+                        colSpan={6}
+                        style={{ height: `${bottomSpacerHeight}px` }}
+                      />
+                    </tr>
+                  )}
+                  {taxons.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="p-4 text-center text-[color:var(--app-text-soft)]"
+                      >
+                        Aucun taxon trouvé.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       )}
