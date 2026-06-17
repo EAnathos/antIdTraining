@@ -841,7 +841,7 @@ export function ContributionPage() {
           >
             <button
               type="button"
-              className="absolute right-2 top-2 rounded-full bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
+              className="absolute right-2 top-2 rounded-sm bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow"
               onClick={() => setProposalPreview(null)}
             >
               Fermer
@@ -849,7 +849,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-left-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1
@@ -881,7 +881,7 @@ export function ContributionPage() {
 
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] px-3 py-2 text-lg font-semibold text-[color:var(--app-text)] shadow disabled:cursor-not-allowed disabled:opacity-40 sm:-right-14"
               onClick={() =>
                 setProposalPreview((current) =>
                   !current || current.images.length <= 1

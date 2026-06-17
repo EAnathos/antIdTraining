@@ -172,7 +172,7 @@ export function TaxonLevelEditor({
                   onContinueSwarmingRangeSelection(month.value)
                 }
                 onPointerUp={onEndSwarmingRangeSelection}
-                className={`shrink-0 rounded-full border transition ${
+                className={`shrink-0 rounded-sm border transition ${
                   isMonthRangeEndpoint(month.value)
                     ? 'h-6 w-6 border-[color:var(--app-primary)] bg-[color:var(--app-primary)]'
                     : isMonthInSelectedRange(month.value)

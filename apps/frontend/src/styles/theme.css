@@ -22,9 +22,9 @@
   --color-app-danger-soft: var(--app-danger-soft);
   --font-family-display: var(--font-display);
   --font-family-mono: var(--font-mono);
-  --shadow-sm: var(--app-shadow-sm);
-  --shadow-md: var(--app-shadow);
-  --shadow-lg: var(--app-shadow-lg);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
 }
 
 @layer base {
@@ -83,17 +83,17 @@
     --app-selection: rgba(26, 58, 42, 0.2);
     --app-ring: rgba(26, 58, 42, 0.28);
 
-    /* Shadows — warm earth undertone */
-    --app-shadow-sm: 0 2px 8px rgba(26, 45, 31, 0.08);
-    --app-shadow: 0 8px 24px rgba(26, 45, 31, 0.1);
-    --app-shadow-lg: 0 20px 56px rgba(26, 45, 31, 0.14);
+    /* Shadows — removed; depth comes from borders, contrast, spacing */
+    --app-shadow-sm: none;
+    --app-shadow: none;
+    --app-shadow-lg: none;
 
-    /* Border Radius */
-    --app-radius-sm: 0.375rem;
-    --app-radius-md: 0.625rem;
-    --app-radius-xl: 0.875rem;
-    --app-radius-2xl: 1.125rem;
-    --app-radius-pill: 9999px;
+    /* Border Radius — crisp, deliberate scale */
+    --app-radius-sm: 0.25rem; /* 4px — buttons, inputs, chips, badges */
+    --app-radius-md: 0.375rem; /* 6px — nav-action, tabs, small cards */
+    --app-radius-xl: 0.5rem; /* 8px — panels, cards */
+    --app-radius-2xl: 0.625rem; /* 10px — header, footer, modals */
+    --app-radius-pill: 9999px; /* avatars only */
   }
 
   html[data-theme='dark'] {
@@ -138,10 +138,10 @@
     --app-selection: rgba(134, 239, 172, 0.22);
     --app-ring: rgba(134, 239, 172, 0.3);
 
-    /* Shadows — deep black */
-    --app-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --app-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    --app-shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.55);
+    /* Shadows — removed */
+    --app-shadow-sm: none;
+    --app-shadow: none;
+    --app-shadow-lg: none;
   }
 
   body {

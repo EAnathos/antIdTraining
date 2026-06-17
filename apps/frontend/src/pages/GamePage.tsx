@@ -377,7 +377,7 @@ export function GamePage() {
                   type="button"
                   onClick={goToPreviousImage}
                   disabled={question.images.length <= 1}
-                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Photo précédente"
                 >
                   <svg
@@ -454,7 +454,7 @@ export function GamePage() {
                   type="button"
                   onClick={goToNextImage}
                   disabled={question.images.length <= 1}
-                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)]/90 px-3 py-2 text-xl text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Photo suivante"
                 >
                   <svg
@@ -754,7 +754,7 @@ export function GamePage() {
                   <>
                     <button
                       type="button"
-                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
+                      className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:left-2"
                       aria-label="Photo précédente"
                       onClick={goToPreviousImage}
                     >
@@ -774,7 +774,7 @@ export function GamePage() {
 
                     <button
                       type="button"
-                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
+                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-sm bg-[color:var(--app-surface-strong)] p-1.5 text-[color:var(--app-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40 sm:right-2"
                       aria-label="Photo suivante"
                       onClick={goToNextImage}
                     >
@@ -796,7 +796,7 @@ export function GamePage() {
 
                 <button
                   type="button"
-                  className="absolute right-2 top-2 rounded-full bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow hover:bg-[color:var(--app-surface-muted)]"
+                  className="absolute right-2 top-2 rounded-sm bg-[color:var(--app-surface-strong)] px-2 py-1 text-xs font-semibold text-[color:var(--app-text)] shadow hover:bg-[color:var(--app-surface-muted)]"
                   onClick={() => setFullscreenImage(null)}
                   aria-label="Fermer"
                 >

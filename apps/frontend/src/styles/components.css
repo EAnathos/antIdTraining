@@ -10,7 +10,6 @@
     border-radius: var(--app-radius-xl);
     border: 1px solid var(--app-border);
     background: var(--app-surface);
-    box-shadow: var(--app-shadow-sm);
   }
 
   .surface-panel--solid {
@@ -31,7 +30,6 @@
   html[data-theme='dark'] .surface-panel--compact {
     background: var(--app-surface);
     border-color: var(--app-border);
-    box-shadow: var(--app-shadow);
   }
 
   html[data-theme='dark'] .surface-panel--solid {
@@ -61,7 +59,6 @@
       var(--app-surface-muted)
     );
     border-color: var(--app-border);
-    box-shadow: var(--app-shadow-lg);
   }
 
   /* ============================================================
@@ -88,7 +85,7 @@
     justify-content: center;
     gap: 0.55rem;
     border: 1px solid transparent;
-    border-radius: var(--app-radius-md);
+    border-radius: var(--app-radius-sm);
     padding: 0.78rem 1.25rem;
     min-height: 2.75rem;
     font-weight: 600;
@@ -110,35 +107,27 @@
   .ui-tab--active {
     background: var(--app-primary);
     color: var(--app-text-inverse);
-    box-shadow: 0 2px 6px rgba(26, 58, 42, 0.28);
   }
 
   .ui-button--primary:hover,
   .ui-tab--active:hover {
     background: var(--app-primary-strong);
-    box-shadow: 0 4px 12px rgba(26, 58, 42, 0.32);
   }
 
   html[data-theme='dark'] .ui-button--primary,
   html[data-theme='dark'] .ui-tab--active {
     color: #0d1a12;
-    box-shadow: 0 2px 6px rgba(134, 239, 172, 0.2);
-  }
-
-  html[data-theme='dark'] .ui-button--primary:hover,
-  html[data-theme='dark'] .ui-tab--active:hover {
-    box-shadow: 0 4px 12px rgba(134, 239, 172, 0.28);
   }
 
   .ui-button--secondary {
     background: var(--app-surface-strong);
     color: var(--app-text);
     border-color: var(--app-border);
-    box-shadow: var(--app-shadow-sm);
   }
 
   .ui-button--secondary:hover {
     background: var(--app-surface-muted);
+    border-color: var(--app-primary-soft);
   }
 
   .ui-button--ghost {
@@ -154,12 +143,10 @@
   .ui-button--danger {
     background: var(--app-danger);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(153, 27, 27, 0.2);
   }
 
   .ui-button--danger:hover {
     background: #7f1d1d;
-    box-shadow: 0 4px 12px rgba(153, 27, 27, 0.28);
   }
 
   html[data-theme='dark'] .ui-button--secondary,
@@ -194,7 +181,6 @@
     color: var(--app-text-muted);
     font-weight: 600;
     cursor: pointer;
-    box-shadow: var(--app-shadow-sm);
   }
 
   .ui-tab:hover {
@@ -436,12 +422,10 @@
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius-2xl);
     background: var(--app-surface-strong);
-    box-shadow: var(--app-shadow-lg);
   }
 
   .ui-dialog__backdrop {
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px);
   }
 
   html[data-theme='dark'] .ui-dialog {
@@ -463,7 +447,7 @@
     height: 0.6rem;
     appearance: none;
     border: 0;
-    border-radius: var(--app-radius-pill);
+    border-radius: var(--app-radius-sm);
     background: var(--app-surface-muted);
     overflow: hidden;
   }
@@ -499,7 +483,6 @@
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius-xl);
     background: var(--app-surface-strong);
-    box-shadow: var(--app-shadow-sm);
   }
 
   .profile-action-card--warning {
@@ -715,7 +698,7 @@
     justify-content: center;
     gap: 0.4rem;
     padding: 0.38rem 0.7rem;
-    border-radius: 0.4rem;
+    border-radius: var(--app-radius-sm);
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.4;
@@ -831,7 +814,6 @@
   html[data-theme='dark'] [class*='border-slate-200'][class*='bg-slate-100'] {
     background: var(--app-surface) !important;
     border-color: var(--app-border) !important;
-    box-shadow: var(--app-shadow) !important;
   }
 
   html[data-theme='dark'] [class*='rounded-xl'][class*='border-slate-200'],
@@ -889,10 +871,15 @@
     border-color: var(--app-border) !important;
   }
 
-  html[data-theme='dark'] .shadow-sm,
-  html[data-theme='dark'] .shadow,
-  html[data-theme='dark'] .shadow-xl {
-    box-shadow: var(--app-shadow) !important;
+  /* All decorative shadows removed app-wide — neutralize any Tailwind
+     shadow utilities still present in markup. */
+  .shadow-sm,
+  .shadow,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
   }
 
   /* Table dark mode */
@@ -957,7 +944,6 @@
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius-xl);
     background: var(--app-surface-strong);
-    box-shadow: var(--app-shadow);
     overflow: hidden;
   }
 
@@ -1078,7 +1064,11 @@
      ============================================================ */
 
   .field-table {
+    /* Fixed layout: columns never resize from content.
+       Width is determined solely by <col> declarations. */
+    table-layout: fixed;
     width: 100%;
+    min-width: 640px; /* horizontal scroll below this threshold */
     border-collapse: collapse;
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius-xl);
@@ -1094,17 +1084,51 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--app-text-soft);
-    padding: 0.625rem 0.875rem;
+    padding: 0.5rem 0.75rem;
     background: var(--app-surface-muted);
     border-bottom: 1px solid var(--app-border);
     text-align: left;
+    /* Inherit fixed width from <col>; never stretch from header text */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  .field-table td {
-    padding: 0.625rem 0.875rem;
+  /* Unified data cell — every td must use this for stable fixed layout */
+  .field-table td,
+  .taxon-td {
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--app-border);
     color: var(--app-text-muted);
     vertical-align: middle;
+    /* max-width: 0 is the key trick for text-overflow in fixed-layout tables.
+       The actual rendered width comes from the <col>, not max-width. */
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Interactive cell content (links/buttons) must also truncate */
+  .taxon-td-btn {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+    color: var(--app-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .taxon-td-btn:hover {
+    opacity: 0.8;
   }
 
   .field-table tbody tr:last-child td {
@@ -1119,6 +1143,12 @@
     font-family: var(--font-mono);
     font-style: italic;
     color: var(--app-text);
+  }
+
+  /* Spacer rows (virtual scroll) must not collapse when empty */
+  .field-table .taxon-spacer td {
+    padding: 0;
+    border: none;
   }
 
   .taxon-indent-1 {

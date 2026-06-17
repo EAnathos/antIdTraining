@@ -230,8 +230,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <h1 className="app-brand__title">Ant ID Training</h1>
             <p className="app-brand__subtitle">
-              Plateforme d'entraînement à l'identification des fourmis de France
-              métropolitaine
+              Plateforme d'entraînement à l'identification des fourmis
             </p>
           </NavLink>
 
