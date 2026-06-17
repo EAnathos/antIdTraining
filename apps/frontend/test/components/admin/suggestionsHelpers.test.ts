@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveImageUrl } from '../../../src/components/admin/imageHelpers'
+import { resolveImageUrl } from '../../../src/lib/imageUrl'
 
 describe('Suggestions helpers', () => {
   it('resolves image urls correctly', () => {
