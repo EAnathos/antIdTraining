@@ -72,10 +72,14 @@ const verifyEmailSchema = z.object({
 
 const avatarSchema = z
   .union([
-    z.string().url('Avatar doit être une URL valide'),
     z
       .string()
-      .regex(/^\/.*/, 'Avatar doit être une URL valide ou un chemin relatif'),
+      .url()
+      .refine(
+        (u) => /^https?:\/\//i.test(u),
+        "Schéma d'URL non autorisé (http/https uniquement)",
+      ),
+    z.string().regex(/^\/uploads\/[\w.\-/]+$/, "Chemin d'avatar invalide"),
   ])
   .nullable()
   .optional()
@@ -85,6 +89,10 @@ const updateProfileSchema = z.object({
   bio: z
     .string()
     .max(500, 'La biographie doit contenir au maximum 500 caractères')
+    // eslint-disable-next-line no-control-regex
+    .refine((v) => !/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(v), {
+      message: 'La biographie contient des caractères non autorisés',
+    })
     .nullable()
     .optional(),
 })
