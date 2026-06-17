@@ -5,6 +5,16 @@ import { resolveImageUrl } from '../lib/imageUrl'
 import { getResponsiveImageProps } from '../lib/image'
 import type { EntryProposal, Suggestion } from '../types/models'
 
+type StatusFilter = 'all' | 'pending' | 'processed' | 'rejected'
+
+function statusLabel(status: string): string {
+  if (status === 'PENDING') return 'En attente'
+  if (status === 'ACCEPTED') return 'Accepté'
+  if (status === 'PROCESSED') return 'Traité'
+  if (status === 'REJECTED') return 'Refusé'
+  return status
+}
+
 const departmentOptions = [
   { code: '01', name: 'Ain' },
   { code: '02', name: 'Aisne' },
@@ -207,6 +217,21 @@ export function ContributionPage() {
   } | null>(null)
   const suggestionFormRef = useRef<HTMLFormElement | null>(null)
 
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+
+  const [editingProposalId, setEditingProposalId] = useState<string | null>(
+    null,
+  )
+  const [editingProposalForm, setEditingProposalForm] =
+    useState<EntryForm>(emptyEntryForm)
+  const [editingProposalFiles, setEditingProposalFiles] =
+    useState<FileList | null>(null)
+  const [editingSuggestionId, setEditingSuggestionId] = useState<string | null>(
+    null,
+  )
+  const [editingSuggestionMessage, setEditingSuggestionMessage] = useState('')
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+
   const token =
     typeof window !== 'undefined'
       ? window.localStorage.getItem('antidtraining-auth-token')
@@ -382,6 +407,114 @@ export function ContributionPage() {
     void load()
   }, [view, load])
 
+  const filteredProposals = useMemo(() => {
+    if (statusFilter === 'pending')
+      return proposals.filter((p) => p.status === 'PENDING')
+    if (statusFilter === 'processed')
+      return proposals.filter((p) => p.status === 'ACCEPTED')
+    if (statusFilter === 'rejected')
+      return proposals.filter((p) => p.status === 'REJECTED')
+    return proposals
+  }, [proposals, statusFilter])
+
+  const filteredSuggestions = useMemo(() => {
+    if (statusFilter === 'pending')
+      return suggestions.filter((s) => s.status === 'PENDING')
+    if (statusFilter === 'processed')
+      return suggestions.filter((s) => s.status === 'PROCESSED')
+    if (statusFilter === 'rejected')
+      return suggestions.filter((s) => s.status === 'REJECTED')
+    return suggestions
+  }, [suggestions, statusFilter])
+
+  const statusCounts = useMemo(() => {
+    const all = [...proposals, ...suggestions]
+    return {
+      all: all.length,
+      pending: all.filter((x) => x.status === 'PENDING').length,
+      processed: all.filter(
+        (x) => x.status === 'ACCEPTED' || x.status === 'PROCESSED',
+      ).length,
+      rejected: all.filter((x) => x.status === 'REJECTED').length,
+    }
+  }, [proposals, suggestions])
+
+  async function submitEditSuggestion(id: string) {
+    setIsEditSubmitting(true)
+    try {
+      const { data } = await authApi.patch<Suggestion>(`/suggestions/${id}`, {
+        message: editingSuggestionMessage,
+      })
+      setSuggestions((prev) => prev.map((s) => (s.id === id ? data : s)))
+      setEditingSuggestionId(null)
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de la modification.',
+      )
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
+  async function submitEditProposal(id: string) {
+    setIsEditSubmitting(true)
+    try {
+      const formData = new FormData()
+      const taxonLevel = editingProposalForm.species
+        ? 'SPECIES'
+        : editingProposalForm.genus
+          ? 'GENUS'
+          : 'SUBFAMILY'
+      const taxonValue = editingProposalForm.species
+        ? editingProposalForm.species.trim()
+        : editingProposalForm.genus
+          ? editingProposalForm.genus.trim()
+          : editingProposalForm.subfamily.trim()
+
+      formData.append('taxonLevel', taxonLevel)
+      formData.append('taxonValue', taxonValue)
+      if (editingProposalForm.species) {
+        formData.append('taxonGenus', editingProposalForm.genus.trim())
+      }
+      formData.append('subgenus', editingProposalForm.subgenus.trim())
+      formData.append('speciesGroup', editingProposalForm.speciesGroup.trim())
+      formData.append(
+        'department',
+        parseDepartmentInput(editingProposalForm.department),
+      )
+      formData.append('observedAt', editingProposalForm.observedAt)
+      formData.append('biotope', editingProposalForm.biotope.trim())
+      formData.append(
+        'photoCredit',
+        editingProposalForm.photoCredit.trim() || username,
+      )
+      formData.append('caste', editingProposalForm.caste || 'WORKER')
+      if (editingProposalFiles) {
+        Array.from(editingProposalFiles).forEach((f) =>
+          formData.append('images', f),
+        )
+      }
+
+      const { data } = await authApi.patch<EntryProposal>(
+        `/entry-proposals/${id}`,
+        formData,
+      )
+      setProposals((prev) => prev.map((p) => (p.id === id ? data : p)))
+      setEditingProposalId(null)
+      setEditingProposalFiles(null)
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de la modification.',
+      )
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
   async function submitSuggestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
@@ -519,22 +652,44 @@ export function ContributionPage() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
               <p className="text-[color:var(--app-text-muted)]">
-                Entrées proposées
+                Entrées en attente
               </p>
               <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.proposalCount}/{counts.proposalLimit}
               </p>
             </div>
             <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
-              <p className="text-[color:var(--app-text-muted)]">Suggestions</p>
+              <p className="text-[color:var(--app-text-muted)]">
+                Suggestions en attente
+              </p>
               <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.suggestionCount}/{counts.suggestionLimit}
               </p>
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-2 text-xs">
+            {(
+              [
+                ['all', 'Tous'],
+                ['pending', 'En attente'],
+                ['processed', 'Accepté · Traité'],
+                ['rejected', 'Refusé'],
+              ] as [StatusFilter, string][]
+            ).map(([f, label]) => (
+              <button
+                key={f}
+                className={`ui-tab ${statusFilter === f ? 'ui-tab--active' : ''}`}
+                onClick={() => setStatusFilter(f)}
+              >
+                {label}{' '}
+                <span className="ml-1 opacity-70">({statusCounts[f]})</span>
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-3">
-            {proposals.map((p) => (
+            {filteredProposals.map((p) => (
               <div
                 key={p.id}
                 className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
@@ -548,12 +703,170 @@ export function ContributionPage() {
                       {p.department} · {p.caste}
                     </p>
                   </div>
-                  <span
-                    className={`ui-chip text-xs ${p.status === 'PENDING' ? '' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
-                  >
-                    {p.status}
-                  </span>
+                  <div className="flex shrink-0 items-start gap-2">
+                    {p.status === 'PENDING' &&
+                      (editingProposalId === p.id ? (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => setEditingProposalId(null)}
+                        >
+                          Annuler
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => {
+                            setEditingProposalId(p.id)
+                            setEditingProposalForm({
+                              subfamily: p.subfamily,
+                              genus: p.genus ?? '',
+                              subgenus: p.subgenus ?? '',
+                              species: p.species ?? '',
+                              speciesGroup: p.speciesGroup ?? '',
+                              department: p.department,
+                              observedAt: p.observedAt.slice(0, 10),
+                              biotope: p.biotope,
+                              photoCredit: p.photoCredit,
+                              caste: (p.caste as EntryCaste | null) ?? '',
+                            })
+                            setEditingProposalFiles(null)
+                          }}
+                        >
+                          Modifier
+                        </button>
+                      ))}
+                    <span
+                      className={`ui-chip text-xs ${p.status === 'PENDING' ? '' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                    >
+                      {statusLabel(p.status)}
+                    </span>
+                  </div>
                 </div>
+                {editingProposalId === p.id && (
+                  <div className="mt-3 space-y-3 border-t border-[color:var(--app-border)] pt-3">
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <select
+                        className="ui-select"
+                        value={editingProposalForm.subfamily}
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            subfamily: e.target.value,
+                            genus: '',
+                            species: '',
+                            subgenus: '',
+                            speciesGroup: '',
+                          }))
+                        }
+                        required
+                      >
+                        <option value="">Sous-famille</option>
+                        {subfamilies.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        className="ui-select"
+                        list="department-suggestions"
+                        placeholder="Département"
+                        value={editingProposalForm.department}
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            department: e.target.value,
+                          }))
+                        }
+                        onBlur={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            department: parseDepartmentInput(e.target.value),
+                          }))
+                        }
+                        required
+                      />
+                      <input
+                        className="ui-select"
+                        type="date"
+                        value={editingProposalForm.observedAt}
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            observedAt: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                      <textarea
+                        className="ui-input min-h-[60px] resize-y"
+                        placeholder="Biotope"
+                        value={editingProposalForm.biotope}
+                        maxLength={50}
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            biotope: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                      <input
+                        className="ui-input"
+                        placeholder="Crédit photo"
+                        value={editingProposalForm.photoCredit}
+                        minLength={3}
+                        required
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            photoCredit: e.target.value,
+                          }))
+                        }
+                      />
+                      <select
+                        className="ui-select"
+                        value={editingProposalForm.caste}
+                        onChange={(e) =>
+                          setEditingProposalForm((f) => ({
+                            ...f,
+                            caste: e.target.value as EntryCaste | '',
+                          }))
+                        }
+                        required
+                      >
+                        <option value="">Caste</option>
+                        <option value="WORKER">Ouvrière</option>
+                        <option value="QUEEN">Reine</option>
+                        <option value="MALE">Mâle</option>
+                      </select>
+                      <div className="space-y-1">
+                        <input
+                          className="ui-input"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) =>
+                            setEditingProposalFiles(e.target.files)
+                          }
+                        />
+                        <p className="text-xs text-[color:var(--app-text-soft)]">
+                          Laisser vide pour conserver les photos actuelles.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isEditSubmitting}
+                      onClick={() => void submitEditProposal(p.id)}
+                    >
+                      {isEditSubmitting ? 'Enregistrement...' : 'Sauvegarder'}
+                    </button>
+                  </div>
+                )}
                 {p.images.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {p.images.map((image, index) => (
@@ -594,19 +907,64 @@ export function ContributionPage() {
                 )}
               </div>
             ))}
-            {suggestions.map((s) => (
+            {filteredSuggestions.map((s) => (
               <div
                 key={s.id}
                 className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
               >
                 <div className="flex justify-between gap-3">
                   <p className="whitespace-pre-wrap">{s.message}</p>
-                  <span
-                    className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
-                  >
-                    {s.status}
-                  </span>
+                  <div className="flex shrink-0 items-start gap-2">
+                    {s.status === 'PENDING' &&
+                      (editingSuggestionId === s.id ? (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => setEditingSuggestionId(null)}
+                        >
+                          Annuler
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => {
+                            setEditingSuggestionId(s.id)
+                            setEditingSuggestionMessage(s.message)
+                          }}
+                        >
+                          Modifier
+                        </button>
+                      ))}
+                    <span
+                      className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                    >
+                      {statusLabel(s.status)}
+                    </span>
+                  </div>
                 </div>
+                {editingSuggestionId === s.id && (
+                  <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-3">
+                    <textarea
+                      className="ui-textarea"
+                      value={editingSuggestionMessage}
+                      minLength={10}
+                      maxLength={5000}
+                      onChange={(e) =>
+                        setEditingSuggestionMessage(e.target.value)
+                      }
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isEditSubmitting}
+                      onClick={() => void submitEditSuggestion(s.id)}
+                    >
+                      {isEditSubmitting ? 'Enregistrement...' : 'Sauvegarder'}
+                    </button>
+                  </div>
+                )}
                 {s.rejectionMessage && (
                   <div className="mt-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                     <p className="mb-1 font-semibold uppercase tracking-wide">

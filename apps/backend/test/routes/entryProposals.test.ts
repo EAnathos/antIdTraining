@@ -139,3 +139,123 @@ describe('GET /api/entry-proposals/user-counts', () => {
     expect(body.canPropose).toBe(false)
   })
 })
+
+describe('PATCH /api/entry-proposals/:id', () => {
+  const baseProposal = {
+    id: 'p1',
+    userId: 'user-1',
+    status: 'PENDING',
+    taxonLevel: 'GENUS',
+    taxonValue: 'Lasius',
+    subfamily: 'Formicinae',
+    genus: 'Lasius',
+    subgenus: null,
+    species: null,
+    speciesGroup: null,
+    size: null,
+    caste: 'WORKER',
+    department: '75',
+    observedAt: new Date('2024-01-01'),
+    biotope: 'Forêt mixte',
+    photoCredit: 'enc:Alice',
+    images: [{ id: 'img1', imageUrl: '/uploads/test.webp', proposalId: 'p1' }],
+  }
+
+  it('returns 401 when not authenticated', async () => {
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/p1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ biotope: 'Prairie sèche valide' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 404 when proposal not found', async () => {
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(null)
+
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/missing`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ biotope: 'Prairie sèche valide' }),
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when proposal belongs to another user', async () => {
+    prismaMocks.entryProposal.findUnique.mockResolvedValue({
+      ...baseProposal,
+      userId: 'other-user',
+    })
+
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/p1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ biotope: 'Prairie sèche valide' }),
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 400 when proposal is not PENDING', async () => {
+    prismaMocks.entryProposal.findUnique.mockResolvedValue({
+      ...baseProposal,
+      status: 'ACCEPTED',
+    })
+
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/p1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ biotope: 'Prairie sèche valide' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('updates non-taxon fields without calling resolveEntryTaxonSelection', async () => {
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(baseProposal)
+    prismaMocks.entryProposal.update.mockResolvedValue({
+      ...baseProposal,
+      biotope: 'Prairie sèche valide',
+      images: [],
+    })
+
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/p1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ biotope: 'Prairie sèche valide' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(mocks.resolveEntryTaxonSelection).not.toHaveBeenCalled()
+    expect(prismaMocks.entryProposal.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ biotope: 'Prairie sèche valide' }),
+      }),
+    )
+  })
+
+  it('calls resolveEntryTaxonSelection when taxon fields change', async () => {
+    prismaMocks.entryProposal.findUnique.mockResolvedValue(baseProposal)
+    mocks.resolveEntryTaxonSelection.mockResolvedValue({
+      taxonLevel: 'GENUS',
+      taxonValue: 'Formica',
+      subfamily: 'Formicinae',
+      genus: 'Formica',
+      species: null,
+      taxonId: null,
+      size: null,
+    })
+    prismaMocks.entryProposal.update.mockResolvedValue({
+      ...baseProposal,
+      taxonValue: 'Formica',
+      images: [],
+    })
+
+    const res = await fetch(`${getBaseUrl()}/api/entry-proposals/p1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ taxonLevel: 'GENUS', taxonValue: 'Formica' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(mocks.resolveEntryTaxonSelection).toHaveBeenCalled()
+  })
+})

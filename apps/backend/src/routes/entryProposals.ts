@@ -230,10 +230,10 @@ entryProposalsRouter.get(
 
     const [proposalCount, suggestionCount] = await Promise.all([
       prisma.entryProposal.count({
-        where: { userId: req.user.userId },
+        where: { userId: req.user.userId, status: 'PENDING' },
       }),
       prisma.suggestion.count({
-        where: { userId: req.user.userId },
+        where: { userId: req.user.userId, status: 'PENDING' },
       }),
     ])
 
@@ -264,7 +264,7 @@ entryProposalsRouter.post(
 
     // Check proposal limit
     const proposalCount = await prisma.entryProposal.count({
-      where: { userId: req.user.userId },
+      where: { userId: req.user.userId, status: 'PENDING' },
     })
     if (proposalCount >= MAX_PROPOSALS_PER_USER) {
       throw new AppError(
@@ -326,5 +326,119 @@ entryProposalsRouter.post(
     })
 
     return res.status(201).json(publicProposal(created))
+  }),
+)
+
+const patchProposalSchema = proposalSchema.partial()
+
+// Edit a pending entry proposal
+entryProposalsRouter.patch(
+  '/:id',
+  uploadProposalImages,
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw new AppError(401, 'Non autorisé.')
+
+    const id = req.params.id as string
+
+    const parsed = patchProposalSchema.safeParse(req.body)
+    if (!parsed.success) throw new AppError(400, 'Requête invalide.')
+
+    const existing = await prisma.entryProposal.findUnique({
+      where: { id },
+      include: { images: true },
+    })
+    if (!existing) throw new AppError(404, 'Proposition introuvable.')
+    if (existing.userId !== req.user.userId)
+      throw new AppError(403, 'Accès refusé.')
+    if (existing.status !== 'PENDING')
+      throw new AppError(
+        400,
+        'Seules les propositions en attente peuvent être modifiées.',
+      )
+
+    // Resolve taxon only when taxon fields are provided
+    let taxonSelection = null
+    if (parsed.data.taxonLevel || parsed.data.taxonValue) {
+      taxonSelection = await resolveEntryTaxonSelection({
+        taxonLevel: (parsed.data.taxonLevel ?? existing.taxonLevel) as
+          | 'SUBFAMILY'
+          | 'GENUS'
+          | 'SPECIES',
+        taxonValue: parsed.data.taxonValue ?? existing.taxonValue,
+        taxonGenus: parsed.data.taxonGenus ?? existing.genus ?? undefined,
+        subgenus: parsed.data.subgenus ?? existing.subgenus ?? undefined,
+        speciesGroup:
+          parsed.data.speciesGroup ?? existing.speciesGroup ?? undefined,
+        department: existing.department,
+        observedAt: existing.observedAt,
+        biotope: existing.biotope,
+        photoCredit: existing.photoCredit,
+      })
+      if (!taxonSelection)
+        throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+    }
+
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    let imageCreateData: { imageUrl: string; position: number }[] | undefined
+
+    if (files.length > 0) {
+      // Delete existing image files from disk
+      await Promise.allSettled(
+        existing.images.map((img) =>
+          deleteUploadFilesForImageUrl(img.imageUrl),
+        ),
+      )
+      // Delete existing image records
+      await prisma.entryProposalImage.deleteMany({
+        where: { proposalId: existing.id },
+      })
+      // Save new images
+      const optimizedFileNames = await Promise.all(
+        files.map((file, index) =>
+          optimizeAndSaveImage(file, index).then((r) => r.baseFileName),
+        ),
+      )
+      imageCreateData = optimizedFileNames.map((filename, i) => ({
+        imageUrl: `/uploads/${filename}`,
+        position: i,
+      }))
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (taxonSelection) {
+      updateData.taxonLevel = taxonSelection.taxonLevel
+      updateData.taxonValue = taxonSelection.taxonValue
+      updateData.subfamily = taxonSelection.subfamily
+      updateData.genus = taxonSelection.genus
+      updateData.species = taxonSelection.species
+    }
+    if (parsed.data.caste !== undefined) updateData.caste = parsed.data.caste
+    if (parsed.data.department !== undefined)
+      updateData.department = parsed.data.department
+    if (parsed.data.observedAt !== undefined)
+      updateData.observedAt = parsed.data.observedAt
+    if (parsed.data.biotope !== undefined)
+      updateData.biotope = parsed.data.biotope
+    if (parsed.data.photoCredit !== undefined)
+      updateData.photoCredit =
+        encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit
+    if (parsed.data.size !== undefined) updateData.size = parsed.data.size
+    if (parsed.data.subgenus !== undefined)
+      updateData.subgenus = parsed.data.subgenus
+    if (parsed.data.speciesGroup !== undefined)
+      updateData.speciesGroup = parsed.data.speciesGroup
+
+    const updated = await prisma.entryProposal.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(imageCreateData
+          ? { images: { create: imageCreateData } }
+          : undefined),
+      },
+      include: { images: true },
+    })
+
+    return res.json(publicProposal(updated))
   }),
 )

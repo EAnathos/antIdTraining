@@ -37,7 +37,7 @@ suggestionsRouter.post(
     }
 
     const suggestionCount = await prisma.suggestion.count({
-      where: { userId: req.user!.userId },
+      where: { userId: req.user!.userId, status: 'PENDING' },
     })
     if (suggestionCount >= MAX_SUGGESTIONS_PER_USER) {
       throw new AppError(
@@ -60,5 +60,42 @@ suggestionsRouter.post(
     })
 
     return res.status(201).json(publicSuggestion(created))
+  }),
+)
+
+const patchSuggestionSchema = z.object({
+  message: z
+    .string()
+    .min(10, 'Le message doit contenir au moins 10 caractères')
+    .max(5000, 'Message trop long')
+    .trim(),
+})
+
+suggestionsRouter.patch(
+  '/:id',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const id = req.params.id as string
+    const parsed = patchSuggestionSchema.safeParse(req.body)
+    if (!parsed.success) throw new AppError(400, 'Requête invalide.')
+
+    const existing = await prisma.suggestion.findUnique({
+      where: { id },
+    })
+    if (!existing) throw new AppError(404, 'Suggestion introuvable.')
+    if (existing.userId !== req.user!.userId)
+      throw new AppError(403, 'Accès refusé.')
+    if (existing.status !== 'PENDING')
+      throw new AppError(
+        400,
+        'Seules les suggestions en attente peuvent être modifiées.',
+      )
+
+    const updated = await prisma.suggestion.update({
+      where: { id },
+      data: { message: parsed.data.message },
+    })
+
+    return res.json(publicSuggestion(updated))
   }),
 )
