@@ -3,6 +3,12 @@ import { api } from '../lib/api'
 import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
 import { UserProfileModal } from '../components/UserProfileModal'
 
+const MEDALS = ['🥇', '🥈', '🥉']
+
+function rankLabel(index: number): string {
+  return MEDALS[index] ?? `#${index + 1}`
+}
+
 export function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,9 +42,7 @@ export function LeaderboardPage() {
         currentUserPromise,
       ])
 
-      if (cancelled.value) {
-        return
-      }
+      if (cancelled.value) return
 
       setData(leaderboardResponse.data)
       setCurrentUserPoints(currentUserResponse?.data.points ?? null)
@@ -61,7 +65,6 @@ export function LeaderboardPage() {
   useEffect(() => {
     const cancelled = { value: false }
     void fetchData(cancelled)
-
     return () => {
       cancelled.value = true
     }
@@ -69,28 +72,20 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        void fetchData({ value: false })
-      }
+      if (!document.hidden) void fetchData({ value: false })
     }
-
     document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
   useEffect(() => {
-    const handlePointsChanged = () => {
-      void fetchData({ value: false })
-    }
-
+    const handlePointsChanged = () => void fetchData({ value: false })
     window.addEventListener(
       'antidtraining-user-points-changed',
       handlePointsChanged,
     )
-
     return () => {
       window.removeEventListener(
         'antidtraining-user-points-changed',
@@ -99,113 +94,143 @@ export function LeaderboardPage() {
     }
   }, [])
 
+  function openModal(username: string) {
+    setSelectedUsername(username)
+    setModalOpen(true)
+  }
+
   return (
-    <section className="surface-panel surface-panel--solid min-w-0 space-y-4 p-6 overflow-hidden">
+    <section className="surface-panel surface-panel--solid p-6 overflow-hidden">
       <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
         Classement
       </h2>
-      <p className="text-sm text-[color:var(--app-text-muted)]">
+      <p className="mt-2 text-sm text-[color:var(--app-text-muted)]">
         Les meilleurs joueurs selon leurs points. Les points proviennent des
         réponses correctes et des ajustements administrateur. Il vous faut 200
         points pour apparaître dans le classement.
       </p>
 
       {currentUserPoints !== null && (
-        <div className="ui-alert ui-alert--info">
+        <div className="mt-4 ui-alert ui-alert--info">
           Vos points actuels :{' '}
           <span className="font-semibold">{currentUserPoints}</span>
         </div>
       )}
 
       {loading && (
-        <p className="text-sm text-[color:var(--app-text-muted)]">
+        <p className="mt-4 text-sm text-[color:var(--app-text-muted)]">
           Chargement…
         </p>
       )}
-      {error && <p className="ui-alert ui-alert--danger">{error}</p>}
+      {error && <p className="mt-4 ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="w-full min-w-0 overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
-          <table className="field-table text-sm">
-            <colgroup>
-              <col style={{ width: '3rem' }} />
-              <col />
-              <col
-                className="hidden sm:table-column"
-                style={{ width: '6rem' }}
-              />
-              <col
-                className="hidden sm:table-column"
-                style={{ width: '9rem' }}
-              />
-              <col style={{ width: '6rem' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="table-head-sticky">#</th>
-                <th className="table-head-sticky">Joueur</th>
-                <th className="table-head-sticky hidden sm:table-cell">
-                  Parties
-                </th>
-                <th className="table-head-sticky hidden sm:table-cell">
-                  Bonnes réponses
-                </th>
-                <th className="table-head-sticky">Points</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color:var(--app-border)]">
-              {data.items.map((item, index) => (
-                <tr
+        <>
+          {/* ── Mobile card list (< 640px) ── */}
+          <div className="mt-4 sm:hidden rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)] overflow-hidden divide-y divide-[color:var(--app-border)]">
+            {data.items.length === 0 ? (
+              <p className="px-4 py-4 text-sm text-[color:var(--app-text-muted)]">
+                Aucun joueur classé pour le moment.
+              </p>
+            ) : (
+              data.items.map((item, index) => (
+                <div
                   key={item.userId}
-                  className={
-                    index < 3
-                      ? 'bg-[color:var(--app-warning-soft)]'
-                      : 'bg-[color:var(--app-surface)]'
-                  }
+                  className={`leaderboard-card${index < 3 ? ' leaderboard-card--top' : ''}`}
                 >
-                  <td className="taxon-td font-medium text-[color:var(--app-text)]">
-                    {index + 1}
-                  </td>
-                  <td className="taxon-td">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedUsername(item.username)
-                        setModalOpen(true)
-                      }}
-                      className="taxon-td-btn"
-                    >
-                      {item.username}
-                    </button>
-                  </td>
-                  <td className="taxon-td hidden sm:table-cell text-[color:var(--app-text-muted)]">
-                    {item.gamesPlayed}
-                  </td>
-                  <td className="taxon-td hidden sm:table-cell text-[color:var(--app-text-muted)]">
-                    {item.correctCount}
-                  </td>
-                  <td className="taxon-td font-semibold text-[color:var(--app-text)]">
-                    {item.points}
-                  </td>
-                </tr>
-              ))}
-              {!data.items.length && (
-                <tr>
-                  <td
-                    className="px-4 py-4 text-[color:var(--app-text-muted)]"
-                    colSpan={5}
+                  <span
+                    className={`leaderboard-card__rank${index < 3 ? ' text-[color:var(--app-secondary)]' : ''}`}
                   >
-                    Aucun joueur classé pour le moment.
-                  </td>
+                    {rankLabel(index)}
+                  </span>
+                  <button
+                    type="button"
+                    className="leaderboard-card__name"
+                    onClick={() => openModal(item.username)}
+                  >
+                    {item.username}
+                  </button>
+                  <span className="leaderboard-card__points">
+                    {item.points} pts
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ── Desktop table (≥ 640px) ── */}
+          <div className="mt-4 hidden sm:block overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
+            <table className="field-table text-sm">
+              <colgroup>
+                <col style={{ width: '3rem' }} />
+                <col />
+                <col style={{ width: '6rem' }} />
+                <col style={{ width: '9rem' }} />
+                <col style={{ width: '6rem' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className="table-head-sticky">#</th>
+                  <th className="table-head-sticky">Joueur</th>
+                  <th className="table-head-sticky">Parties</th>
+                  <th className="table-head-sticky">Bonnes réponses</th>
+                  <th className="table-head-sticky">Points</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-[color:var(--app-border)]">
+                {data.items.length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-4 py-4 text-[color:var(--app-text-muted)]"
+                      colSpan={5}
+                    >
+                      Aucun joueur classé pour le moment.
+                    </td>
+                  </tr>
+                ) : (
+                  data.items.map((item, index) => (
+                    <tr
+                      key={item.userId}
+                      className={
+                        index < 3
+                          ? 'bg-[color:var(--app-warning-soft)]'
+                          : undefined
+                      }
+                    >
+                      <td
+                        className={`taxon-td font-medium${index < 3 ? ' text-[color:var(--app-secondary)]' : ' text-[color:var(--app-text-soft)]'}`}
+                      >
+                        {rankLabel(index)}
+                      </td>
+                      <td className="taxon-td">
+                        <button
+                          type="button"
+                          onClick={() => openModal(item.username)}
+                          className="taxon-td-btn"
+                        >
+                          {item.username}
+                        </button>
+                      </td>
+                      <td className="taxon-td text-[color:var(--app-text-muted)]">
+                        {item.gamesPlayed}
+                      </td>
+                      <td className="taxon-td text-[color:var(--app-text-muted)]">
+                        {item.correctCount}
+                      </td>
+                      <td className="taxon-td font-semibold text-[color:var(--app-text)]">
+                        {item.points}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <UserProfileModal
-        username={selectedUsername || ''}
+        username={selectedUsername ?? ''}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
       />

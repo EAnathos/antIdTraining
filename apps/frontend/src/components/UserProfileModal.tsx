@@ -46,33 +46,31 @@ export function UserProfileModal({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-xl z-50 mx-auto">
+      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-strong)] p-6 shadow-xl z-50">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Profil</h2>
+          <h2 className="text-lg font-semibold text-[color:var(--app-text)]">
+            Profil
+          </h2>
           <button
-            className="text-slate-500 hover:text-slate-700 text-xl"
+            className="text-[color:var(--app-text-soft)] hover:text-[color:var(--app-text)] text-xl leading-none"
             type="button"
             onClick={onClose}
+            aria-label="Fermer"
           >
             ✕
           </button>
         </div>
 
         {loading && (
-          <div className="text-center py-8 text-slate-600">Chargement…</div>
-        )}
-
-        {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">
-            {error}
+          <div className="text-center py-8 text-[color:var(--app-text-muted)] text-sm">
+            Chargement…
           </div>
         )}
+
+        {error && <div className="ui-alert ui-alert--danger">{error}</div>}
 
         {profile && (
           <div className="space-y-4">
@@ -81,27 +79,27 @@ export function UserProfileModal({
                 <img
                   src={resolveImageUrl(profile.avatar)}
                   alt={profile.username}
-                  className="w-16 h-16 rounded-full object-cover"
+                  className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                 />
               )}
-              <div>
-                <h3 className="font-semibold text-slate-900">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[color:var(--app-text)] truncate">
                   {profile.username}
                 </h3>
-                <p className="text-sm font-medium text-slate-700">
+                <p className="text-sm font-medium text-[color:var(--app-text-muted)]">
                   {profile.points} points
                 </p>
               </div>
             </div>
 
             {profile.bio && (
-              <div>
-                <p className="text-sm text-slate-700">{profile.bio}</p>
-              </div>
+              <p className="text-sm text-[color:var(--app-text-muted)]">
+                {profile.bio}
+              </p>
             )}
 
             <button
-              className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 text-sm font-medium"
+              className="ui-button ui-button--primary w-full"
               type="button"
               onClick={onClose}
             >
