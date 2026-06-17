@@ -177,11 +177,7 @@ export function ReferencesCrudPanel({
         }
       : null
 
-    if (referenceForm.type !== 'MYRMECOLOGY' && !reference) {
-      return
-    }
-
-    if (reference && reference.type !== 'MYRMECOLOGY') {
+    if ((reference ? reference.type : referenceForm.type) !== 'MYRMECOLOGY') {
       return
     }
 

@@ -21,11 +21,14 @@ import {
 } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import {
+  MAX_SUGGESTIONS_PER_USER,
+  publicSuggestion,
+} from '../lib/suggestionFormatters.js'
 
 ensureUploadsDir()
 
 const MAX_PROPOSALS_PER_USER = 20
-const MAX_SUGGESTIONS_PER_USER = 10
 
 const proposalSchema = z.object({
   taxonLevel: z.enum(['SUBFAMILY', 'GENUS', 'SPECIES']),
@@ -65,20 +68,6 @@ function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
     ...proposal,
     photoCredit:
       decryptSensitiveText(proposal.photoCredit) ?? proposal.photoCredit,
-  }
-}
-
-function publicSuggestion<
-  T extends { name: string | null; email: string | null },
->(suggestion: T): T {
-  return {
-    ...suggestion,
-    name: suggestion.name
-      ? (decryptSensitiveText(suggestion.name) ?? suggestion.name)
-      : suggestion.name,
-    email: suggestion.email
-      ? (decryptSensitiveText(suggestion.email) ?? suggestion.email)
-      : suggestion.email,
   }
 }
 
