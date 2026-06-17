@@ -127,76 +127,112 @@ export function LeaderboardPage() {
       {error && <p className="ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="overflow-x-auto">
-          <table className="field-table min-w-full text-sm">
-            <thead>
-              <tr className="bg-[color:var(--app-surface-muted)]">
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  Joueur
-                </th>
-                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
-                  Parties
-                </th>
-                <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
-                  Bonnes réponses
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
-                  Points
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color:var(--app-border)]">
-              {data.items.map((item, index) => (
-                <tr
+        <>
+          {/* Mobile card view (< 640px) */}
+          <div className="flex flex-col divide-y divide-[color:var(--app-border)] sm:hidden">
+            {data.items.length === 0 ? (
+              <p className="py-4 text-sm text-[color:var(--app-text-muted)]">
+                Aucun joueur classé pour le moment.
+              </p>
+            ) : (
+              data.items.map((item, index) => (
+                <div
                   key={item.userId}
-                  className={
-                    index < 3
-                      ? 'bg-[color:var(--app-warning-soft)]'
-                      : 'bg-[color:var(--app-surface)]'
-                  }
+                  className={`leaderboard-card${index < 3 ? ' leaderboard-card--top' : ''}`}
                 >
-                  <td className="px-4 py-3 font-medium text-[color:var(--app-text)]">
-                    {index + 1}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedUsername(item.username)
-                        setModalOpen(true)
-                      }}
-                      className="cursor-pointer text-[color:var(--app-text)] hover:text-[color:var(--app-primary)] hover:underline"
-                    >
-                      {item.username}
-                    </button>
-                  </td>
-                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
-                    {item.gamesPlayed}
-                  </td>
-                  <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
-                    {item.correctCount}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-[color:var(--app-text)]">
-                    {item.points}
-                  </td>
-                </tr>
-              ))}
-              {!data.items.length && (
-                <tr>
-                  <td
-                    className="px-4 py-4 text-[color:var(--app-text-muted)]"
-                    colSpan={5}
+                  <span className="leaderboard-card__rank">#{index + 1}</span>
+                  <button
+                    type="button"
+                    className="leaderboard-card__name"
+                    onClick={() => {
+                      setSelectedUsername(item.username)
+                      setModalOpen(true)
+                    }}
                   >
-                    Aucun joueur classé pour le moment.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    {item.username}
+                  </button>
+                  <span className="leaderboard-card__points">
+                    {item.points}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table view (≥ 640px) */}
+          <div className="hidden sm:block">
+            <div className="overflow-x-auto">
+              <table className="field-table min-w-full text-sm">
+                <thead>
+                  <tr className="bg-[color:var(--app-surface-muted)]">
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                      Joueur
+                    </th>
+                    <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+                      Parties
+                    </th>
+                    <th className="hidden px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)] sm:table-cell">
+                      Bonnes réponses
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--app-text-soft)]">
+                      Points
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[color:var(--app-border)]">
+                  {data.items.map((item, index) => (
+                    <tr
+                      key={item.userId}
+                      className={
+                        index < 3
+                          ? 'bg-[color:var(--app-warning-soft)]'
+                          : 'bg-[color:var(--app-surface)]'
+                      }
+                    >
+                      <td className="px-4 py-3 font-medium text-[color:var(--app-text)]">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedUsername(item.username)
+                            setModalOpen(true)
+                          }}
+                          className="cursor-pointer text-[color:var(--app-text)] hover:text-[color:var(--app-primary)] hover:underline"
+                        >
+                          {item.username}
+                        </button>
+                      </td>
+                      <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
+                        {item.gamesPlayed}
+                      </td>
+                      <td className="hidden px-4 py-3 text-[color:var(--app-text-muted)] sm:table-cell">
+                        {item.correctCount}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-[color:var(--app-text)]">
+                        {item.points}
+                      </td>
+                    </tr>
+                  ))}
+                  {!data.items.length && (
+                    <tr>
+                      <td
+                        className="px-4 py-4 text-[color:var(--app-text-muted)]"
+                        colSpan={5}
+                      >
+                        Aucun joueur classé pour le moment.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       <UserProfileModal
