@@ -125,7 +125,7 @@ export function LeaderboardPage() {
       {error && <p className="ui-alert ui-alert--danger">{error}</p>}
 
       {data && (
-        <div className="overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
+        <div className="w-full min-w-0 overflow-auto rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
           <table className="field-table text-sm">
             <colgroup>
               <col style={{ width: '3rem' }} />
