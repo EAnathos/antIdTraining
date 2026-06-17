@@ -4,28 +4,13 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { requireAuth } from '../middleware/auth.js'
+import { encryptSensitiveText } from '../lib/encryption.js'
 import {
-  decryptSensitiveText,
-  encryptSensitiveText,
-} from '../lib/encryption.js'
+  MAX_SUGGESTIONS_PER_USER,
+  publicSuggestion,
+} from '../lib/suggestionFormatters.js'
 
 export const suggestionsRouter = Router()
-
-const MAX_SUGGESTIONS_PER_USER = 10
-
-function publicSuggestion<
-  T extends { name: string | null; email: string | null },
->(suggestion: T): T {
-  return {
-    ...suggestion,
-    name: suggestion.name
-      ? (decryptSensitiveText(suggestion.name) ?? suggestion.name)
-      : suggestion.name,
-    email: suggestion.email
-      ? (decryptSensitiveText(suggestion.email) ?? suggestion.email)
-      : suggestion.email,
-  }
-}
 
 const suggestionSchema = z.object({
   name: z.string().max(100, 'Nom trop long').trim().optional().nullable(),

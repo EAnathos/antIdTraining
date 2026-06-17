@@ -173,9 +173,9 @@ describe('gameRouter', () => {
     expect(response.status).toBe(200)
     expect(json).toEqual({ correct: true, points: 5 })
     expect(commonMocks.enforceIpRateLimit).toHaveBeenCalled()
-    expect((gameService as any).validateGameAnswer).toHaveBeenCalledWith({
-      questionId: 'q1',
-      answer: 'a',
-    })
+    expect((gameService as any).validateGameAnswer).toHaveBeenCalledWith(
+      { questionId: 'q1', answer: 'a' },
+      null,
+    )
   })
 })

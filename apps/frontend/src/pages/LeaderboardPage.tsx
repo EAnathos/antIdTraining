@@ -70,8 +70,7 @@ export function LeaderboardPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        const cancelled = { value: false }
-        void fetchData(cancelled)
+        void fetchData({ value: false })
       }
     }
 
@@ -84,8 +83,7 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     const handlePointsChanged = () => {
-      const cancelled = { value: false }
-      void fetchData(cancelled)
+      void fetchData({ value: false })
     }
 
     window.addEventListener(

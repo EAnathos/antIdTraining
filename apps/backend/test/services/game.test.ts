@@ -96,17 +96,16 @@ describe('game service', () => {
     prismaMocks.gameSession.findUnique.mockResolvedValue({
       id: 'session_1',
       level: 'EASY',
+      entryId: 'entry_1',
+      finalCorrect: null,
+      userId: null,
+      entry: { subfamily: 'Formicinae', genus: null, species: null },
     })
 
     const result = await validateGameAnswer({
       level: 'easy',
       sessionId: 'session_1',
-      selected: {
-        subfamily: 'Myrmicinae',
-      },
-      answer: {
-        subfamily: 'Formicinae',
-      },
+      selected: { subfamily: 'Myrmicinae' },
     })
 
     expect(result).toMatchObject({
@@ -135,17 +134,16 @@ describe('game service', () => {
     prismaMocks.gameSession.findUnique.mockResolvedValue({
       id: 'session_1',
       level: 'EASY',
+      entryId: 'entry_1',
+      finalCorrect: null,
+      userId: null,
+      entry: { subfamily: 'Formicinae', genus: null, species: null },
     })
 
     const result = await validateGameAnswer({
       level: 'easy',
       sessionId: 'session_1',
-      selected: {
-        subfamily: 'Formicinae',
-      },
-      answer: {
-        subfamily: 'Formicinae',
-      },
+      selected: { subfamily: 'Formicinae' },
     })
 
     expect(result).toMatchObject({

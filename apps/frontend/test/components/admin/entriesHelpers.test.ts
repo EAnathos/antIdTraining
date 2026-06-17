@@ -3,7 +3,7 @@ import {
   normalizeDepartment,
   parseDepartmentInput,
 } from '../../../src/components/admin/entriesHelpers'
-import { resolveImageUrl } from '../../../src/components/admin/imageHelpers'
+import { resolveImageUrl } from '../../../src/lib/imageUrl'
 
 describe('Entries helpers', () => {
   it('normalizes department codes', () => {

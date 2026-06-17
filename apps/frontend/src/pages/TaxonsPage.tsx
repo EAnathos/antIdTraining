@@ -8,6 +8,7 @@ import type {
 } from '../types/models'
 import { FranceMap } from '../components/FranceMap'
 import type { FrenchDepartmentCode } from '../lib/frenchDepartments'
+import { getReferenceHref } from '../lib/referenceUtils'
 
 function TreeIcon({ className }: { className?: string }) {
   return (
@@ -632,22 +633,6 @@ const monthLabels = [
   'Décembre',
 ] as const
 
-function getReferenceHref(reference: ReferenceItem) {
-  if (!reference.url) {
-    return null
-  }
-
-  if (
-    reference.type === 'MYRMECOLOGY' &&
-    !reference.url.startsWith('http://') &&
-    !reference.url.startsWith('https://')
-  ) {
-    return `https://doi.org/${reference.url}`
-  }
-
-  return reference.url
-}
-
 function getTaxonsCacheKey(query: string) {
   return `${TAXONS_CACHE_PREFIX}${encodeURIComponent(query.trim().toLowerCase())}`
 }
@@ -838,7 +823,7 @@ export function TaxonsPage() {
     }
   }, [loadAllTaxons])
 
-  async function openSelectedDetail(
+  function openSelectedDetail(
     taxon: Taxon,
     level: 'subfamily' | 'genus' | 'subgenus' | 'speciesGroup' | 'species',
     value: string,
@@ -1512,16 +1497,10 @@ export function TaxonsPage() {
                   </p>
                   {selectedDetail.taxon.swarmingStartMonth &&
                   selectedDetail.taxon.swarmingEndMonth ? (
-                    (() => {
-                      const startMonth = selectedDetail.taxon.swarmingStartMonth
-                      const endMonth = selectedDetail.taxon.swarmingEndMonth
-                      return (
-                        <p className="mt-2 text-[color:var(--app-text-muted)]">
-                          {monthLabels[startMonth - 1]} à{' '}
-                          {monthLabels[endMonth - 1]}
-                        </p>
-                      )
-                    })()
+                    <p className="mt-2 text-[color:var(--app-text-muted)]">
+                      {monthLabels[selectedDetail.taxon.swarmingStartMonth - 1]}{' '}
+                      à {monthLabels[selectedDetail.taxon.swarmingEndMonth - 1]}
+                    </p>
                   ) : (
                     <p className="mt-2 text-[color:var(--app-text-muted)]">
                       Aucune période d'essaimage renseignée.
@@ -1598,21 +1577,19 @@ export function TaxonsPage() {
                   </p>
                   <div className="mt-1">
                     {(() => {
-                      const raw = (selectedDetail.taxon.distribution
-                        ?.departments ?? []) as unknown[]
-                      const codes = raw.filter(
-                        (c) => typeof c === 'string',
-                      ) as FrenchDepartmentCode[]
-
-                      if (codes.length === 0) {
-                        return (
-                          <p className="mt-1 text-[color:var(--app-text-muted)]">
-                            Aucune aire de répartition renseignée.
-                          </p>
-                        )
-                      }
-
-                      return <FranceMap selectedDepartments={codes} readonly />
+                      const codes = (
+                        (selectedDetail.taxon.distribution?.departments ??
+                          []) as unknown[]
+                      ).filter(
+                        (c): c is FrenchDepartmentCode => typeof c === 'string',
+                      )
+                      return codes.length === 0 ? (
+                        <p className="mt-1 text-[color:var(--app-text-muted)]">
+                          Aucune aire de répartition renseignée.
+                        </p>
+                      ) : (
+                        <FranceMap selectedDepartments={codes} readonly />
+                      )
                     })()}
                   </div>
                 </>

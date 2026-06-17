@@ -1,4 +1,4 @@
-import { backendOrigin } from './api'
+import { resolveImageUrl } from './imageUrl'
 
 const RESPONSIVE_IMAGE_WIDTHS = [480, 960, 1600] as const
 
@@ -6,16 +6,8 @@ type ResponsiveImageOptions = {
   sizes?: string
 }
 
-function resolveAbsoluteImageUrl(imageUrl: string) {
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl
-  }
-
-  return `${backendOrigin}${imageUrl}`
-}
-
 function getVariantImageUrl(imageUrl: string, width: number) {
-  const absoluteUrl = resolveAbsoluteImageUrl(imageUrl)
+  const absoluteUrl = resolveImageUrl(imageUrl)
   if (width === 1600) {
     return absoluteUrl
   }
@@ -36,7 +28,7 @@ export function getResponsiveImageProps(
   imageUrl: string,
   options: ResponsiveImageOptions = {},
 ) {
-  const src = resolveAbsoluteImageUrl(imageUrl)
+  const src = resolveImageUrl(imageUrl)
   const srcSet = RESPONSIVE_IMAGE_WIDTHS.map(
     (width) => `${getVariantImageUrl(imageUrl, width)} ${width}w`,
   ).join(', ')
