@@ -25,9 +25,12 @@ export function LeaderboardPage() {
         '/stats/leaderboard',
         { params: { limit: 20 } },
       )
-      const currentUserPromise = api
-        .get<AuthMeResponse>('/auth/me')
-        .catch(() => null)
+      const isAuthenticated =
+        typeof window !== 'undefined' &&
+        !!window.localStorage.getItem('antidtraining-auth-role')
+      const currentUserPromise = isAuthenticated
+        ? api.get<AuthMeResponse>('/auth/me').catch(() => null)
+        : Promise.resolve(null)
 
       const [leaderboardResponse, currentUserResponse] = await Promise.all([
         leaderboardPromise,

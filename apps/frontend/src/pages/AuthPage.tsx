@@ -27,12 +27,7 @@ export function AuthPage() {
           email,
           password,
         })
-        persistAuth(
-          data.role,
-          data.token,
-          data.user.username,
-          data.user.email ?? null,
-        )
+        persistAuth(data.role, data.user.username, data.user.email ?? null)
         navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
         return
       }

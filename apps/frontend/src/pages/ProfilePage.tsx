@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { clearAuth } from '../lib/auth'
 import { resolveImageUrl } from '../lib/imageUrl'
 import type { AuthMeResponse } from '../types/models'
 
@@ -232,10 +233,7 @@ export function ProfilePage() {
 
     try {
       await api.post('/auth/delete-account')
-      window.localStorage.removeItem('antidtraining-auth-role')
-      window.localStorage.removeItem('antidtraining-auth-username')
-      window.localStorage.removeItem('antidtraining-auth-email')
-      window.dispatchEvent(new Event('antidtraining-auth-changed'))
+      clearAuth()
       navigate('/connexion', { replace: true })
     } catch (err) {
       setError(
@@ -248,10 +246,7 @@ export function ProfilePage() {
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => undefined)
-    window.localStorage.removeItem('antidtraining-auth-role')
-    window.localStorage.removeItem('antidtraining-auth-username')
-    window.localStorage.removeItem('antidtraining-auth-email')
-    window.dispatchEvent(new Event('antidtraining-auth-changed'))
+    clearAuth()
     navigate('/connexion', { replace: true })
   }
 

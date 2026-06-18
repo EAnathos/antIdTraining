@@ -24,12 +24,7 @@ export function ActivateAccountPage() {
     api
       .post<AuthResponse>('/auth/verify-email', { token })
       .then(({ data }) => {
-        persistAuth(
-          data.role,
-          data.token,
-          data.user.username,
-          data.user.email ?? null,
-        )
+        persistAuth(data.role, data.user.username, data.user.email ?? null)
         setStatus({ kind: 'success' })
         setTimeout(
           () =>

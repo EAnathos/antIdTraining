@@ -574,13 +574,7 @@ export function ContributionPage() {
       ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
       : ''
 
-  const authApi = useMemo(
-    () =>
-      api.create({
-        baseURL: '/api',
-      }),
-    [],
-  )
+  const authApi = api.create({ baseURL: '/api' })
 
   function patchEntryForm(patch: Partial<EntryForm>) {
     setEntryForm((f) => ({ ...f, ...patch }))

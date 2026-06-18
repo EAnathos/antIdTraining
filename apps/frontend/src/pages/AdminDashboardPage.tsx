@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AdminSection } from '../types/models'
 import { useAdminData } from '../hooks/useAdminData'
+import { clearAuth } from '../lib/auth'
 import { AdminMobileMenu } from '../components/admin/AdminMobileMenu'
 import { TaxonsCrudPanel } from '../components/admin/TaxonsCrudPanel'
 import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
@@ -32,10 +33,7 @@ export function AdminDashboardPage() {
 
   const logoutToLogin = useCallback(async () => {
     await api.post('/auth/logout').catch(() => undefined)
-    window.localStorage.removeItem('antidtraining-auth-role')
-    window.localStorage.removeItem('antidtraining-auth-username')
-    window.localStorage.removeItem('antidtraining-auth-email')
-    window.dispatchEvent(new Event('antidtraining-auth-changed'))
+    clearAuth()
     navigate('/connexion', { replace: true })
   }, [navigate])
 

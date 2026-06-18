@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { api } from '../../lib/api'
+import { clearAuth } from '../../lib/auth'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -95,16 +97,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then((res) => {
-        if (res.status === 401) {
-          window.localStorage.removeItem('antidtraining-auth-role')
-          window.localStorage.removeItem('antidtraining-auth-username')
-          window.localStorage.removeItem('antidtraining-auth-email')
-          setAuthState({ role: null })
-        }
-      })
-      .catch(() => undefined)
+    api.get('/auth/me').catch((err: { status?: number }) => {
+      if (err.status === 401) clearAuth()
+    })
   }, [])
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 export function persistAuth(
   role: 'ADMIN' | 'USER',
-  _token: string,
   username: string,
   email: string | null,
 ) {
@@ -9,5 +8,12 @@ export function persistAuth(
   if (email) {
     window.localStorage.setItem('antidtraining-auth-email', email)
   }
+  window.dispatchEvent(new Event('antidtraining-auth-changed'))
+}
+
+export function clearAuth() {
+  window.localStorage.removeItem('antidtraining-auth-role')
+  window.localStorage.removeItem('antidtraining-auth-username')
+  window.localStorage.removeItem('antidtraining-auth-email')
   window.dispatchEvent(new Event('antidtraining-auth-changed'))
 }
