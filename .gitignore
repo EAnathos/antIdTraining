@@ -42,3 +42,6 @@ coverage/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Deploy scripts (kept locally only)
+scripts/deploy-vps.sh
