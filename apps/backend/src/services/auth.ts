@@ -197,7 +197,7 @@ export async function verifyRegistrationEmail(
   await enforceIpRateLimit(
     'email-verification',
     ip,
-    VERIFICATION_WINDOW_MS,
+    ACTIVATION_TOKEN_EXPIRY_MS,
     VERIFICATION_MAX_ATTEMPTS,
     'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
   )

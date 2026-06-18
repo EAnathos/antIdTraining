@@ -96,6 +96,7 @@ export async function sendVerificationEmail(
 
   const activationUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/activate?token=${encodeURIComponent(token)}`
   const safeUsername = escapeHtml(username)
+  const safeActivationUrl = escapeHtml(activationUrl)
   await sendResendEmail(
     {
       to: email,
@@ -113,7 +114,7 @@ export async function sendVerificationEmail(
       html: `
       <p>Bonjour ${safeUsername},</p>
       <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
-      <p><a href="${activationUrl}">Activer mon compte</a></p>
+      <p><a href="${safeActivationUrl}">Activer mon compte</a></p>
       <p>Ce lien expire dans 24 heures.</p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
