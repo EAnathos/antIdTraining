@@ -51,6 +51,7 @@ export async function loginAdmin(
       role: true,
       emailVerifiedAt: true,
       passwordHash: true,
+      tokenVersion: true,
     },
   })
 
@@ -87,7 +88,7 @@ export async function loginAdmin(
   await resetIpRateLimit('login', ip)
 
   const token = jwt.sign(
-    { userId: user.id, role: user.role },
+    { userId: user.id, role: user.role, tokenVersion: user.tokenVersion },
     config.jwtSecret,
     {
       expiresIn: '12h',
@@ -225,13 +226,18 @@ export async function verifyRegistrationEmail(
       username: true,
       email: true,
       role: true,
+      tokenVersion: true,
     },
   })
 
   await resetIpRateLimit('email-verification', ip)
 
   const token = jwt.sign(
-    { userId: updatedUser.id, role: updatedUser.role },
+    {
+      userId: updatedUser.id,
+      role: updatedUser.role,
+      tokenVersion: updatedUser.tokenVersion,
+    },
     config.jwtSecret,
     {
       expiresIn: '12h',

@@ -31,7 +31,10 @@ let server: ReturnType<express.Express['listen']>
 let baseUrl = ''
 
 function authHeader(role: 'USER' | 'ADMIN' = 'USER') {
-  const token = jwt.sign({ userId: 'user-1', role }, JWT_SECRET)
+  const token = jwt.sign(
+    { userId: 'user-1', role, tokenVersion: 0 },
+    JWT_SECRET,
+  )
   return { Authorization: `Bearer ${token}` }
 }
 
@@ -60,6 +63,10 @@ afterAll(async () => {
 
 beforeEach(() => {
   resetSharedMocks()
+  prismaMocks.user.findUnique.mockResolvedValue({
+    role: 'USER',
+    tokenVersion: 0,
+  })
   mocks.encryptSensitiveText.mockImplementation((v: string) => `enc:${v}`)
   mocks.decryptSensitiveText.mockImplementation((v: string) =>
     v.replace(/^enc:/, ''),

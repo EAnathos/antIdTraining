@@ -233,6 +233,7 @@ describe('auth service', () => {
       username: 'new-user',
       email: 'new-user@example.com',
       role: 'USER',
+      tokenVersion: 0,
     })
 
     const result = await verifyRegistrationEmail('b'.repeat(48), '127.0.0.1')
@@ -259,6 +260,7 @@ describe('auth service', () => {
         username: true,
         email: true,
         role: true,
+        tokenVersion: true,
       },
     })
     expect(commonMocks.resetIpRateLimit).toHaveBeenCalledWith(
