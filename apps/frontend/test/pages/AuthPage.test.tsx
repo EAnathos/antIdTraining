@@ -62,26 +62,13 @@ describe('AuthPage', () => {
     expect(connectButtons.length).toBeGreaterThan(0)
   })
 
-  it('submits register form and stores auth data', async () => {
-    apiMocks.post
-      .mockResolvedValueOnce({
-        data: {
-          requiresEmailVerification: true,
-          email: 'newuser@example.com',
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          role: 'USER',
-          token: 'test_token_456',
-          user: {
-            id: 'user_1',
-            username: 'newuser',
-            email: 'newuser@example.com',
-            role: 'USER',
-          },
-        },
-      })
+  it('submits register form and shows activation link message', async () => {
+    apiMocks.post.mockResolvedValueOnce({
+      data: {
+        requiresEmailVerification: true,
+        email: 'newuser@example.com',
+      },
+    })
 
     renderWithRouter(<AuthPage />)
 
@@ -112,28 +99,9 @@ describe('AuthPage', () => {
     })
 
     expect(
-      screen.getByText(/Un code de vérification a été envoyé/),
+      screen.getByText(/Un lien d'activation a été envoyé/),
     ).toBeInTheDocument()
-    expect(
-      screen.getByPlaceholderText('Code de vérification'),
-    ).toBeInTheDocument()
-
-    fireEvent.change(screen.getByPlaceholderText('Code de vérification'), {
-      target: { value: '123456' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Vérifier mon e-mail' }))
-
-    await waitFor(() => {
-      expect(apiMocks.post).toHaveBeenLastCalledWith('/auth/verify-email', {
-        email: 'newuser@example.com',
-        code: '123456',
-      })
-    })
-
-    expect(localStorage.getItem('antidtraining-auth-username')).toBe('newuser')
-    expect(localStorage.getItem('antidtraining-auth-email')).toBe(
-      'newuser@example.com',
-    )
+    expect(screen.queryByPlaceholderText('Code de vérification')).toBeNull()
   })
 
   it('submits login form with e-mail', async () => {
