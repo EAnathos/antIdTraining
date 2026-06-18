@@ -8,7 +8,7 @@ import { recordAdminAudit } from '../lib/adminAudit.js'
 export const adminSuggestionsRouter = Router()
 
 const updateSchema = z.object({
-  status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
+  status: z.enum(['PENDING', 'ACCEPTED', 'REJECTED']),
   rejectionMessage: z
     .string()
     .min(3, 'Message trop court')
@@ -21,7 +21,7 @@ adminSuggestionsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const rawStatus = req.query.status
-    const statusSchema = z.enum(['PENDING', 'PROCESSED', 'REJECTED']).optional()
+    const statusSchema = z.enum(['PENDING', 'ACCEPTED', 'REJECTED']).optional()
     const parsed = statusSchema.safeParse(rawStatus)
     const where =
       parsed.success && parsed.data ? { status: parsed.data } : undefined
@@ -55,7 +55,7 @@ adminSuggestionsRouter.put(
 
     const data: any = { status: parsed.data.status }
     if (
-      parsed.data.status === 'PROCESSED' ||
+      parsed.data.status === 'ACCEPTED' ||
       parsed.data.status === 'REJECTED'
     ) {
       data.processedAt = new Date()

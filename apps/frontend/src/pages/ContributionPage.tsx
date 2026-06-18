@@ -656,7 +656,7 @@ export function ContributionPage() {
     if (statusFilter === 'pending')
       return suggestions.filter((s) => s.status === 'PENDING')
     if (statusFilter === 'processed')
-      return suggestions.filter((s) => s.status === 'PROCESSED')
+      return suggestions.filter((s) => s.status === 'ACCEPTED')
     if (statusFilter === 'rejected')
       return suggestions.filter((s) => s.status === 'REJECTED')
     return suggestions
@@ -668,7 +668,7 @@ export function ContributionPage() {
       rejected = 0
     for (const x of [...proposals, ...suggestions]) {
       if (x.status === 'PENDING') pending++
-      else if (x.status === 'ACCEPTED' || x.status === 'PROCESSED') processed++
+      else if (x.status === 'ACCEPTED') processed++
       else if (x.status === 'REJECTED') rejected++
     }
     return {
@@ -909,7 +909,7 @@ export function ContributionPage() {
               [
                 ['all', 'Tous'],
                 ['pending', 'En attente'],
-                ['processed', 'Accepté · Traité'],
+                ['processed', 'Accepté'],
                 ['rejected', 'Refusé'],
               ] as [StatusFilter, string][]
             ).map(([f, label]) => (

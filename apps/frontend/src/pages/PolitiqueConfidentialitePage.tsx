@@ -8,7 +8,7 @@ export default function PolitiqueConfidentialitePage() {
   return (
     <StaticPage
       title="Politique de confidentialité"
-      subtitle="Dernière mise à jour : 16 juin 2026"
+      subtitle="Dernière mise à jour : 18 juin 2026"
     >
       <StaticSection title="Responsable du traitement">
         <StaticP>
@@ -75,8 +75,7 @@ export default function PolitiqueConfidentialitePage() {
             <strong className="text-[color:var(--app-text)]">
               Suggestions
             </strong>{' '}
-            — texte libre, adresse e-mail optionnelle pour les utilisateurs non
-            connectés.
+            — texte libre, réservées aux utilisateurs connectés.
           </li>
         </ul>
       </StaticSection>
