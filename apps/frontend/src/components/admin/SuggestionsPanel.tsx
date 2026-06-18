@@ -356,14 +356,20 @@ export function SuggestionsPanel({
                 <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-2">
                   <textarea
                     className="ui-textarea w-full p-2 text-xs"
-                    placeholder="Message d'explication"
+                    placeholder="Message d'explication (obligatoire)"
                     value={rejectMessage}
                     onChange={(e) => setRejectMessage(e.target.value)}
                   />
+                  {rejectMessage.trim().length === 0 && (
+                    <p className="text-xs text-red-500">
+                      Un message de refus est obligatoire.
+                    </p>
+                  )}
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="ui-action ui-action--danger"
+                      className="ui-action ui-action--danger disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={rejectMessage.trim().length === 0}
                       onClick={() =>
                         void setSuggestionStatus(
                           s.id,
@@ -584,14 +590,20 @@ export function SuggestionsPanel({
                 <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-2">
                   <textarea
                     className="ui-textarea w-full p-2 text-xs"
-                    placeholder="Message d'explication"
+                    placeholder="Message d'explication (obligatoire)"
                     value={rejectMessage}
                     onChange={(e) => setRejectMessage(e.target.value)}
                   />
+                  {rejectMessage.trim().length === 0 && (
+                    <p className="text-xs text-red-500">
+                      Un message de refus est obligatoire.
+                    </p>
+                  )}
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="ui-action ui-action--danger"
+                      className="ui-action ui-action--danger disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={rejectMessage.trim().length === 0}
                       onClick={() =>
                         void setProposalStatus(p.id, 'REJECT', rejectMessage)
                       }

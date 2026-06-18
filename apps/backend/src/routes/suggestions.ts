@@ -33,7 +33,8 @@ suggestionsRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = suggestionSchema.safeParse(req.body)
     if (!parsed.success) {
-      throw new AppError(400, 'Requête invalide.')
+      const message = parsed.error.issues[0]?.message ?? 'Requête invalide.'
+      throw new AppError(400, message)
     }
 
     const suggestionCount = await prisma.suggestion.count({
@@ -77,7 +78,10 @@ suggestionsRouter.patch(
   asyncHandler(async (req, res) => {
     const id = req.params.id as string
     const parsed = patchSuggestionSchema.safeParse(req.body)
-    if (!parsed.success) throw new AppError(400, 'Requête invalide.')
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Requête invalide.'
+      throw new AppError(400, message)
+    }
 
     const existing = await prisma.suggestion.findUnique({
       where: { id },
