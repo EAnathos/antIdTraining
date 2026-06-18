@@ -4,7 +4,6 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import { publicSuggestion } from '../lib/suggestionFormatters.js'
 
 export const adminSuggestionsRouter = Router()
 
@@ -29,10 +28,20 @@ adminSuggestionsRouter.get(
 
     const items = await prisma.suggestion.findMany({
       where,
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        title: true,
+        message: true,
+        status: true,
+        rejectionMessage: true,
+        createdAt: true,
+        processedAt: true,
+        user: { select: { username: true } },
+      },
       orderBy: { createdAt: 'desc' },
     })
-    return res.json(items.map((item) => publicSuggestion(item)))
+    return res.json(items)
   }),
 )
 
@@ -60,7 +69,17 @@ adminSuggestionsRouter.put(
     const updated = await prisma.suggestion.update({
       where: { id: req.params.id as string },
       data,
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        title: true,
+        message: true,
+        status: true,
+        rejectionMessage: true,
+        createdAt: true,
+        processedAt: true,
+        user: { select: { username: true } },
+      },
     })
 
     await recordAdminAudit(req, {
@@ -70,7 +89,7 @@ adminSuggestionsRouter.put(
       entityType: 'suggestion',
       entityId: updated.id,
     })
-    return res.json(publicSuggestion(updated))
+    return res.json(updated)
   }),
 )
 

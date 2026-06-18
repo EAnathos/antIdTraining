@@ -221,8 +221,7 @@ export type EntryProposal = {
 export type Suggestion = {
   id: string
   userId?: string | null
-  name?: string | null
-  email?: string | null
+  title?: string | null
   message: string
   status: 'PENDING' | 'PROCESSED' | 'REJECTED'
   rejectionMessage?: string | null

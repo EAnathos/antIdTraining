@@ -100,12 +100,11 @@ describe('POST /api/suggestions', () => {
     expect(body.message).toMatch(/Limite/)
   })
 
-  it('creates suggestion and returns 201 with encrypted fields', async () => {
+  it('creates suggestion with title and returns 201', async () => {
     const created = {
       id: 's1',
       userId: 'user-1',
-      name: 'enc:Alice',
-      email: 'enc:alice@example.com',
+      title: 'Mon titre',
       message: 'Une suggestion valide de test',
       createdAt: new Date().toISOString(),
     }
@@ -118,33 +117,29 @@ describe('POST /api/suggestions', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({
-        name: 'Alice',
-        email: 'alice@example.com',
+        title: 'Mon titre',
         message: 'Une suggestion valide de test',
       }),
     })
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.name).toBe('Alice')
-    expect(body.email).toBe('alice@example.com')
+    expect(body.title).toBe('Mon titre')
     expect(prismaMocks.suggestion.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          name: 'enc:Alice',
-          email: 'enc:alice@example.com',
+          title: 'Mon titre',
         }),
       }),
     )
   })
 
-  it('creates suggestion without name/email', async () => {
+  it('creates suggestion without title', async () => {
     const created = {
       id: 's2',
       userId: 'user-1',
-      name: null,
-      email: null,
-      message: 'Message anonyme valide pour le test',
+      title: null,
+      message: 'Message valide pour le test',
       createdAt: new Date().toISOString(),
     }
     prismaMocks.suggestion = {
@@ -155,13 +150,12 @@ describe('POST /api/suggestions', () => {
     const res = await fetch(`${baseUrl}/api/suggestions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ message: 'Message anonyme valide pour le test' }),
+      body: JSON.stringify({ message: 'Message valide pour le test' }),
     })
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.name).toBeNull()
-    expect(body.email).toBeNull()
+    expect(body.title).toBeNull()
   })
 })
 
