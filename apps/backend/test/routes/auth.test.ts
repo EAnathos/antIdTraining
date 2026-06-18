@@ -565,6 +565,7 @@ describe('authRouter', () => {
           passwordResetToken: null,
           passwordResetTokenExpiresAt: null,
           passwordResetRequestedAt: null,
+          tokenVersion: { increment: 1 },
         },
       }),
     )

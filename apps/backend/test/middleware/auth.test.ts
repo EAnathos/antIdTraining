@@ -12,6 +12,9 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret'
 
+const prismaMock = vi.hoisted(() => ({ user: { findUnique: vi.fn() } }))
+vi.mock('../../src/prisma.js', () => ({ prisma: prismaMock }))
+
 import {
   getAuthToken,
   getJwtPayload,
@@ -82,39 +85,71 @@ describe('getJwtPayload', () => {
 })
 
 describe('requireAuth middleware', () => {
-  it('calls next with user set when token is valid', () => {
-    const token = jwt.sign({ userId: 'u1', role: 'USER' }, JWT_SECRET)
+  beforeEach(() => {
+    prismaMock.user.findUnique.mockReset()
+  })
+
+  it('calls next with user set when token is valid', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      role: 'USER',
+      tokenVersion: 0,
+    })
+    const token = jwt.sign(
+      { userId: 'u1', role: 'USER', tokenVersion: 0 },
+      JWT_SECRET,
+    )
     const req = makeReq({
       headers: { authorization: `Bearer ${token}` },
     }) as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    requireAuth(req, res as any, next)
+    await requireAuth(req, res as any, next)
 
     expect(next).toHaveBeenCalledWith()
     expect(req.user).toMatchObject({ userId: 'u1', role: 'USER' })
   })
 
-  it('returns 401 when no token', () => {
+  it('returns 401 when no token', async () => {
     const req = makeReq() as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    requireAuth(req, res as any, next)
+    await requireAuth(req, res as any, next)
 
     expect(res.status).toHaveBeenCalledWith(401)
     expect(next).not.toHaveBeenCalled()
   })
 
-  it('returns 401 when token is invalid', () => {
+  it('returns 401 when token is invalid', async () => {
     const req = makeReq({
       headers: { authorization: 'Bearer bad.token' },
     }) as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    requireAuth(req, res as any, next)
+    await requireAuth(req, res as any, next)
+
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('returns 401 when tokenVersion mismatches (revoked session)', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      role: 'USER',
+      tokenVersion: 1,
+    })
+    const token = jwt.sign(
+      { userId: 'u1', role: 'USER', tokenVersion: 0 },
+      JWT_SECRET,
+    )
+    const req = makeReq({
+      headers: { authorization: `Bearer ${token}` },
+    }) as any
+    const res = makeRes()
+    const next = vi.fn() as unknown as NextFunction
+
+    await requireAuth(req, res as any, next)
 
     expect(res.status).toHaveBeenCalledWith(401)
     expect(next).not.toHaveBeenCalled()

@@ -179,10 +179,21 @@ authRouter.post(
   }),
 )
 
-authRouter.post('/logout', (_req, res) => {
-  res.clearCookie('adminToken', getAdminCookieOptions())
-  return res.status(204).send()
-})
+authRouter.post(
+  '/logout',
+  optionalAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user?.userId
+    if (userId) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { tokenVersion: { increment: 1 } },
+      })
+    }
+    res.clearCookie('adminToken', getAdminCookieOptions())
+    return res.status(204).send()
+  }),
+)
 
 authRouter.get(
   '/me',
@@ -460,6 +471,7 @@ authRouter.post(
         passwordResetToken: null,
         passwordResetTokenExpiresAt: null,
         passwordResetRequestedAt: null,
+        tokenVersion: { increment: 1 },
       },
     })
 
