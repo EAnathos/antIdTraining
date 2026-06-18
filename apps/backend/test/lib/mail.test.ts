@@ -52,13 +52,14 @@ describe('sendLoginNotificationEmail', () => {
 })
 
 describe('sendVerificationEmail', () => {
-  it('sends verification code in email body', async () => {
-    await sendVerificationEmail('alice@example.com', 'Alice', '123456')
+  it('sends activation link in email body', async () => {
+    const token = 'a'.repeat(48)
+    await sendVerificationEmail('alice@example.com', 'Alice', token)
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
-    expect(body.subject).toBe('Validez votre adresse e-mail')
-    expect(body.text).toContain('123456')
-    expect(body.html).toContain('123456')
+    expect(body.subject).toBe('Activez votre compte')
+    expect(body.text).toContain(token)
+    expect(body.html).toContain(token)
   })
 
   it('throws when API responds with error', async () => {
