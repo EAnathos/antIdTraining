@@ -177,6 +177,303 @@ const emptyEntryForm: EntryForm = {
   caste: '',
 }
 
+function ProposalFormFields({
+  form,
+  onPatch,
+  onFiles,
+  subfamilies,
+  isSubmitting,
+  onSubmit,
+  submitLabel,
+  imageRequired = false,
+  onCancel,
+}: {
+  form: EntryForm
+  onPatch: (patch: Partial<EntryForm>) => void
+  onFiles: (f: FileList | null) => void
+  subfamilies: string[]
+  isSubmitting: boolean
+  onSubmit: () => void
+  submitLabel: string
+  imageRequired?: boolean
+  onCancel?: () => void
+}) {
+  const [generaOptions, setGeneraOptions] = useState<string[]>([])
+  const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
+  const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
+  const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!form.subfamily) {
+      setGeneraOptions([])
+      return
+    }
+    let cancelled = false
+    void api
+      .get<string[]>('/taxons/genera', {
+        params: { subfamily: form.subfamily },
+      })
+      .then(({ data }) => {
+        if (!cancelled) setGeneraOptions(data)
+      })
+      .catch(() => {
+        if (!cancelled) setGeneraOptions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [form.subfamily])
+
+  useEffect(() => {
+    if (!form.genus) {
+      setSpeciesOptions([])
+      setSubgenusOptions([])
+      setSpeciesGroupOptions([])
+      return
+    }
+    let cancelled = false
+    void Promise.all([
+      api.get<string[]>('/taxons/species', { params: { genus: form.genus } }),
+      api.get<string[]>('/taxons/subgenera', { params: { genus: form.genus } }),
+      api.get<string[]>('/taxons/species-groups', {
+        params: { genus: form.genus },
+      }),
+    ])
+      .then(([speciesRes, subgenusRes, groupRes]) => {
+        if (!cancelled) {
+          setSpeciesOptions(speciesRes.data)
+          setSubgenusOptions(subgenusRes.data)
+          setSpeciesGroupOptions(groupRes.data)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSpeciesOptions([])
+          setSubgenusOptions([])
+          setSpeciesGroupOptions([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [form.genus])
+
+  async function handleSpeciesChange(e: ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
+    const genus = form.genus
+    onPatch({ species: value })
+    if (!value || !genus) return
+    try {
+      const { data } = await api.get<SpeciesMetadata>(
+        '/taxons/species-metadata',
+        { params: { genus, species: value } },
+      )
+      onPatch({
+        species: value,
+        subgenus: data.subgenus ?? '',
+        speciesGroup: data.speciesGroup ?? '',
+      })
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit()
+      }}
+    >
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
+          Sélection du taxon
+        </h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          <select
+            className="ui-select"
+            value={form.subfamily}
+            onChange={(e) =>
+              onPatch({
+                subfamily: e.target.value,
+                genus: '',
+                species: '',
+                subgenus: '',
+                speciesGroup: '',
+              })
+            }
+            required
+          >
+            <option value="">Sous-famille</option>
+            {subfamilies.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.genus}
+            onChange={(e) =>
+              onPatch({
+                genus: e.target.value,
+                species: '',
+                subgenus: '',
+                speciesGroup: '',
+              })
+            }
+            disabled={!form.subfamily}
+          >
+            <option value="">Genre (optionnel)</option>
+            {generaOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.subgenus}
+            onChange={(e) => onPatch({ subgenus: e.target.value, species: '' })}
+            disabled={!form.genus}
+          >
+            <option value="">Sous-genre (optionnel)</option>
+            {subgenusOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.speciesGroup}
+            onChange={(e) =>
+              onPatch({ speciesGroup: e.target.value, species: '' })
+            }
+            disabled={!form.genus}
+          >
+            <option value="">Groupe d'espèce (optionnel)</option>
+            {speciesGroupOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.species}
+            onChange={handleSpeciesChange}
+            disabled={!form.genus}
+          >
+            <option value="">Espèce (optionnel)</option>
+            {speciesOptions.map((v) => (
+              <option key={`${form.genus}-${v}`} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.caste}
+            onChange={(e) =>
+              onPatch({ caste: e.target.value as EntryCaste | '' })
+            }
+            required
+          >
+            <option value="">Choisir la caste</option>
+            <option value="WORKER">Ouvrière</option>
+            <option value="QUEEN">Reine</option>
+            <option value="MALE">Mâle</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
+          Détails de l'observation
+        </h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          <input
+            className="ui-select"
+            list="department-suggestions"
+            placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
+            value={form.department}
+            onChange={(e) => onPatch({ department: e.target.value })}
+            onBlur={(e) =>
+              onPatch({ department: parseDepartmentInput(e.target.value) })
+            }
+            required
+          />
+          <datalist id="department-suggestions">
+            {departmentOptions.map((d) => (
+              <option key={d.code} value={`${d.code} - ${d.name}`} />
+            ))}
+          </datalist>
+          <input
+            className="ui-select"
+            type="date"
+            value={form.observedAt}
+            onChange={(e) => onPatch({ observedAt: e.target.value })}
+            required
+          />
+          <div className="space-y-1">
+            <textarea
+              className="ui-input min-h-[80px] resize-y"
+              placeholder="Biotope (ex: forêt mixte, prairie sèche...)"
+              value={form.biotope}
+              maxLength={50}
+              onChange={(e) => onPatch({ biotope: e.target.value })}
+              required
+            />
+            <p className="text-right text-xs text-[color:var(--app-text-soft)]">
+              {form.biotope.length}/50
+            </p>
+          </div>
+          <input
+            className="ui-input"
+            placeholder="Crédit photo (votre pseudo par défaut)"
+            value={form.photoCredit}
+            minLength={3}
+            required
+            onChange={(e) => onPatch({ photoCredit: e.target.value })}
+          />
+          <div className="space-y-1">
+            <input
+              className="ui-input"
+              type="file"
+              accept="image/*"
+              multiple
+              required={imageRequired}
+              onChange={(e) => onFiles(e.target.files)}
+            />
+            <p className="text-xs text-[color:var(--app-text-soft)]">
+              {imageRequired
+                ? "Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3)."
+                : "Laisser vide pour conserver les photos actuelles · 8 Mo max (jusqu'à 3)."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {onCancel && (
+          <button type="button" className="ui-button" onClick={onCancel}>
+            Annuler
+          </button>
+        )}
+        <button
+          type="submit"
+          className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Envoi...' : submitLabel}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export function ContributionPage() {
   const [isConnected, setIsConnected] = useState(
     () =>
@@ -197,10 +494,6 @@ export function ContributionPage() {
     suggestionLimit: 10,
   })
   const [subfamilies, setSubfamilies] = useState<string[]>([])
-  const [generaOptions, setGeneraOptions] = useState<string[]>([])
-  const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
-  const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
-  const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
   const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
   const [entryForm, setEntryForm] = useState<EntryForm>(() => ({
     ...emptyEntryForm,
@@ -251,32 +544,7 @@ export function ContributionPage() {
   )
 
   function patchEntryForm(patch: Partial<EntryForm>) {
-    setEntryForm({ ...entryForm, ...patch })
-  }
-
-  async function handleSpeciesSelectChange(e: ChangeEvent<HTMLSelectElement>) {
-    const value = e.target.value
-    const genus = entryForm.genus
-    const baseForm = { ...entryForm, species: value }
-    setEntryForm(baseForm)
-
-    if (!value || !genus) return
-
-    try {
-      const { data } = await api.get<SpeciesMetadata>(
-        '/taxons/species-metadata',
-        {
-          params: { genus, species: value },
-        },
-      )
-      setEntryForm({
-        ...baseForm,
-        subgenus: data.subgenus ?? '',
-        speciesGroup: data.speciesGroup ?? '',
-      })
-    } catch {
-      // ignore errors
-    }
+    setEntryForm((f) => ({ ...f, ...patch }))
   }
 
   useEffect(() => {
@@ -299,78 +567,6 @@ export function ContributionPage() {
       .then(({ data }) => setSubfamilies(data))
       .catch(() => setSubfamilies([]))
   }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!entryForm.subfamily) {
-      setGeneraOptions([])
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void api
-      .get<string[]>('/taxons/genera', {
-        params: { subfamily: entryForm.subfamily },
-      })
-      .then(({ data }) => {
-        if (!cancelled) {
-          setGeneraOptions(data)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setGeneraOptions([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [entryForm.subfamily])
-
-  useEffect(() => {
-    let cancelled = false
-    if (!entryForm.genus) {
-      setSpeciesOptions([])
-      setSubgenusOptions([])
-      setSpeciesGroupOptions([])
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void Promise.all([
-      api.get<string[]>('/taxons/species', {
-        params: { genus: entryForm.genus },
-      }),
-      api.get<string[]>('/taxons/subgenera', {
-        params: { genus: entryForm.genus },
-      }),
-      api.get<string[]>('/taxons/species-groups', {
-        params: { genus: entryForm.genus },
-      }),
-    ])
-      .then(([speciesRes, subgenusRes, groupRes]) => {
-        if (!cancelled) {
-          setSpeciesOptions(speciesRes.data)
-          setSubgenusOptions(subgenusRes.data)
-          setSpeciesGroupOptions(groupRes.data)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSpeciesOptions([])
-          setSubgenusOptions([])
-          setSpeciesGroupOptions([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [entryForm.genus])
 
   const load = useCallback(async () => {
     if (!token) return
@@ -543,8 +739,7 @@ export function ContributionPage() {
     }
   }
 
-  async function submitProposal(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function submitProposal() {
     setMessage('')
     setIsSubmitting(true)
 
@@ -745,126 +940,19 @@ export function ContributionPage() {
                   </div>
                 </div>
                 {editingProposalId === p.id && (
-                  <div className="mt-3 space-y-3 border-t border-[color:var(--app-border)] pt-3">
-                    <div className="grid gap-2 md:grid-cols-2">
-                      <select
-                        className="ui-select"
-                        value={editingProposalForm.subfamily}
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            subfamily: e.target.value,
-                            genus: '',
-                            species: '',
-                            subgenus: '',
-                            speciesGroup: '',
-                          }))
-                        }
-                        required
-                      >
-                        <option value="">Sous-famille</option>
-                        {subfamilies.map((v) => (
-                          <option key={v} value={v}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="ui-select"
-                        list="department-suggestions"
-                        placeholder="Département"
-                        value={editingProposalForm.department}
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            department: e.target.value,
-                          }))
-                        }
-                        onBlur={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            department: parseDepartmentInput(e.target.value),
-                          }))
-                        }
-                        required
-                      />
-                      <input
-                        className="ui-select"
-                        type="date"
-                        value={editingProposalForm.observedAt}
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            observedAt: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                      <textarea
-                        className="ui-input min-h-[60px] resize-y"
-                        placeholder="Biotope"
-                        value={editingProposalForm.biotope}
-                        maxLength={50}
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            biotope: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                      <input
-                        className="ui-input"
-                        placeholder="Crédit photo"
-                        value={editingProposalForm.photoCredit}
-                        minLength={3}
-                        required
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            photoCredit: e.target.value,
-                          }))
-                        }
-                      />
-                      <select
-                        className="ui-select"
-                        value={editingProposalForm.caste}
-                        onChange={(e) =>
-                          setEditingProposalForm((f) => ({
-                            ...f,
-                            caste: e.target.value as EntryCaste | '',
-                          }))
-                        }
-                        required
-                      >
-                        <option value="">Caste</option>
-                        <option value="WORKER">Ouvrière</option>
-                        <option value="QUEEN">Reine</option>
-                        <option value="MALE">Mâle</option>
-                      </select>
-                      <div className="space-y-1">
-                        <input
-                          className="ui-input"
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) =>
-                            setEditingProposalFiles(e.target.files)
-                          }
-                        />
-                        <p className="text-xs text-[color:var(--app-text-soft)]">
-                          Laisser vide pour conserver les photos actuelles.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isEditSubmitting}
-                      onClick={() => void submitEditProposal(p.id)}
-                    >
-                      {isEditSubmitting ? 'Enregistrement...' : 'Sauvegarder'}
-                    </button>
+                  <div className="mt-3 border-t border-[color:var(--app-border)] pt-3">
+                    <ProposalFormFields
+                      form={editingProposalForm}
+                      onPatch={(patch) =>
+                        setEditingProposalForm((f) => ({ ...f, ...patch }))
+                      }
+                      onFiles={setEditingProposalFiles}
+                      subfamilies={subfamilies}
+                      isSubmitting={isEditSubmitting}
+                      onSubmit={() => void submitEditProposal(p.id)}
+                      submitLabel="Sauvegarder"
+                      onCancel={() => setEditingProposalId(null)}
+                    />
                   </div>
                 )}
                 {p.images.length > 0 && (
@@ -980,192 +1068,16 @@ export function ContributionPage() {
       )}
 
       {view === 'entry' && (
-        <form className="space-y-4" onSubmit={submitProposal}>
-          <div className="surface-panel surface-panel--solid p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
-              Sélection du taxon
-            </h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              <select
-                className="ui-select"
-                value={entryForm.subfamily}
-                onChange={(e) =>
-                  patchEntryForm({
-                    subfamily: e.target.value,
-                    genus: '',
-                    species: '',
-                    subgenus: '',
-                    speciesGroup: '',
-                  })
-                }
-                required
-              >
-                <option value="">Sous-famille</option>
-                {subfamilies.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.genus}
-                onChange={(e) =>
-                  patchEntryForm({
-                    genus: e.target.value,
-                    species: '',
-                    subgenus: '',
-                    speciesGroup: '',
-                  })
-                }
-                disabled={!entryForm.subfamily}
-              >
-                <option value="">Genre (optionnel)</option>
-                {generaOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.subgenus}
-                onChange={(e) =>
-                  patchEntryForm({ subgenus: e.target.value, species: '' })
-                }
-                disabled={!entryForm.genus}
-              >
-                <option value="">Sous-genre (optionnel)</option>
-                {subgenusOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.speciesGroup}
-                onChange={(e) =>
-                  patchEntryForm({ speciesGroup: e.target.value, species: '' })
-                }
-                disabled={!entryForm.genus}
-              >
-                <option value="">Groupe d'espèce (optionnel)</option>
-                {speciesGroupOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.species}
-                onChange={handleSpeciesSelectChange}
-                disabled={!entryForm.genus}
-              >
-                <option value="">Espèce (optionnel)</option>
-                {speciesOptions.map((value) => (
-                  <option key={`${entryForm.genus}-${value}`} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.caste}
-                onChange={(e) =>
-                  patchEntryForm({ caste: e.target.value as EntryCaste | '' })
-                }
-                required
-              >
-                <option value="">Choisir la caste</option>
-                <option value="WORKER">Ouvrière</option>
-                <option value="QUEEN">Reine</option>
-                <option value="MALE">Mâle</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="surface-panel surface-panel--solid p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
-              Détails de l'observation
-            </h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              <input
-                className="ui-select"
-                list="department-suggestions"
-                placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
-                value={entryForm.department}
-                onChange={(e) => patchEntryForm({ department: e.target.value })}
-                onBlur={(e) =>
-                  patchEntryForm({
-                    department: parseDepartmentInput(e.target.value),
-                  })
-                }
-                required
-              />
-              <datalist id="department-suggestions">
-                {departmentOptions.map((department) => (
-                  <option
-                    key={department.code}
-                    value={`${department.code} - ${department.name}`}
-                  />
-                ))}
-              </datalist>
-              <input
-                className="ui-select"
-                type="date"
-                value={entryForm.observedAt}
-                onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
-                required
-              />
-              <div className="space-y-1">
-                <textarea
-                  className="ui-input min-h-[80px] resize-y"
-                  placeholder="Biotope (ex: forêt mixte, prairie sèche...)"
-                  value={entryForm.biotope}
-                  maxLength={50}
-                  onChange={(e) => patchEntryForm({ biotope: e.target.value })}
-                  required
-                />
-                <p className="text-right text-xs text-[color:var(--app-text-soft)]">
-                  {entryForm.biotope.length}/50
-                </p>
-              </div>
-              <input
-                className="ui-input"
-                placeholder="Crédit photo (votre pseudo par défaut)"
-                value={entryForm.photoCredit}
-                minLength={3}
-                required
-                onChange={(e) =>
-                  patchEntryForm({ photoCredit: e.target.value })
-                }
-              />
-              <div className="space-y-1">
-                <input
-                  className="ui-input"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  required
-                  onChange={(e) => setEntryFiles(e.target.files)}
-                />
-                <p className="text-xs text-[color:var(--app-text-soft)]">
-                  Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3).
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <button
-            className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Envoi...' : 'Envoyer la proposition'}
-          </button>
-        </form>
+        <ProposalFormFields
+          form={entryForm}
+          onPatch={patchEntryForm}
+          onFiles={setEntryFiles}
+          subfamilies={subfamilies}
+          isSubmitting={isSubmitting}
+          onSubmit={() => void submitProposal()}
+          submitLabel="Envoyer la proposition"
+          imageRequired
+        />
       )}
 
       {view === 'suggestion' && (
