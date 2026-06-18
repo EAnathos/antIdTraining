@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { api } from '../lib/api'
 import {
@@ -556,8 +556,6 @@ export function ContributionPage() {
     index: number
     alt: string
   } | null>(null)
-  const suggestionFormRef = useRef<HTMLFormElement | null>(null)
-
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   const [editingProposalId, setEditingProposalId] = useState<string | null>(
@@ -571,7 +569,10 @@ export function ContributionPage() {
   const [editingSuggestionId, setEditingSuggestionId] = useState<string | null>(
     null,
   )
+  const [editingSuggestionTitle, setEditingSuggestionTitle] = useState('')
   const [editingSuggestionMessage, setEditingSuggestionMessage] = useState('')
+  const [newSuggestionTitle, setNewSuggestionTitle] = useState('')
+  const [newSuggestionMessage, setNewSuggestionMessage] = useState('')
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
   const username =
@@ -579,7 +580,7 @@ export function ContributionPage() {
       ? (window.localStorage.getItem(AUTH_USERNAME_KEY) ?? '')
       : ''
 
-  const authApi = api.create({ baseURL: '/api' })
+  const authApi = useMemo(() => api.create({ baseURL: '/api' }), [])
 
   function patchEntryForm(patch: Partial<EntryForm>) {
     setEntryForm((f) => ({ ...f, ...patch }))
@@ -662,14 +663,19 @@ export function ContributionPage() {
   }, [suggestions, statusFilter])
 
   const statusCounts = useMemo(() => {
-    const all = [...proposals, ...suggestions]
+    let pending = 0,
+      processed = 0,
+      rejected = 0
+    for (const x of [...proposals, ...suggestions]) {
+      if (x.status === 'PENDING') pending++
+      else if (x.status === 'ACCEPTED' || x.status === 'PROCESSED') processed++
+      else if (x.status === 'REJECTED') rejected++
+    }
     return {
-      all: all.length,
-      pending: all.filter((x) => x.status === 'PENDING').length,
-      processed: all.filter(
-        (x) => x.status === 'ACCEPTED' || x.status === 'PROCESSED',
-      ).length,
-      rejected: all.filter((x) => x.status === 'REJECTED').length,
+      all: proposals.length + suggestions.length,
+      pending,
+      processed,
+      rejected,
     }
   }, [proposals, suggestions])
 
@@ -677,6 +683,7 @@ export function ContributionPage() {
     setIsEditSubmitting(true)
     try {
       const { data } = await authApi.patch<Suggestion>(`/suggestions/${id}`, {
+        title: editingSuggestionTitle.trim() || null,
         message: editingSuggestionMessage,
       })
       setSuggestions((prev) => prev.map((s) => (s.id === id ? data : s)))
@@ -754,19 +761,13 @@ export function ContributionPage() {
   async function submitSuggestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
-    const formElement = suggestionFormRef.current
-    if (!formElement) {
-      setMessage('Impossible de retrouver le formulaire de suggestion.')
-      return
-    }
-    const form = new FormData(formElement)
     try {
       await api.post('/suggestions', {
-        name: username || null,
-        email: null,
-        message: String(form.get('message') ?? '').trim(),
+        title: newSuggestionTitle.trim() || null,
+        message: newSuggestionMessage.trim(),
       })
-      formElement.reset()
+      setNewSuggestionTitle('')
+      setNewSuggestionMessage('')
       await load()
       setView('contributions')
       setMessage('Suggestion envoyée.')
@@ -774,7 +775,7 @@ export function ContributionPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Impossible d’envoyer la suggestion.',
+          : "Impossible d'envoyer la suggestion.",
       )
     }
   }
@@ -832,7 +833,7 @@ export function ContributionPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Impossible d’envoyer la proposition.',
+          : "Impossible d'envoyer la proposition.",
       )
     } finally {
       setIsSubmitting(false)
@@ -1055,7 +1056,16 @@ export function ContributionPage() {
                 className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
               >
                 <div className="flex justify-between gap-3">
-                  <p className="whitespace-pre-wrap">{s.message}</p>
+                  <div className="min-w-0">
+                    {s.title && (
+                      <p className="mb-1 font-medium text-[color:var(--app-text)]">
+                        {s.title}
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap text-[color:var(--app-text-muted)]">
+                      {s.message}
+                    </p>
+                  </div>
                   <div className="flex shrink-0 items-start gap-2">
                     {s.status === 'PENDING' &&
                       (editingSuggestionId === s.id ? (
@@ -1072,6 +1082,7 @@ export function ContributionPage() {
                           className="ui-tab text-xs"
                           onClick={() => {
                             setEditingSuggestionId(s.id)
+                            setEditingSuggestionTitle(s.title ?? '')
                             setEditingSuggestionMessage(s.message)
                           }}
                         >
@@ -1087,6 +1098,15 @@ export function ContributionPage() {
                 </div>
                 {editingSuggestionId === s.id && (
                   <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-3">
+                    <input
+                      className="ui-input"
+                      placeholder="Titre (optionnel)"
+                      value={editingSuggestionTitle}
+                      maxLength={150}
+                      onChange={(e) =>
+                        setEditingSuggestionTitle(e.target.value)
+                      }
+                    />
                     <textarea
                       className="ui-textarea"
                       value={editingSuggestionMessage}
@@ -1135,16 +1155,20 @@ export function ContributionPage() {
       )}
 
       {view === 'suggestion' && (
-        <form
-          ref={suggestionFormRef}
-          className="space-y-3"
-          onSubmit={submitSuggestion}
-        >
+        <form className="space-y-3" onSubmit={submitSuggestion}>
+          <input
+            className="ui-input"
+            placeholder="Titre (optionnel)"
+            maxLength={150}
+            value={newSuggestionTitle}
+            onChange={(e) => setNewSuggestionTitle(e.target.value)}
+          />
           <textarea
-            name="message"
             className="ui-textarea"
             placeholder="Votre suggestion"
             required
+            value={newSuggestionMessage}
+            onChange={(e) => setNewSuggestionMessage(e.target.value)}
           />
           <button
             className="ui-button ui-button--primary"

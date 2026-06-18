@@ -21,10 +21,7 @@ import {
 } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import {
-  MAX_SUGGESTIONS_PER_USER,
-  publicSuggestion,
-} from '../lib/suggestionFormatters.js'
+import { MAX_SUGGESTIONS_PER_USER } from '../lib/suggestionConstants.js'
 
 ensureUploadsDir()
 
@@ -207,15 +204,23 @@ entryProposalsRouter.get(
       }),
       prisma.suggestion.findMany({
         where: { userId: req.user.userId },
+        select: {
+          id: true,
+          userId: true,
+          title: true,
+          message: true,
+          status: true,
+          rejectionMessage: true,
+          createdAt: true,
+          processedAt: true,
+        },
         orderBy: { createdAt: 'desc' },
       }),
     ])
 
     return res.json({
       proposals: proposals.map((proposal) => publicProposal(proposal)),
-      suggestions: suggestions.map((suggestion) =>
-        publicSuggestion(suggestion),
-      ),
+      suggestions,
     })
   }),
 )

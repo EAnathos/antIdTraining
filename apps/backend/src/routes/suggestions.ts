@@ -4,22 +4,12 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { requireAuth } from '../middleware/auth.js'
-import { encryptSensitiveText } from '../lib/encryption.js'
-import {
-  MAX_SUGGESTIONS_PER_USER,
-  publicSuggestion,
-} from '../lib/suggestionFormatters.js'
+import { MAX_SUGGESTIONS_PER_USER } from '../lib/suggestionConstants.js'
 
 export const suggestionsRouter = Router()
 
 const suggestionSchema = z.object({
-  name: z.string().max(100, 'Nom trop long').trim().optional().nullable(),
-  email: z
-    .string()
-    .email('Email invalide')
-    .max(255, 'Email trop long')
-    .optional()
-    .nullable(),
+  title: z.string().max(150, 'Titre trop long').trim().optional().nullable(),
   message: z
     .string()
     .min(10, 'Le message doit contenir au moins 10 caractères')
@@ -50,34 +40,21 @@ suggestionsRouter.post(
     const created = await prisma.suggestion.create({
       data: {
         userId: req.user!.userId,
-        name: parsed.data.name
-          ? (encryptSensitiveText(parsed.data.name) ?? parsed.data.name)
-          : null,
-        email: parsed.data.email
-          ? (encryptSensitiveText(parsed.data.email) ?? parsed.data.email)
-          : null,
+        title: parsed.data.title ?? null,
         message: parsed.data.message,
       },
     })
 
-    return res.status(201).json(publicSuggestion(created))
+    return res.status(201).json(created)
   }),
 )
-
-const patchSuggestionSchema = z.object({
-  message: z
-    .string()
-    .min(10, 'Le message doit contenir au moins 10 caractères')
-    .max(5000, 'Message trop long')
-    .trim(),
-})
 
 suggestionsRouter.patch(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = req.params.id as string
-    const parsed = patchSuggestionSchema.safeParse(req.body)
+    const parsed = suggestionSchema.safeParse(req.body)
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Requête invalide.'
       throw new AppError(400, message)
@@ -97,9 +74,12 @@ suggestionsRouter.patch(
 
     const updated = await prisma.suggestion.update({
       where: { id },
-      data: { message: parsed.data.message },
+      data: {
+        title: parsed.data.title,
+        message: parsed.data.message,
+      },
     })
 
-    return res.json(publicSuggestion(updated))
+    return res.json(updated)
   }),
 )

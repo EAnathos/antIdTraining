@@ -227,13 +227,12 @@ export function SuggestionsPanel({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="text-left">
-                  <p className="font-medium">{s.name ?? 'Anonyme'}</p>
-                  <p className="text-xs text-[color:var(--app-text-muted)]">
-                    {s.email ?? ''}
-                  </p>
-                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--app-primary)]">
-                    Message de contribution
-                  </p>
+                  <p className="font-medium">{s.user?.username ?? 'Anonyme'}</p>
+                  {s.title && (
+                    <p className="mt-1 text-sm font-semibold text-[color:var(--app-text)]">
+                      {s.title}
+                    </p>
+                  )}
                   <p className="mt-2 whitespace-pre-wrap">{s.message}</p>
                   {s.rejectionMessage && (
                     <div className="mt-2 rounded border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
