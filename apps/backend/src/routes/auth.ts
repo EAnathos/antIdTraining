@@ -14,7 +14,8 @@ import { logger } from '../lib/logger.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
 import { upload } from '../middleware/upload.js'
-import crypto, { createHash } from 'node:crypto'
+import crypto from 'node:crypto'
+import { hashToken } from '../lib/token.js'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
@@ -107,10 +108,6 @@ const passwordResetRequestSchema = z.object({
   email: emailSchema.optional(),
 })
 
-function hashResetToken(token: string) {
-  return createHash('sha256').update(token).digest('hex')
-}
-
 const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
 const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 const publicPasswordResetMessage =
@@ -143,9 +140,8 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = registerSchema.safeParse(req.body)
     if (!parsed.success) {
-      const passwordIssues = parsed.error.issues.filter(
-        (i) =>
-          i.path.includes('password') || i.path.includes('confirmPassword'),
+      const passwordIssues = parsed.error.issues.filter((i) =>
+        i.path.some((segment) => String(segment).includes('password')),
       )
       if (passwordIssues.length > 0) {
         logger.warn(
@@ -373,7 +369,7 @@ authRouter.post(
 
     // generate a token and expiry (valid 24 hours)
     const token = crypto.randomBytes(24).toString('hex')
-    const tokenHash = hashResetToken(token)
+    const tokenHash = hashToken(token)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     // store hashed token — never the raw token — to limit exposure in case of DB breach
@@ -440,7 +436,7 @@ authRouter.post(
     const { token, password } = parsed.data
 
     const user = await prisma.user.findFirst({
-      where: { passwordResetToken: hashResetToken(token) },
+      where: { passwordResetToken: hashToken(token) },
       select: {
         id: true,
         passwordResetTokenExpiresAt: true,

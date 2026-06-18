@@ -1,41 +1,36 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { persistAuth } from '../lib/auth'
 import type { AuthResponse } from '../types/models'
+
+type Status =
+  | { kind: 'pending' }
+  | { kind: 'success' }
+  | { kind: 'error'; message: string }
 
 export function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState<'pending' | 'success' | 'error'>(
-    'pending',
-  )
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState<Status>({ kind: 'pending' })
 
   useEffect(() => {
     const token = searchParams.get('token')
     if (!token) {
-      setStatus('error')
-      setError("Lien d'activation invalide.")
+      setStatus({ kind: 'error', message: "Lien d'activation invalide." })
       return
     }
 
     api
       .post<AuthResponse>('/auth/verify-email', { token })
       .then(({ data }) => {
-        window.localStorage.setItem('antidtraining-auth-token', data.token)
-        window.localStorage.setItem('antidtraining-auth-role', data.role)
-        window.localStorage.setItem(
-          'antidtraining-auth-username',
+        persistAuth(
+          data.role,
+          data.token,
           data.user.username,
+          data.user.email ?? null,
         )
-        if (data.user.email) {
-          window.localStorage.setItem(
-            'antidtraining-auth-email',
-            data.user.email,
-          )
-        }
-        window.dispatchEvent(new Event('antidtraining-auth-changed'))
-        setStatus('success')
+        setStatus({ kind: 'success' })
         setTimeout(
           () =>
             navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true }),
@@ -43,12 +38,13 @@ export function ActivateAccountPage() {
         )
       })
       .catch((err) => {
-        setStatus('error')
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : "Lien d'activation invalide ou expiré.",
-        )
+        setStatus({
+          kind: 'error',
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "Lien d'activation invalide ou expiré.",
+        })
       })
   }, [searchParams, navigate])
 
@@ -57,18 +53,20 @@ export function ActivateAccountPage() {
       <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
         Activation du compte
       </h2>
-      {status === 'pending' && (
+      {status.kind === 'pending' && (
         <p className="text-sm text-[color:var(--app-text-muted)]">
           Activation en cours…
         </p>
       )}
-      {status === 'success' && (
+      {status.kind === 'success' && (
         <p className="text-sm text-[color:var(--app-success)]">
           Compte activé ! Vous allez être redirigé…
         </p>
       )}
-      {status === 'error' && (
-        <p className="text-sm text-[color:var(--app-danger)]">{error}</p>
+      {status.kind === 'error' && (
+        <p className="text-sm text-[color:var(--app-danger)]">
+          {status.message}
+        </p>
       )}
     </section>
   )

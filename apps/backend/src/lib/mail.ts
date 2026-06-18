@@ -1,6 +1,17 @@
 import { config } from '../config.js'
 import { logger } from './logger.js'
 
+function buildFrontendUrl(
+  path: string,
+  params: Record<string, string>,
+): string {
+  const base = config.frontendUrl.replace(/\/$/, '')
+  const query = Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&')
+  return `${base}/#/${path}?${query}`
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -94,7 +105,7 @@ export async function sendVerificationEmail(
     )
   }
 
-  const activationUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/activate?token=${encodeURIComponent(token)}`
+  const activationUrl = buildFrontendUrl('activate', { token })
   const safeUsername = escapeHtml(username)
   const safeActivationUrl = escapeHtml(activationUrl)
   await sendResendEmail(
@@ -134,11 +145,9 @@ export async function sendPasswordResetEmail(
     )
   }
 
-  const resetUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/reset-password?token=${encodeURIComponent(
-    token,
-  )}`
-
+  const resetUrl = buildFrontendUrl('reset-password', { token })
   const safeUsername = escapeHtml(username)
+  const safeResetUrl = escapeHtml(resetUrl)
   await sendResendEmail(
     {
       to: email,
@@ -155,7 +164,7 @@ export async function sendPasswordResetEmail(
       html: `
       <p>Bonjour ${safeUsername},</p>
       <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
-      <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
+      <p><a href="${safeResetUrl}">Réinitialiser mon mot de passe</a></p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
     },

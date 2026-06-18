@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { persistAuth } from '../lib/auth'
 import type { AuthRegistrationResponse, AuthResponse } from '../types/models'
 
 type AuthMode = 'login' | 'register'
@@ -16,21 +17,6 @@ export function AuthPage() {
   const [error, setError] = useState('')
   const [registered, setRegistered] = useState<string | null>(null)
 
-  function persistAuth(
-    roleValue: 'ADMIN' | 'USER',
-    token: string,
-    name: string,
-    emailValue: string | null,
-  ) {
-    window.localStorage.setItem('antidtraining-auth-token', token)
-    window.localStorage.setItem('antidtraining-auth-role', roleValue)
-    window.localStorage.setItem('antidtraining-auth-username', name)
-    if (emailValue) {
-      window.localStorage.setItem('antidtraining-auth-email', emailValue)
-    }
-    window.dispatchEvent(new Event('antidtraining-auth-changed'))
-  }
-
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setError('')
@@ -41,7 +27,12 @@ export function AuthPage() {
           email,
           password,
         })
-        persistAuth(data.role, data.token, data.user.username, data.user.email)
+        persistAuth(
+          data.role,
+          data.token,
+          data.user.username,
+          data.user.email ?? null,
+        )
         navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
         return
       }
