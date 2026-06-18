@@ -10,10 +10,12 @@ import {
   verifyRegistrationEmail,
 } from '../services/auth.js'
 import { prisma } from '../prisma.js'
+import { logger } from '../lib/logger.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
 import { upload } from '../middleware/upload.js'
-import crypto, { createHash } from 'node:crypto'
+import crypto from 'node:crypto'
+import { hashToken } from '../lib/token.js'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
@@ -62,12 +64,7 @@ const registerSchema = z
   })
 
 const verifyEmailSchema = z.object({
-  email: emailSchema,
-  code: z
-    .string()
-    .trim()
-    .min(6, 'Le code de vérification est requis')
-    .max(6, 'Le code de vérification est invalide'),
+  token: z.string().trim().length(48, "Lien d'activation invalide"),
 })
 
 const avatarSchema = z
@@ -111,10 +108,6 @@ const passwordResetRequestSchema = z.object({
   email: emailSchema.optional(),
 })
 
-function hashResetToken(token: string) {
-  return createHash('sha256').update(token).digest('hex')
-}
-
 const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
 const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 const publicPasswordResetMessage =
@@ -147,6 +140,15 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = registerSchema.safeParse(req.body)
     if (!parsed.success) {
+      const passwordIssues = parsed.error.issues.filter((i) =>
+        i.path.some((segment) => String(segment).includes('password')),
+      )
+      if (passwordIssues.length > 0) {
+        logger.warn(
+          { ip: req.ip, issues: passwordIssues.map((i) => i.message) },
+          "Tentative d'inscription avec un mot de passe non conforme",
+        )
+      }
       throw parsed.error
     }
 
@@ -169,11 +171,7 @@ authRouter.post(
       throw parsed.error
     }
 
-    const auth = await verifyRegistrationEmail(
-      parsed.data.email,
-      parsed.data.code,
-      req.ip,
-    )
+    const auth = await verifyRegistrationEmail(parsed.data.token, req.ip)
 
     res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
@@ -371,7 +369,7 @@ authRouter.post(
 
     // generate a token and expiry (valid 24 hours)
     const token = crypto.randomBytes(24).toString('hex')
-    const tokenHash = hashResetToken(token)
+    const tokenHash = hashToken(token)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     // store hashed token — never the raw token — to limit exposure in case of DB breach
@@ -438,7 +436,7 @@ authRouter.post(
     const { token, password } = parsed.data
 
     const user = await prisma.user.findFirst({
-      where: { passwordResetToken: hashResetToken(token) },
+      where: { passwordResetToken: hashToken(token) },
       select: {
         id: true,
         passwordResetTokenExpiresAt: true,

@@ -1,10 +1,10 @@
-import { randomInt, createHash } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
 import { enforceIpRateLimit, resetIpRateLimit } from '../lib/rateLimit.js'
+import { generateToken, hashToken } from '../lib/token.js'
 import { UserRole } from '@prisma/client'
 import { emailSchema } from '../lib/zodUtils.js'
 import { logger } from '../lib/logger.js'
@@ -34,13 +34,7 @@ function buildUserSummary(user: {
   }
 }
 
-function generateVerificationCode() {
-  return randomInt(0, 1_000_000).toString().padStart(6, '0')
-}
-
-function hashVerificationCode(code: string) {
-  return createHash('sha256').update(code).digest('hex')
-}
+const ACTIVATION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000
 
 export async function loginAdmin(
   email: string,
@@ -145,10 +139,10 @@ export async function registerUser(
     throw new AppError(409, 'Cette adresse e-mail est déjà utilisée.')
   }
 
-  const verificationCode = generateVerificationCode()
-  const verificationCodeHash = hashVerificationCode(verificationCode)
-  const verificationCodeExpiresAt = new Date(
-    Date.now() + VERIFICATION_WINDOW_MS,
+  const activationToken = generateToken()
+  const activationTokenHash = hashToken(activationToken)
+  const activationTokenExpiresAt = new Date(
+    Date.now() + ACTIVATION_TOKEN_EXPIRY_MS,
   )
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
@@ -156,8 +150,8 @@ export async function registerUser(
       username,
       email: normalizedEmail,
       emailVerifiedAt: null,
-      emailVerificationCodeHash: verificationCodeHash,
-      emailVerificationCodeExpiresAt: verificationCodeExpiresAt,
+      emailVerificationToken: activationTokenHash,
+      emailVerificationTokenExpiresAt: activationTokenExpiresAt,
       passwordHash,
       role: UserRole.USER,
     },
@@ -170,11 +164,7 @@ export async function registerUser(
   })
 
   try {
-    await sendVerificationEmail(
-      user.email ?? normalizedEmail,
-      user.username,
-      verificationCode,
-    )
+    await sendVerificationEmail(normalizedEmail, user.username, activationToken)
   } catch (error) {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined)
     throw error
@@ -184,35 +174,32 @@ export async function registerUser(
 
   return {
     requiresEmailVerification: true as const,
-    email: user.email ?? normalizedEmail,
+    email: normalizedEmail,
   }
 }
 
 export async function verifyRegistrationEmail(
-  email: string,
-  code: string,
+  activationToken: string,
   ip?: string | null,
 ) {
   await enforceIpRateLimit(
     'email-verification',
     ip,
-    VERIFICATION_WINDOW_MS,
+    ACTIVATION_TOKEN_EXPIRY_MS,
     VERIFICATION_MAX_ATTEMPTS,
     'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
   )
 
-  const normalizedEmail = emailSchema.parse(email)
-  const normalizedCode = code.trim()
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
+  const tokenHash = hashToken(activationToken)
+  const user = await prisma.user.findFirst({
+    where: { emailVerificationToken: tokenHash },
     select: {
       id: true,
       username: true,
       email: true,
       role: true,
       emailVerifiedAt: true,
-      emailVerificationCodeHash: true,
-      emailVerificationCodeExpiresAt: true,
+      emailVerificationTokenExpiresAt: true,
     },
   })
 
@@ -220,26 +207,18 @@ export async function verifyRegistrationEmail(
     !user ||
     !user.email ||
     user.emailVerifiedAt ||
-    !user.emailVerificationCodeHash ||
-    !user.emailVerificationCodeExpiresAt
+    !user.emailVerificationTokenExpiresAt ||
+    user.emailVerificationTokenExpiresAt.getTime() < Date.now()
   ) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
-  }
-
-  if (user.emailVerificationCodeExpiresAt.getTime() < Date.now()) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
-  }
-
-  if (hashVerificationCode(normalizedCode) !== user.emailVerificationCodeHash) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
+    throw new AppError(400, "Lien d'activation invalide ou expiré.")
   }
 
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: {
       emailVerifiedAt: new Date(),
-      emailVerificationCodeHash: null,
-      emailVerificationCodeExpiresAt: null,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
     },
     select: {
       id: true,
