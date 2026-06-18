@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { clearAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
+import { AUTH_THEME_KEY } from '../lib/authKeys'
 import { resolveImageUrl } from '../lib/imageUrl'
 import type { AuthMeResponse } from '../types/models'
 
@@ -54,7 +56,7 @@ function getStoredThemePreference(): ThemePreference {
     return 'system'
   }
 
-  const stored = window.localStorage.getItem('antidtraining-theme')
+  const stored = window.localStorage.getItem(AUTH_THEME_KEY)
   return stored === 'light' || stored === 'dark' || stored === 'system'
     ? stored
     : 'system'
@@ -75,7 +77,7 @@ function applyTheme(themePreference: ThemePreference) {
     return
   }
 
-  window.localStorage.setItem('antidtraining-theme', themePreference)
+  window.localStorage.setItem(AUTH_THEME_KEY, themePreference)
 
   let resolvedTheme: 'light' | 'dark'
   if (themePreference === 'system') {
@@ -112,13 +114,12 @@ function formatMemberSince(createdAt: string | null | undefined) {
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const [profile, setProfile] = useState<AuthMeResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { profile, isLoading, refresh } = useAuth()
   const [error, setError] = useState('')
   const [editMode, setEditMode] = useState(false)
-  const [avatar, setAvatar] = useState('')
+  const [avatar, setAvatar] = useState(profile?.avatar ?? '')
   const [avatarUploading, setAvatarUploading] = useState(false)
-  const [bio, setBio] = useState('')
+  const [bio, setBio] = useState(profile?.bio ?? '')
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [passwordResetConfirm, setPasswordResetConfirm] = useState(false)
@@ -128,30 +129,18 @@ export function ProfilePage() {
     getStoredThemePreference(),
   )
 
+  // Sync edit-form fields when the context profile first arrives
+  useEffect(() => {
+    if (profile) {
+      setAvatar(profile.avatar ?? '')
+      setBio(profile.bio ?? '')
+    }
+  }, [profile])
+
   function handleThemeChange(newTheme: ThemePreference) {
     setThemePreference(newTheme)
     applyTheme(newTheme)
   }
-
-  useEffect(() => {
-    api
-      .get<AuthMeResponse>('/auth/me')
-      .then((response) => {
-        setProfile(response.data)
-        setAvatar(response.data.avatar || '')
-        setBio(response.data.bio || '')
-      })
-      .catch((err) => {
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : 'Impossible de charger le profil.',
-        )
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [])
 
   async function handleSaveProfile() {
     if (!profile) return
@@ -160,11 +149,11 @@ export function ProfilePage() {
     setSuccessMessage('')
 
     try {
-      const updated = await api.patch<AuthMeResponse>('/auth/profile', {
+      await api.patch<AuthMeResponse>('/auth/profile', {
         avatar: avatar || null,
         bio: bio || null,
       })
-      setProfile(updated.data)
+      await refresh()
       setEditMode(false)
       setSuccessMessage('Profil mis à jour avec succès.')
       setTimeout(() => setSuccessMessage(''), 3000)
@@ -190,16 +179,15 @@ export function ProfilePage() {
     try {
       const form = new FormData()
       form.append('avatar', file)
-      const updated = await api.post<AuthMeResponse>('/auth/avatar', form)
-      setProfile(updated.data)
-      setAvatar(updated.data.avatar || '')
+      await api.post<AuthMeResponse>('/auth/avatar', form)
+      await refresh()
       setSuccessMessage('Avatar mis à jour.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       setError(
         err instanceof Error && err.message
           ? err.message
-          : 'Erreur lors de l’upload de l’avatar.',
+          : "Erreur lors de l'upload de l'avatar.",
       )
     } finally {
       setAvatarUploading(false)
@@ -250,11 +238,11 @@ export function ProfilePage() {
     navigate('/connexion', { replace: true })
   }
 
-  if (!loading && !profile) {
+  if (!isLoading && !profile) {
     return <Navigate to="/connexion" replace />
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
         <p className="text-[color:var(--app-text-muted)]">
@@ -488,7 +476,7 @@ export function ProfilePage() {
             {passwordResetConfirm && (
               <div className="profile-action-card__panel space-y-3">
                 <p className="text-sm text-[color:var(--app-text-muted)]">
-                  Le lien sera envoyé à l’adresse associée au compte.
+                  Le lien sera envoyé à l'adresse associée au compte.
                 </p>
                 <div className="profile-action-card__actions sm:flex-row">
                   <button

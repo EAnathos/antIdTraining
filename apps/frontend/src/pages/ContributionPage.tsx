@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { api } from '../lib/api'
+import {
+  AUTH_CHANGED_EVENT,
+  AUTH_ROLE_KEY,
+  AUTH_USERNAME_KEY,
+} from '../lib/authKeys'
 import { resolveImageUrl } from '../lib/imageUrl'
 import { getResponsiveImageProps } from '../lib/image'
 import type { EntryProposal, Suggestion } from '../types/models'
@@ -521,7 +526,7 @@ export function ContributionPage() {
   const [isConnected, setIsConnected] = useState(
     () =>
       typeof window !== 'undefined' &&
-      !!window.localStorage.getItem('antidtraining-auth-role'),
+      !!window.localStorage.getItem(AUTH_ROLE_KEY),
   )
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -542,7 +547,7 @@ export function ContributionPage() {
     ...emptyEntryForm,
     photoCredit:
       typeof window !== 'undefined'
-        ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
+        ? (window.localStorage.getItem(AUTH_USERNAME_KEY) ?? '')
         : '',
   }))
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -571,7 +576,7 @@ export function ContributionPage() {
 
   const username =
     typeof window !== 'undefined'
-      ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
+      ? (window.localStorage.getItem(AUTH_USERNAME_KEY) ?? '')
       : ''
 
   const authApi = api.create({ baseURL: '/api' })
@@ -582,14 +587,14 @@ export function ContributionPage() {
 
   useEffect(() => {
     const syncAuthState = () => {
-      setIsConnected(!!window.localStorage.getItem('antidtraining-auth-role'))
+      setIsConnected(!!window.localStorage.getItem(AUTH_ROLE_KEY))
     }
 
-    window.addEventListener('antidtraining-auth-changed', syncAuthState)
+    window.addEventListener(AUTH_CHANGED_EVENT, syncAuthState)
     window.addEventListener('storage', syncAuthState)
 
     return () => {
-      window.removeEventListener('antidtraining-auth-changed', syncAuthState)
+      window.removeEventListener(AUTH_CHANGED_EVENT, syncAuthState)
       window.removeEventListener('storage', syncAuthState)
     }
   }, [])

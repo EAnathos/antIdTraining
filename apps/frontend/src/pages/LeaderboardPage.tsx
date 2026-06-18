@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
 import { UserProfileModal } from '../components/UserProfileModal'
 
@@ -27,7 +28,7 @@ export function LeaderboardPage() {
       )
       const isAuthenticated =
         typeof window !== 'undefined' &&
-        !!window.localStorage.getItem('antidtraining-auth-role')
+        !!window.localStorage.getItem(AUTH_ROLE_KEY)
       const currentUserPromise = isAuthenticated
         ? api.get<AuthMeResponse>('/auth/me').catch(() => null)
         : Promise.resolve(null)
