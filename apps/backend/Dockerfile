@@ -1,7 +1,6 @@
-FROM node:22-alpine
+FROM node:22-alpine AS builder
 
 WORKDIR /app
-ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/antidtraining?schema=public
 
 COPY package*.json ./
 RUN npm install
@@ -9,6 +8,22 @@ RUN npm install
 COPY . .
 RUN npm run prisma:generate && npm run build
 
+FROM node:22-alpine AS runtime
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
 EXPOSE 4000
 
-CMD ["sh", "-c", "npm run prisma:generate && npx prisma db push --accept-data-loss && npm run start"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node dist/index.js"]

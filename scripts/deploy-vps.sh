@@ -4,6 +4,9 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIST="$REPO_DIR/apps/frontend/dist"
 DEPLOY_DIR="/var/www/ant-id-training"
+UPLOADS_DIR="$REPO_DIR/apps/backend/uploads"
+NGINX_CONF_SRC="$REPO_DIR/nginx/default.conf"
+NGINX_CONF_DEST="/etc/nginx/sites-available/ant-id-training"
 BACKEND_PROCESS="antIdTraining-backend"
 
 # Check critical dependencies
@@ -89,6 +92,21 @@ npm run build -w apps/frontend
 
 printf '\n==> %s\n' "Déploiement du frontend dans $DEPLOY_DIR"
 rsync -a --delete "$FRONTEND_DIST"/ "$DEPLOY_DIR"/
+
+printf '\n==> %s\n' "Mise à jour de la configuration Nginx"
+# Adapte nginx/default.conf (chemins Docker) aux chemins VPS réels
+sed \
+  -e "s|server backend:4000;|server 127.0.0.1:4000;|g" \
+  -e "s|root /usr/share/nginx/html;|root $DEPLOY_DIR;|g" \
+  -e "s|alias /uploads/;|alias $UPLOADS_DIR/;|g" \
+  "$NGINX_CONF_SRC" | sudo tee "$NGINX_CONF_DEST" > /dev/null
+
+# Active le site si pas encore fait
+if [ ! -L /etc/nginx/sites-enabled/ant-id-training ]; then
+  sudo ln -sf "$NGINX_CONF_DEST" /etc/nginx/sites-enabled/ant-id-training
+fi
+
+sudo nginx -t
 
 printf '\n==> %s\n' "Redémarrage du backend PM2"
 pm2 restart "$BACKEND_PROCESS"
