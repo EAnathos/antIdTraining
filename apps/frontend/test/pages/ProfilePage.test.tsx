@@ -21,6 +21,7 @@ vi.mock('../../src/lib/imageUrl', () => ({
   resolveImageUrl: vi.fn((url: string) => url),
 }))
 
+import { AuthProvider } from '../../src/lib/authContext'
 import { ProfilePage } from '../../src/pages/ProfilePage'
 
 const mockProfile = {
@@ -36,7 +37,9 @@ const mockProfile = {
 function renderPage() {
   return render(
     <BrowserRouter>
-      <ProfilePage />
+      <AuthProvider>
+        <ProfilePage />
+      </AuthProvider>
     </BrowserRouter>,
   )
 }
@@ -45,7 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
 
-  // Default: api.get resolves with profile
+  // Default: AuthProvider.get resolves with profile
   apiMocks.get.mockResolvedValue({ data: mockProfile })
 })
 
@@ -60,13 +63,8 @@ describe('ProfilePage — not authenticated', () => {
 })
 
 describe('ProfilePage — authenticated', () => {
-  beforeEach(() => {
-    apiMocks.get.mockResolvedValue({ data: mockProfile })
-  })
-
   it('shows loading state initially then username', async () => {
     renderPage()
-    // Loading state
     expect(screen.getByText('Chargement du profil…')).toBeInTheDocument()
 
     await waitFor(() => {
@@ -88,7 +86,6 @@ describe('ProfilePage — authenticated', () => {
     renderPage()
     await waitFor(() => screen.getByText('Alice'))
 
-    // Find dark theme button
     const darkBtn = screen.getByTitle('Mode sombre')
     fireEvent.click(darkBtn)
 
