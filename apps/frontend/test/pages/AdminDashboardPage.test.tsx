@@ -203,7 +203,7 @@ describe('AdminDashboardPage', () => {
   it('executes logoutToLogin when the hook requests logout', async () => {
     const removeSpy = vi.spyOn(window.localStorage.__proto__, 'removeItem')
     // when the hook is invoked, call the provided logout callback
-    useAdminDataMock.mockImplementationOnce((token: any, logout: any) => {
+    useAdminDataMock.mockImplementationOnce((logout: any) => {
       if (logout) void logout()
       return {
         message: '',

@@ -155,7 +155,7 @@ export function GamePage() {
   const fullscreenTouchStartX = useRef<number | null>(null)
   const isConnected =
     typeof window !== 'undefined' &&
-    !!window.localStorage.getItem('antidtraining-auth-token')
+    !!window.localStorage.getItem('antidtraining-auth-role')
 
   useEffect(() => {
     let cancelled = false

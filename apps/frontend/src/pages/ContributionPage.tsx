@@ -521,7 +521,7 @@ export function ContributionPage() {
   const [isConnected, setIsConnected] = useState(
     () =>
       typeof window !== 'undefined' &&
-      !!window.localStorage.getItem('antidtraining-auth-token'),
+      !!window.localStorage.getItem('antidtraining-auth-role'),
   )
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -569,10 +569,6 @@ export function ContributionPage() {
   const [editingSuggestionMessage, setEditingSuggestionMessage] = useState('')
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
-  const token =
-    typeof window !== 'undefined'
-      ? window.localStorage.getItem('antidtraining-auth-token')
-      : null
   const username =
     typeof window !== 'undefined'
       ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
@@ -582,9 +578,8 @@ export function ContributionPage() {
     () =>
       api.create({
         baseURL: '/api',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       }),
-    [token],
+    [],
   )
 
   function patchEntryForm(patch: Partial<EntryForm>) {
@@ -593,7 +588,7 @@ export function ContributionPage() {
 
   useEffect(() => {
     const syncAuthState = () => {
-      setIsConnected(!!window.localStorage.getItem('antidtraining-auth-token'))
+      setIsConnected(!!window.localStorage.getItem('antidtraining-auth-role'))
     }
 
     window.addEventListener('antidtraining-auth-changed', syncAuthState)
@@ -613,7 +608,7 @@ export function ContributionPage() {
   }, [])
 
   const load = useCallback(async () => {
-    if (!token) return
+    if (!isConnected) return
     setLoading(true)
     try {
       const [contribRes, countsRes] = await Promise.all([
@@ -640,7 +635,7 @@ export function ContributionPage() {
     } finally {
       setLoading(false)
     }
-  }, [authApi, token])
+  }, [authApi, isConnected])
 
   useEffect(() => {
     if (view !== 'contributions') return

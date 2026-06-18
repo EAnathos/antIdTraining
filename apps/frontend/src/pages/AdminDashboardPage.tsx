@@ -32,7 +32,6 @@ export function AdminDashboardPage() {
 
   const logoutToLogin = useCallback(async () => {
     await api.post('/auth/logout').catch(() => undefined)
-    window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
     window.localStorage.removeItem('antidtraining-auth-email')
@@ -40,11 +39,7 @@ export function AdminDashboardPage() {
     navigate('/connexion', { replace: true })
   }, [navigate])
 
-  const token =
-    typeof window !== 'undefined'
-      ? window.localStorage.getItem('antidtraining-auth-token')
-      : null
-  const data = useAdminData(token, logoutToLogin)
+  const data = useAdminData(logoutToLogin)
 
   const normalizedMessage = data.message.toLowerCase()
   const isErrorMessage =

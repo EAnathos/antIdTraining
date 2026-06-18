@@ -1,10 +1,9 @@
 export function persistAuth(
   role: 'ADMIN' | 'USER',
-  token: string,
+  _token: string,
   username: string,
   email: string | null,
 ) {
-  window.localStorage.setItem('antidtraining-auth-token', token)
   window.localStorage.setItem('antidtraining-auth-role', role)
   window.localStorage.setItem('antidtraining-auth-username', username)
   if (email) {

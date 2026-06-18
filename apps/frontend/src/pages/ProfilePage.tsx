@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { resolveImageUrl } from '../lib/imageUrl'
@@ -111,21 +111,6 @@ function formatMemberSince(createdAt: string | null | undefined) {
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const token = useMemo(
-    () =>
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null,
-    [],
-  )
-
-  const authApi = useMemo(
-    () =>
-      api.create({
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }),
-    [token],
-  )
   const [profile, setProfile] = useState<AuthMeResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -148,12 +133,7 @@ export function ProfilePage() {
   }
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    authApi
+    api
       .get<AuthMeResponse>('/auth/me')
       .then((response) => {
         setProfile(response.data)
@@ -170,16 +150,16 @@ export function ProfilePage() {
       .finally(() => {
         setLoading(false)
       })
-  }, [token, authApi])
+  }, [])
 
   async function handleSaveProfile() {
-    if (!token || !profile) return
+    if (!profile) return
     setSaving(true)
     setError('')
     setSuccessMessage('')
 
     try {
-      const updated = await authApi.patch<AuthMeResponse>('/auth/profile', {
+      const updated = await api.patch<AuthMeResponse>('/auth/profile', {
         avatar: avatar || null,
         bio: bio || null,
       })
@@ -202,14 +182,14 @@ export function ProfilePage() {
     e: React.ChangeEvent<HTMLInputElement>,
   ) {
     const file = e.target.files?.[0]
-    if (!file || !token) return
+    if (!file) return
     setAvatarUploading(true)
     setError('')
 
     try {
       const form = new FormData()
       form.append('avatar', file)
-      const updated = await authApi.post<AuthMeResponse>('/auth/avatar', form)
+      const updated = await api.post<AuthMeResponse>('/auth/avatar', form)
       setProfile(updated.data)
       setAvatar(updated.data.avatar || '')
       setSuccessMessage('Avatar mis à jour.')
@@ -226,12 +206,11 @@ export function ProfilePage() {
   }
 
   async function handlePasswordResetRequest() {
-    if (!token) return
     setPasswordResetLoading(true)
     setError('')
 
     try {
-      await authApi.post('/auth/password-reset-request')
+      await api.post('/auth/password-reset-request')
       setPasswordResetConfirm(false)
       setSuccessMessage(
         'Demande de réinitialisation enregistrée. Vous pouvez en faire une nouvelle dans 7 jours.',
@@ -249,11 +228,10 @@ export function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    if (!token || !deleteConfirm) return
+    if (!deleteConfirm) return
 
     try {
-      await authApi.post('/auth/delete-account')
-      window.localStorage.removeItem('antidtraining-auth-token')
+      await api.post('/auth/delete-account')
       window.localStorage.removeItem('antidtraining-auth-role')
       window.localStorage.removeItem('antidtraining-auth-username')
       window.localStorage.removeItem('antidtraining-auth-email')
@@ -270,7 +248,6 @@ export function ProfilePage() {
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => undefined)
-    window.localStorage.removeItem('antidtraining-auth-token')
     window.localStorage.removeItem('antidtraining-auth-role')
     window.localStorage.removeItem('antidtraining-auth-username')
     window.localStorage.removeItem('antidtraining-auth-email')
@@ -278,7 +255,7 @@ export function ProfilePage() {
     navigate('/connexion', { replace: true })
   }
 
-  if (!token) {
+  if (!loading && !profile) {
     return <Navigate to="/connexion" replace />
   }
 
@@ -288,24 +265,6 @@ export function ProfilePage() {
         <p className="text-[color:var(--app-text-muted)]">
           Chargement du profil…
         </p>
-      </section>
-    )
-  }
-
-  if (error && !profile) {
-    return (
-      <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
-        <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
-          Profil
-        </h2>
-        <p className="mt-3 text-sm text-[color:var(--app-danger)]">{error}</p>
-        <button
-          className="ui-action ui-action--secondary mt-4"
-          type="button"
-          onClick={() => void handleLogout()}
-        >
-          Se déconnecter
-        </button>
       </section>
     )
   }

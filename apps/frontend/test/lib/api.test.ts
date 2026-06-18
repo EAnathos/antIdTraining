@@ -78,7 +78,7 @@ describe('api client', () => {
 
   it('builds API errors with payload metadata and triggers unauthorized callback', async () => {
     const onUnauthorized = vi.fn()
-    const adminApi = createAdminApiClient('token-123', onUnauthorized)
+    const adminApi = createAdminApiClient(onUnauthorized)
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
@@ -129,7 +129,7 @@ describe('api client', () => {
     const formData = new FormData()
     formData.append('name', 'queen')
 
-    const adminApi = createAdminApiClient('token-123')
+    const adminApi = createAdminApiClient()
     const response = await adminApi.post<{ created: boolean }>(
       '/entries',
       formData,
@@ -140,7 +140,6 @@ describe('api client', () => {
     expect(requestInit).toMatchObject({
       method: 'POST',
       credentials: 'include',
-      headers: { Authorization: 'Bearer token-123' },
     })
   })
 })

@@ -20,20 +20,12 @@ export function LeaderboardPage() {
   const [modalOpen, setModalOpen] = useState(false)
 
   const fetchData = async (cancelled: { value: boolean }) => {
-    const token =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null
-    const authApi = token
-      ? api.create({ headers: { Authorization: `Bearer ${token}` } })
-      : api
-
     try {
       const leaderboardPromise = api.get<LeaderboardResponse>(
         '/stats/leaderboard',
         { params: { limit: 20 } },
       )
-      const currentUserPromise = authApi
+      const currentUserPromise = api
         .get<AuthMeResponse>('/auth/me')
         .catch(() => null)
 

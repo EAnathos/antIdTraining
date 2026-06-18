@@ -28,10 +28,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [installPromptEvent, setInstallPromptEvent] =
     useState<BeforeInstallPromptEvent | null>(null)
   const [authState, setAuthState] = useState(() => ({
-    token:
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null,
     role:
       typeof window !== 'undefined'
         ? (window.localStorage.getItem('antidtraining-auth-role') as
@@ -82,7 +78,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const syncAuthState = () => {
       setAuthState({
-        token: window.localStorage.getItem('antidtraining-auth-token'),
         role: window.localStorage.getItem('antidtraining-auth-role') as
           | 'ADMIN'
           | 'USER'
@@ -97,6 +92,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener('antidtraining-auth-changed', syncAuthState)
       window.removeEventListener('storage', syncAuthState)
     }
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => {
+        if (res.status === 401) {
+          window.localStorage.removeItem('antidtraining-auth-role')
+          window.localStorage.removeItem('antidtraining-auth-username')
+          window.localStorage.removeItem('antidtraining-auth-email')
+          setAuthState({ role: null })
+        }
+      })
+      .catch(() => undefined)
   }, [])
 
   useEffect(() => {
@@ -248,7 +256,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="app-nav__group app-nav__group--push-right">
-              {authState.token ? (
+              {authState.role ? (
                 <>
                   {authState.role === 'ADMIN' && (
                     <span className="hidden sm:contents">
