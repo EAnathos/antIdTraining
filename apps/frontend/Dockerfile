@@ -14,7 +14,7 @@ ENV VITE_BACKEND_ORIGIN=$VITE_BACKEND_ORIGIN
 
 RUN npm run build
 
-FROM alpine:latest
+FROM alpine:3.21
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 CMD ["sh", "-c", "cp -r /app/dist/. /dist/"]
