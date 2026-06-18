@@ -56,10 +56,10 @@ describe('GET /api/admin/suggestions', () => {
   it('filters by status when provided', async () => {
     prismaMocks.suggestion.findMany.mockResolvedValue([])
 
-    await fetch(`${getBaseUrl()}/api/admin/suggestions?status=PROCESSED`)
+    await fetch(`${getBaseUrl()}/api/admin/suggestions?status=ACCEPTED`)
 
     expect(prismaMocks.suggestion.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: 'PROCESSED' } }),
+      expect.objectContaining({ where: { status: 'ACCEPTED' } }),
     )
   })
 
@@ -75,22 +75,22 @@ describe('GET /api/admin/suggestions', () => {
 })
 
 describe('PUT /api/admin/suggestions/:id', () => {
-  it('updates status to PROCESSED', async () => {
-    const updated = { ...baseSuggestion, status: 'PROCESSED' }
+  it('updates status to ACCEPTED', async () => {
+    const updated = { ...baseSuggestion, status: 'ACCEPTED' }
     prismaMocks.suggestion.update.mockResolvedValue(updated)
     mocks.recordAdminAudit.mockResolvedValue(undefined)
 
     const res = await fetch(`${getBaseUrl()}/api/admin/suggestions/s1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'PROCESSED' }),
+      body: JSON.stringify({ status: 'ACCEPTED' }),
     })
 
     expect(res.status).toBe(200)
     expect(prismaMocks.suggestion.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 's1' },
-        data: expect.objectContaining({ status: 'PROCESSED' }),
+        data: expect.objectContaining({ status: 'ACCEPTED' }),
       }),
     )
   })
@@ -147,10 +147,10 @@ describe('DELETE /api/admin/suggestions/:id', () => {
     expect(res.status).toBe(400)
   })
 
-  it('deletes a PROCESSED suggestion and returns 204', async () => {
+  it('deletes a ACCEPTED suggestion and returns 204', async () => {
     prismaMocks.suggestion.findUnique.mockResolvedValue({
       ...baseSuggestion,
-      status: 'PROCESSED',
+      status: 'ACCEPTED',
     })
     prismaMocks.suggestion.delete.mockResolvedValue(undefined)
     mocks.recordAdminAudit.mockResolvedValue(undefined)

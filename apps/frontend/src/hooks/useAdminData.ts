@@ -912,7 +912,7 @@ export function useAdminData(onUnauthorized?: () => void) {
 
   async function setSuggestionStatus(
     id: string,
-    status: 'PENDING' | 'PROCESSED' | 'REJECTED',
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED',
     rejectionMessage?: string,
   ) {
     await runAdminAction(
