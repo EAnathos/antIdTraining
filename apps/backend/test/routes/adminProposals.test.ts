@@ -98,7 +98,10 @@ describe('PUT /api/admin/proposals/:id — reject', () => {
     const res = await fetch(`${getBaseUrl()}/api/admin/proposals/p1`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decision: 'REJECT' }),
+      body: JSON.stringify({
+        decision: 'REJECT',
+        rejectionMessage: 'Photo de mauvaise qualité.',
+      }),
     })
     expect(res.status).toBe(404)
   })

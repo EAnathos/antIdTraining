@@ -18,15 +18,25 @@ function publicProposal<T extends { photoCredit: string }>(proposal: T): T {
   }
 }
 
-const approveProposalSchema = z.object({
-  decision: z.enum(['ACCEPT', 'REJECT']),
-  rejectionMessage: z
-    .string()
-    .min(3, 'Message trop court')
-    .max(1000, 'Message trop long')
-    .trim()
-    .optional(),
-})
+const approveProposalSchema = z
+  .object({
+    decision: z.enum(['ACCEPT', 'REJECT']),
+    rejectionMessage: z
+      .string()
+      .min(10, 'Le message de refus doit contenir au moins 10 caractères.')
+      .max(1000, 'Message trop long.')
+      .trim()
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      data.decision !== 'REJECT' ||
+      (data.rejectionMessage && data.rejectionMessage.length >= 10),
+    {
+      message: 'Un message de refus est obligatoire.',
+      path: ['rejectionMessage'],
+    },
+  )
 
 // Get all pending proposals
 adminProposalsRouter.get(
@@ -63,7 +73,8 @@ adminProposalsRouter.put(
     const id = req.params.id as string
     const parsed = approveProposalSchema.safeParse(req.body)
     if (!parsed.success) {
-      throw new AppError(400, 'Requête invalide.')
+      const message = parsed.error.issues[0]?.message ?? 'Requête invalide.'
+      throw new AppError(400, message)
     }
 
     const proposal = await prisma.entryProposal.findUnique({
