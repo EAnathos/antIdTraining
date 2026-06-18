@@ -5,14 +5,14 @@ import { BrowserRouter } from 'react-router-dom'
 const apiMocks = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
-  create: vi.fn(),
+  patch: vi.fn(),
 }))
 
 vi.mock('../../src/lib/api', () => ({
   api: {
     get: apiMocks.get,
     post: apiMocks.post,
-    create: apiMocks.create,
+    patch: apiMocks.patch,
   },
   backendOrigin: '',
 }))
@@ -21,6 +21,7 @@ vi.mock('../../src/lib/imageUrl', () => ({
   resolveImageUrl: vi.fn((url: string) => url),
 }))
 
+import { AuthProvider } from '../../src/lib/authContext'
 import { ProfilePage } from '../../src/pages/ProfilePage'
 
 const mockProfile = {
@@ -36,7 +37,9 @@ const mockProfile = {
 function renderPage() {
   return render(
     <BrowserRouter>
-      <ProfilePage />
+      <AuthProvider>
+        <ProfilePage />
+      </AuthProvider>
     </BrowserRouter>,
   )
 }
@@ -45,28 +48,23 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
 
-  // Default: authApi.get resolves with profile
-  const authApiInstance = { get: vi.fn(), patch: vi.fn(), delete: vi.fn() }
-  authApiInstance.get.mockResolvedValue({ data: mockProfile })
-  apiMocks.create.mockReturnValue(authApiInstance)
+  // Default: AuthProvider.get resolves with profile
+  apiMocks.get.mockResolvedValue({ data: mockProfile })
 })
 
 describe('ProfilePage — not authenticated', () => {
-  it('redirects to /connexion when no token in localStorage', () => {
+  it('redirects to /connexion when API returns no profile', async () => {
+    apiMocks.get.mockRejectedValue(new Error('Unauthorized'))
     renderPage()
-    // BrowserRouter renders Navigate which changes location
-    expect(window.location.pathname).toBe('/connexion')
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/connexion')
+    })
   })
 })
 
 describe('ProfilePage — authenticated', () => {
-  beforeEach(() => {
-    localStorage.setItem('antidtraining-auth-token', 'valid-token')
-  })
-
   it('shows loading state initially then username', async () => {
     renderPage()
-    // Loading state
     expect(screen.getByText('Chargement du profil…')).toBeInTheDocument()
 
     await waitFor(() => {
@@ -74,29 +72,13 @@ describe('ProfilePage — authenticated', () => {
     })
   })
 
-  it('shows error when API call fails', async () => {
-    const authApiInstance = { get: vi.fn() }
-    authApiInstance.get.mockRejectedValue(new Error('Réseau indisponible'))
-    apiMocks.create.mockReturnValue(authApiInstance)
+  it('redirects to /connexion when API call fails', async () => {
+    apiMocks.get.mockRejectedValue(new Error('Réseau indisponible'))
 
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByText('Réseau indisponible')).toBeInTheDocument()
-    })
-  })
-
-  it('shows fallback error when API error has no message', async () => {
-    const authApiInstance = { get: vi.fn() }
-    authApiInstance.get.mockRejectedValue({})
-    apiMocks.create.mockReturnValue(authApiInstance)
-
-    renderPage()
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Impossible de charger le profil.'),
-      ).toBeInTheDocument()
+      expect(window.location.pathname).toBe('/connexion')
     })
   })
 
@@ -104,7 +86,6 @@ describe('ProfilePage — authenticated', () => {
     renderPage()
     await waitFor(() => screen.getByText('Alice'))
 
-    // Find dark theme button
     const darkBtn = screen.getByTitle('Mode sombre')
     fireEvent.click(darkBtn)
 
@@ -123,17 +104,13 @@ describe('ProfilePage — authenticated', () => {
     await waitFor(() => {
       expect(apiMocks.post).toHaveBeenCalledWith('/auth/logout')
     })
-    expect(localStorage.getItem('antidtraining-auth-token')).toBeNull()
+    expect(localStorage.getItem('antidtraining-auth-role')).toBeNull()
   })
 
   it('enters edit mode and saves profile', async () => {
-    const authApiInstance = {
-      get: vi.fn().mockResolvedValue({ data: mockProfile }),
-      patch: vi
-        .fn()
-        .mockResolvedValue({ data: { ...mockProfile, bio: 'Nouveau bio' } }),
-    }
-    apiMocks.create.mockReturnValue(authApiInstance)
+    apiMocks.patch.mockResolvedValue({
+      data: { ...mockProfile, bio: 'Nouveau bio' },
+    })
 
     renderPage()
     await waitFor(() => screen.getByText('Alice'))
@@ -144,7 +121,7 @@ describe('ProfilePage — authenticated', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }))
 
     await waitFor(() => {
-      expect(authApiInstance.patch).toHaveBeenCalledWith(
+      expect(apiMocks.patch).toHaveBeenCalledWith(
         '/auth/profile',
         expect.objectContaining({ bio: 'Passionnée de fourmis' }),
       )
@@ -177,11 +154,7 @@ describe('ProfilePage — authenticated', () => {
   })
 
   it('sends password reset request', async () => {
-    const authApiInstance = {
-      get: vi.fn().mockResolvedValue({ data: mockProfile }),
-      post: vi.fn().mockResolvedValue({}),
-    }
-    apiMocks.create.mockReturnValue(authApiInstance)
+    apiMocks.post.mockResolvedValue({})
 
     renderPage()
     await waitFor(() => screen.getByText('Alice'))
@@ -194,9 +167,7 @@ describe('ProfilePage — authenticated', () => {
     fireEvent.click(screen.getByRole('button', { name: /envoyer le lien/i }))
 
     await waitFor(() => {
-      expect(authApiInstance.post).toHaveBeenCalledWith(
-        '/auth/password-reset-request',
-      )
+      expect(apiMocks.post).toHaveBeenCalledWith('/auth/password-reset-request')
     })
   })
 
@@ -215,11 +186,7 @@ describe('ProfilePage — authenticated', () => {
   })
 
   it('deletes account and clears localStorage', async () => {
-    const authApiInstance = {
-      get: vi.fn().mockResolvedValue({ data: mockProfile }),
-      post: vi.fn().mockResolvedValue({}),
-    }
-    apiMocks.create.mockReturnValue(authApiInstance)
+    apiMocks.post.mockResolvedValue({})
 
     renderPage()
     await waitFor(() => screen.getByText('Alice'))
@@ -234,8 +201,8 @@ describe('ProfilePage — authenticated', () => {
     )
 
     await waitFor(() => {
-      expect(authApiInstance.post).toHaveBeenCalledWith('/auth/delete-account')
+      expect(apiMocks.post).toHaveBeenCalledWith('/auth/delete-account')
     })
-    expect(localStorage.getItem('antidtraining-auth-token')).toBeNull()
+    expect(localStorage.getItem('antidtraining-auth-role')).toBeNull()
   })
 })

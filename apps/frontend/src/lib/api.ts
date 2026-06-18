@@ -191,13 +191,9 @@ function createApiClient(
 
 export const api = createApiClient(apiBaseUrl)
 
-export function createAdminApiClient(
-  token: string | null,
-  onUnauthorized?: () => void,
-) {
+export function createAdminApiClient(onUnauthorized?: () => void) {
   return api.create({
     baseURL: `${apiBaseUrl}/admin`,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     onUnauthorized,
   })
 }

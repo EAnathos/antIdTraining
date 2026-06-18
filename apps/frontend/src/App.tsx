@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { AuthProvider } from './lib/authContext'
 
 const GamePage = lazy(() =>
   import('./pages/GamePage').then((module) => ({ default: module.GamePage })),
@@ -72,41 +73,43 @@ const ActivateAccountPage = lazy(() =>
 
 function App() {
   return (
-    <AppShell>
-      <Suspense
-        fallback={
-          <div className="surface-panel surface-panel--compact text-sm text-[color:var(--app-text-muted)]">
-            Chargement de la page…
-          </div>
-        }
-      >
-        <Routes>
-          <Route path="/" element={<GamePage />} />
-          <Route path="/jeu" element={<Navigate to="/" replace />} />
-          <Route path="/taxons" element={<TaxonsPage />} />
-          <Route path="/references" element={<ReferencesPage />} />
-          <Route path="/contribution" element={<ContributionPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/classement" element={<LeaderboardPage />} />
-          <Route path="/connexion" element={<AuthPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/activate" element={<ActivateAccountPage />} />
-          <Route path="/profil" element={<ProfilePage />} />
-          <Route
-            path="/admin/login"
-            element={<Navigate to="/connexion" replace />}
-          />
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
-          <Route
-            path="/politique-de-confidentialite"
-            element={<PolitiqueConfidentialitePage />}
-          />
-          <Route path="/cgu" element={<CguPage />} />
-        </Routes>
-      </Suspense>
-    </AppShell>
+    <AuthProvider>
+      <AppShell>
+        <Suspense
+          fallback={
+            <div className="surface-panel surface-panel--compact text-sm text-[color:var(--app-text-muted)]">
+              Chargement de la page…
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<GamePage />} />
+            <Route path="/jeu" element={<Navigate to="/" replace />} />
+            <Route path="/taxons" element={<TaxonsPage />} />
+            <Route path="/references" element={<ReferencesPage />} />
+            <Route path="/contribution" element={<ContributionPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/classement" element={<LeaderboardPage />} />
+            <Route path="/connexion" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/activate" element={<ActivateAccountPage />} />
+            <Route path="/profil" element={<ProfilePage />} />
+            <Route
+              path="/admin/login"
+              element={<Navigate to="/connexion" replace />}
+            />
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+            <Route
+              path="/politique-de-confidentialite"
+              element={<PolitiqueConfidentialitePage />}
+            />
+            <Route path="/cgu" element={<CguPage />} />
+          </Routes>
+        </Suspense>
+      </AppShell>
+    </AuthProvider>
   )
 }
 

@@ -22,7 +22,7 @@ beforeEach(() => {
 
 describe('LeaderboardPage', () => {
   it('renders leaderboard and current user points', async () => {
-    localStorage.setItem('antidtraining-auth-token', 'token_123')
+    localStorage.setItem('antidtraining-auth-role', 'USER')
     apiMocks.create.mockReturnValue({ get: apiMocks.get })
 
     apiMocks.get.mockImplementation(async (path: string) => {

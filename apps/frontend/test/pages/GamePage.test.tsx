@@ -244,7 +244,7 @@ describe('GamePage', () => {
   })
 
   it('opens fullscreen images and navigates between them on mobile controls', async () => {
-    localStorage.setItem('antidtraining-auth-token', 'token_1')
+    localStorage.setItem('antidtraining-auth-role', 'USER')
 
     apiMocks.get.mockImplementation(async (path: string) => {
       if (path === '/taxons/subfamilies') {

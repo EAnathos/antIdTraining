@@ -225,14 +225,14 @@ authRouter.patch(
       throw new AppError(401, 'Non autorisé.')
     }
 
-    // normalize incoming body to be more permissive: treat empty strings as null
+    const body = (
+      typeof req.body === 'object' && req.body !== null ? req.body : {}
+    ) as Record<string, unknown>
+
+    // only extract the two allowed fields — no spread of req.body to prevent mass-assignment
     const incoming = {
-      ...(typeof req.body === 'object' && req.body !== null ? req.body : {}),
-      avatar: req.body && req.body.avatar === '' ? null : req.body?.avatar,
-      bio:
-        req.body && typeof req.body.bio === 'string' && req.body.bio === ''
-          ? null
-          : req.body?.bio,
+      avatar: body.avatar === '' ? null : body.avatar,
+      bio: typeof body.bio === 'string' && body.bio === '' ? null : body.bio,
     }
 
     const parsed = updateProfileSchema.safeParse(incoming)

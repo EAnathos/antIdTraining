@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
 import { UserProfileModal } from '../components/UserProfileModal'
 
@@ -20,22 +21,17 @@ export function LeaderboardPage() {
   const [modalOpen, setModalOpen] = useState(false)
 
   const fetchData = async (cancelled: { value: boolean }) => {
-    const token =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null
-    const authApi = token
-      ? api.create({ headers: { Authorization: `Bearer ${token}` } })
-      : api
-
     try {
       const leaderboardPromise = api.get<LeaderboardResponse>(
         '/stats/leaderboard',
         { params: { limit: 20 } },
       )
-      const currentUserPromise = authApi
-        .get<AuthMeResponse>('/auth/me')
-        .catch(() => null)
+      const isAuthenticated =
+        typeof window !== 'undefined' &&
+        !!window.localStorage.getItem(AUTH_ROLE_KEY)
+      const currentUserPromise = isAuthenticated
+        ? api.get<AuthMeResponse>('/auth/me').catch(() => null)
+        : Promise.resolve(null)
 
       const [leaderboardResponse, currentUserResponse] = await Promise.all([
         leaderboardPromise,

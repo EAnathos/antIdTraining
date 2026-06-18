@@ -108,10 +108,7 @@ function clearPublicTaxonsCache() {
   }
 }
 
-export function useAdminData(
-  token: string | null,
-  onUnauthorized?: () => void,
-) {
+export function useAdminData(onUnauthorized?: () => void) {
   const [taxons, setTaxons] = useState<Taxon[]>([])
   const [subfamilies, setSubfamilies] = useState<string[]>([])
   const [references, setReferences] = useState<ReferenceItem[]>([])
@@ -174,8 +171,8 @@ export function useAdminData(
   const [proposals, setProposals] = useState<EntryProposal[]>([])
 
   const adminApi = useMemo(
-    () => createAdminApiClient(token, onUnauthorized),
-    [token, onUnauthorized],
+    () => createAdminApiClient(onUnauthorized),
+    [onUnauthorized],
   )
 
   function resolveAdminErrorMessage(error: unknown, fallbackMessage: string) {

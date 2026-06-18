@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
+import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
 
@@ -155,7 +156,7 @@ export function GamePage() {
   const fullscreenTouchStartX = useRef<number | null>(null)
   const isConnected =
     typeof window !== 'undefined' &&
-    !!window.localStorage.getItem('antidtraining-auth-token')
+    !!window.localStorage.getItem(AUTH_ROLE_KEY)
 
   useEffect(() => {
     let cancelled = false
