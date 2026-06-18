@@ -96,6 +96,7 @@ rsync -a --delete "$FRONTEND_DIST"/ "$DEPLOY_DIR"/
 printf '\n==> %s\n' "Mise à jour de la configuration Nginx"
 # Adapte nginx/default.conf (chemins Docker) aux chemins VPS réels
 sed \
+  -e "s|server backend:4000;|server 127.0.0.1:4000;|g" \
   -e "s|root /usr/share/nginx/html;|root $DEPLOY_DIR;|g" \
   -e "s|alias /uploads/;|alias $UPLOADS_DIR/;|g" \
   "$NGINX_CONF_SRC" | sudo tee "$NGINX_CONF_DEST" > /dev/null
