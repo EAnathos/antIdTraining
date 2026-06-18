@@ -75,23 +75,32 @@ describe('image file helpers', () => {
   it('deletes base and responsive variants for an uploaded image', () => {
     const rmSpy = vi.spyOn(fs, 'rmSync').mockImplementation(() => undefined)
 
-    deleteUploadFilesForImageUrl('/uploads/queen.webp')
+    deleteUploadFilesForImageUrl('/uploads/1234567890-queen-abcd1234.webp')
 
     expect(rmSpy).toHaveBeenCalledTimes(3)
     expect(rmSpy).toHaveBeenNthCalledWith(
       1,
-      resolveUploadFilePath('queen.webp'),
+      resolveUploadFilePath('1234567890-queen-abcd1234.webp'),
       { force: true },
     )
     expect(rmSpy).toHaveBeenNthCalledWith(
       2,
-      resolveUploadFilePath('queen-480.webp'),
+      resolveUploadFilePath('1234567890-queen-abcd1234-480.webp'),
       { force: true },
     )
     expect(rmSpy).toHaveBeenNthCalledWith(
       3,
-      resolveUploadFilePath('queen-960.webp'),
+      resolveUploadFilePath('1234567890-queen-abcd1234-960.webp'),
       { force: true },
     )
+  })
+
+  it('skips deletion for non-server-generated URLs', () => {
+    const rmSpy = vi.spyOn(fs, 'rmSync').mockImplementation(() => undefined)
+
+    deleteUploadFilesForImageUrl('/uploads/queen.webp')
+    deleteUploadFilesForImageUrl('https://external.com/image.webp')
+
+    expect(rmSpy).not.toHaveBeenCalled()
   })
 })

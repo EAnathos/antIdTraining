@@ -40,7 +40,13 @@ export function getResponsiveUploadFileNames(imageUrl: string) {
   }
 }
 
+export function isServerGeneratedUploadUrl(imageUrl: string): boolean {
+  return /^\/uploads\/\d+-.+-[a-f0-9]{8}\.webp$/.test(imageUrl)
+}
+
 export function deleteUploadFilesForImageUrl(imageUrl: string) {
+  if (!isServerGeneratedUploadUrl(imageUrl)) return
+
   const { baseFileName, variantFileNames } =
     getResponsiveUploadFileNames(imageUrl)
   const fileNames = [baseFileName, ...variantFileNames]
