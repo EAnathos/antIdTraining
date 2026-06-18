@@ -187,6 +187,9 @@ function ProposalFormFields({
   submitLabel,
   imageRequired = false,
   onCancel,
+  existingImages,
+  deletedImageIds,
+  onToggleDeleteImage,
 }: {
   form: EntryForm
   onPatch: (patch: Partial<EntryForm>) => void
@@ -197,6 +200,9 @@ function ProposalFormFields({
   submitLabel: string
   imageRequired?: boolean
   onCancel?: () => void
+  existingImages?: { id: string; imageUrl: string }[]
+  deletedImageIds?: Set<string>
+  onToggleDeleteImage?: (id: string) => void
 }) {
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
   const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
@@ -438,20 +444,57 @@ function ProposalFormFields({
             required
             onChange={(e) => onPatch({ photoCredit: e.target.value })}
           />
-          <div className="space-y-1">
-            <input
-              className="ui-input"
-              type="file"
-              accept="image/*"
-              multiple
-              required={imageRequired}
-              onChange={(e) => onFiles(e.target.files)}
-            />
-            <p className="text-xs text-[color:var(--app-text-soft)]">
-              {imageRequired
-                ? "Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3)."
-                : "Laisser vide pour conserver les photos actuelles · 8 Mo max (jusqu'à 3)."}
-            </p>
+          <div className="space-y-2 md:col-span-2">
+            {existingImages && existingImages.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-[color:var(--app-text-muted)]">
+                  Photos actuelles
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {existingImages.map((img) => {
+                    const isDeleted = deletedImageIds?.has(img.id)
+                    return (
+                      <div key={img.id} className="relative">
+                        <img
+                          src={resolveImageUrl(img.imageUrl)}
+                          alt="Photo actuelle"
+                          className={`h-16 w-16 rounded-lg border object-cover transition-opacity ${isDeleted ? 'opacity-30' : 'border-[color:var(--app-border)]'}`}
+                          loading="lazy"
+                          decoding="async"
+                          width={64}
+                          height={64}
+                        />
+                        <button
+                          type="button"
+                          className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold shadow ${isDeleted ? 'bg-[color:var(--app-surface-strong)] text-[color:var(--app-text)]' : 'bg-red-500 text-white'}`}
+                          onClick={() => onToggleDeleteImage?.(img.id)}
+                          title={
+                            isDeleted ? 'Annuler la suppression' : 'Supprimer'
+                          }
+                        >
+                          {isDeleted ? '↩' : '×'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <input
+                className="ui-input"
+                type="file"
+                accept="image/*"
+                multiple
+                required={imageRequired}
+                onChange={(e) => onFiles(e.target.files)}
+              />
+              <p className="text-xs text-[color:var(--app-text-soft)]">
+                {imageRequired
+                  ? "Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3)."
+                  : "Laisser vide pour conserver les photos actuelles · 8 Mo max (jusqu'à 3)."}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -519,6 +562,7 @@ export function ContributionPage() {
     useState<EntryForm>(emptyEntryForm)
   const [editingProposalFiles, setEditingProposalFiles] =
     useState<FileList | null>(null)
+  const [deletedImageIds, setDeletedImageIds] = useState<Set<string>>(new Set())
   const [editingSuggestionId, setEditingSuggestionId] = useState<string | null>(
     null,
   )
@@ -692,6 +736,7 @@ export function ContributionPage() {
           formData.append('images', f),
         )
       }
+      formData.append('deleteImageIds', JSON.stringify([...deletedImageIds]))
 
       const { data } = await authApi.patch<EntryProposal>(
         `/entry-proposals/${id}`,
@@ -700,6 +745,7 @@ export function ContributionPage() {
       setProposals((prev) => prev.map((p) => (p.id === id ? data : p)))
       setEditingProposalId(null)
       setEditingProposalFiles(null)
+      setDeletedImageIds(new Set())
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -820,19 +866,19 @@ export function ContributionPage() {
         </h2>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:justify-end">
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'contributions' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'contributions' ? 'nav-action--active' : ''}`}
             onClick={() => setView('contributions')}
           >
             Mes contributions
           </button>
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'entry' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'entry' ? 'nav-action--active' : ''}`}
             onClick={() => setView('entry')}
           >
             Proposer une entrée
           </button>
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'suggestion' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'suggestion' ? 'nav-action--active' : ''}`}
             onClick={() => setView('suggestion')}
           >
             Suggestion
@@ -927,6 +973,7 @@ export function ContributionPage() {
                               caste: (p.caste as EntryCaste | null) ?? '',
                             })
                             setEditingProposalFiles(null)
+                            setDeletedImageIds(new Set())
                           }}
                         >
                           Modifier
@@ -952,6 +999,15 @@ export function ContributionPage() {
                       onSubmit={() => void submitEditProposal(p.id)}
                       submitLabel="Sauvegarder"
                       onCancel={() => setEditingProposalId(null)}
+                      existingImages={p.images}
+                      deletedImageIds={deletedImageIds}
+                      onToggleDeleteImage={(id) =>
+                        setDeletedImageIds((prev) => {
+                          const next = new Set(prev)
+                          next.has(id) ? next.delete(id) : next.add(id)
+                          return next
+                        })
+                      }
                     />
                   </div>
                 )}

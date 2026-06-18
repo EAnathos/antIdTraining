@@ -378,21 +378,43 @@ entryProposalsRouter.patch(
         throw new AppError(400, 'Taxon introuvable pour ce niveau.')
     }
 
-    const files = (req.files as Express.Multer.File[] | undefined) ?? []
-    let imageCreateData: { imageUrl: string; position: number }[] | undefined
+    // Parse individual image IDs to delete
+    const rawDeleteIds = req.body.deleteImageIds as string | undefined
+    const deleteImageIds: string[] = rawDeleteIds
+      ? (JSON.parse(rawDeleteIds) as string[]).filter(
+          (imgId) => typeof imgId === 'string',
+        )
+      : []
 
-    if (files.length > 0) {
-      // Delete existing image files from disk
-      await Promise.allSettled(
-        existing.images.map((img) =>
-          deleteUploadFilesForImageUrl(img.imageUrl),
-        ),
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+
+    // Delete individually-selected images
+    if (deleteImageIds.length > 0) {
+      const toDelete = existing.images.filter((img) =>
+        deleteImageIds.includes(img.id),
       )
-      // Delete existing image records
+      await Promise.allSettled(
+        toDelete.map((img) => deleteUploadFilesForImageUrl(img.imageUrl)),
+      )
       await prisma.entryProposalImage.deleteMany({
-        where: { proposalId: existing.id },
+        where: { id: { in: deleteImageIds }, proposalId: existing.id },
       })
-      // Save new images
+    }
+
+    // Validate at least one image remains (considering deletions and uploads)
+    const remainingCount =
+      existing.images.length - deleteImageIds.length + files.length
+    if (remainingCount < 1) {
+      throw new AppError(400, 'La proposition doit avoir au moins une photo.')
+    }
+
+    // Save new uploaded images
+    let imageCreateData: { imageUrl: string; position: number }[] | undefined
+    if (files.length > 0) {
+      const keptImages = existing.images.filter(
+        (img) => !deleteImageIds.includes(img.id),
+      )
+      const nextPosition = keptImages.length
       const optimizedFileNames = await Promise.all(
         files.map((file, index) =>
           optimizeAndSaveImage(file, index).then((r) => r.baseFileName),
@@ -400,7 +422,7 @@ entryProposalsRouter.patch(
       )
       imageCreateData = optimizedFileNames.map((filename, i) => ({
         imageUrl: `/uploads/${filename}`,
-        position: i,
+        position: nextPosition + i,
       }))
     }
 
