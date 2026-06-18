@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { AuthRegistrationResponse, AuthResponse } from '../types/models'
 
-type AuthMode = 'login' | 'register' | 'verify'
+type AuthMode = 'login' | 'register'
 
 export function AuthPage() {
   const navigate = useNavigate()
@@ -13,8 +13,8 @@ export function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [verificationCode, setVerificationCode] = useState('')
   const [error, setError] = useState('')
+  const [registered, setRegistered] = useState<string | null>(null)
 
   function persistAuth(
     roleValue: 'ADMIN' | 'USER',
@@ -46,25 +46,11 @@ export function AuthPage() {
         return
       }
 
-      if (mode === 'register') {
-        const { data } = await api.post<AuthRegistrationResponse>(
-          '/auth/register',
-          { username, email, password, confirmPassword },
-        )
-        setEmail(data.email)
-        setVerificationCode('')
-        setMode('verify')
-        setPassword('')
-        setConfirmPassword('')
-        return
-      }
-
-      const { data } = await api.post<AuthResponse>('/auth/verify-email', {
-        email,
-        code: verificationCode,
-      })
-      persistAuth(data.role, data.token, data.user.username, data.user.email)
-      navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
+      const { data } = await api.post<AuthRegistrationResponse>(
+        '/auth/register',
+        { username, email, password, confirmPassword },
+      )
+      setRegistered(data.email)
     } catch (err) {
       setError(
         err instanceof Error && err.message
@@ -72,6 +58,25 @@ export function AuthPage() {
           : 'Identifiants invalides',
       )
     }
+  }
+
+  if (registered) {
+    return (
+      <section className="surface-panel surface-panel--solid mx-auto max-w-md space-y-6 p-6">
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--app-text)]">
+          Vérifiez votre boîte mail
+        </h2>
+        <div className="ui-alert ui-alert--warning">
+          <p>
+            Un lien d'activation a été envoyé à <strong>{registered}</strong>.
+          </p>
+          <p className="mt-1">
+            Cliquez sur le lien pour activer votre compte. Il expire dans 24
+            heures.
+          </p>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -82,7 +87,7 @@ export function AuthPage() {
         </h2>
         <p className="text-sm leading-6 text-[color:var(--app-text-muted)]">
           Vous pouvez jouer sans être connecté. Créez un compte joueur avec un
-          nom d’utilisateur et une adresse e-mail pour suivre votre progression
+          nom d'utilisateur et une adresse e-mail pour suivre votre progression
           dans le classement.
         </p>
       </div>
@@ -110,13 +115,6 @@ export function AuthPage() {
         </button>
       </div>
 
-      {mode === 'verify' && (
-        <div className="ui-alert ui-alert--warning">
-          <p>Un code de vérification a été envoyé à {email}.</p>
-          <p className="mt-1">Entrez ce code pour activer votre compte.</p>
-        </div>
-      )}
-
       <form className="space-y-3" onSubmit={onSubmit}>
         {mode === 'register' && (
           <input
@@ -136,17 +134,15 @@ export function AuthPage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        {mode !== 'verify' && (
-          <input
-            className="ui-input"
-            placeholder="Mot de passe"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            pattern={mode === 'register' ? '.*[^A-Za-z0-9\\s].*' : undefined}
-            required
-          />
-        )}
+        <input
+          className="ui-input"
+          placeholder="Mot de passe"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          pattern={mode === 'register' ? '.*[^A-Za-z0-9\\s].*' : undefined}
+          required
+        />
         {mode === 'register' && (
           <>
             <input
@@ -164,24 +160,8 @@ export function AuthPage() {
             </p>
           </>
         )}
-        {mode === 'verify' && (
-          <input
-            className="ui-input"
-            placeholder="Code de vérification"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
-            required
-          />
-        )}
         <button className="ui-button ui-button--primary w-full" type="submit">
-          {mode === 'login'
-            ? 'Se connecter'
-            : mode === 'register'
-              ? 'Créer le compte'
-              : 'Vérifier mon e-mail'}
+          {mode === 'login' ? 'Se connecter' : 'Créer le compte'}
         </button>
       </form>
 

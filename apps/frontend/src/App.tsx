@@ -64,6 +64,11 @@ const PolitiqueConfidentialitePage = lazy(() =>
 const CguPage = lazy(() =>
   import('./pages/CguPage').then((module) => ({ default: module.default })),
 )
+const ActivateAccountPage = lazy(() =>
+  import('./pages/ActivateAccountPage').then((module) => ({
+    default: module.ActivateAccountPage,
+  })),
+)
 
 function App() {
   return (
@@ -86,6 +91,7 @@ function App() {
           <Route path="/connexion" element={<AuthPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/activate" element={<ActivateAccountPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route
             path="/admin/login"

@@ -10,6 +10,7 @@ import {
   verifyRegistrationEmail,
 } from '../services/auth.js'
 import { prisma } from '../prisma.js'
+import { logger } from '../lib/logger.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
 import { upload } from '../middleware/upload.js'
@@ -62,12 +63,7 @@ const registerSchema = z
   })
 
 const verifyEmailSchema = z.object({
-  email: emailSchema,
-  code: z
-    .string()
-    .trim()
-    .min(6, 'Le code de vérification est requis')
-    .max(6, 'Le code de vérification est invalide'),
+  token: z.string().trim().length(48, "Lien d'activation invalide"),
 })
 
 const avatarSchema = z
@@ -147,6 +143,16 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const parsed = registerSchema.safeParse(req.body)
     if (!parsed.success) {
+      const passwordIssues = parsed.error.issues.filter(
+        (i) =>
+          i.path.includes('password') || i.path.includes('confirmPassword'),
+      )
+      if (passwordIssues.length > 0) {
+        logger.warn(
+          { ip: req.ip, issues: passwordIssues.map((i) => i.message) },
+          "Tentative d'inscription avec un mot de passe non conforme",
+        )
+      }
       throw parsed.error
     }
 
@@ -169,11 +175,7 @@ authRouter.post(
       throw parsed.error
     }
 
-    const auth = await verifyRegistrationEmail(
-      parsed.data.email,
-      parsed.data.code,
-      req.ip,
-    )
+    const auth = await verifyRegistrationEmail(parsed.data.token, req.ip)
 
     res.cookie('adminToken', auth.token, getAdminCookieOptions())
 

@@ -86,35 +86,39 @@ export async function sendLoginNotificationEmail(
 export async function sendVerificationEmail(
   email: string,
   username: string,
-  code: string,
+  token: string,
 ) {
   if (!config.resendApiKey) {
     throw new Error(
-      "RESEND_API_KEY non configurée, impossible d'envoyer le code de vérification",
+      "RESEND_API_KEY non configurée, impossible d'envoyer le lien d'activation",
     )
   }
 
+  const activationUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/activate?token=${encodeURIComponent(token)}`
   const safeUsername = escapeHtml(username)
   await sendResendEmail(
     {
       to: email,
-      subject: 'Validez votre adresse e-mail',
+      subject: 'Activez votre compte',
       text: [
         `Bonjour ${username},`,
         '',
-        `Voici votre code de vérification : ${code}`,
+        'Cliquez sur le lien ci-dessous pour activer votre compte :',
         '',
-        'Ce code expire dans 15 minutes.',
+        activationUrl,
+        '',
+        'Ce lien expire dans 24 heures.',
         "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
       ].join('\n'),
       html: `
       <p>Bonjour ${safeUsername},</p>
-      <p>Voici votre code de vérification : <strong>${escapeHtml(code)}</strong></p>
-      <p>Ce code expire dans 15 minutes.</p>
+      <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
+      <p><a href="${activationUrl}">Activer mon compte</a></p>
+      <p>Ce lien expire dans 24 heures.</p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
     },
-    'Email de vérification',
+    "Email d'activation",
   )
 }
 
