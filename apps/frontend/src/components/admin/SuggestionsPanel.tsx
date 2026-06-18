@@ -111,7 +111,7 @@ type Props = {
   suggestions: Suggestion[]
   setSuggestionStatus: (
     id: string,
-    status: 'PENDING' | 'PROCESSED' | 'REJECTED',
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED',
     rejectionMessage?: string,
   ) => Promise<void>
   deleteSuggestion: (id: string) => Promise<void>
@@ -144,7 +144,7 @@ export function SuggestionsPanel({
 }: Props) {
   const [tab, setTab] = useState<'suggestions' | 'proposals'>('suggestions')
   const [filter, setFilter] = useState<
-    'ALL' | 'PENDING' | 'PROCESSED' | 'REJECTED'
+    'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED'
   >('ALL')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectMessage, setRejectMessage] = useState('')
@@ -206,7 +206,7 @@ export function SuggestionsPanel({
       </div>
 
       <div className="flex gap-2">
-        {(['ALL', 'PENDING', 'PROCESSED', 'REJECTED'] as const).map((f) => (
+        {(['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'] as const).map((f) => (
           <button
             key={f}
             type="button"
@@ -305,17 +305,17 @@ export function SuggestionsPanel({
 
                 <div className="flex flex-col items-end gap-2">
                   <span
-                    className={`ui-chip text-xs ${s.status === 'PENDING' ? 'ui-chip--warning' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                    className={`ui-chip text-xs ${s.status === 'PENDING' ? 'ui-chip--warning' : s.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                   >
                     {s.status}
                   </span>
                   <div className="flex gap-2">
-                    {s.status !== 'PROCESSED' && (
+                    {s.status !== 'ACCEPTED' && (
                       <button
                         type="button"
                         className="ui-action ui-action--primary"
                         onClick={() =>
-                          void setSuggestionStatus(s.id, 'PROCESSED')
+                          void setSuggestionStatus(s.id, 'ACCEPTED')
                         }
                       >
                         Marquer traitée

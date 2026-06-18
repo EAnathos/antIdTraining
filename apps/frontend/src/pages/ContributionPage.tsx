@@ -15,7 +15,6 @@ type StatusFilter = 'all' | 'pending' | 'processed' | 'rejected'
 function statusLabel(status: string): string {
   if (status === 'PENDING') return 'En attente'
   if (status === 'ACCEPTED') return 'Accepté'
-  if (status === 'PROCESSED') return 'Traité'
   if (status === 'REJECTED') return 'Refusé'
   return status
 }
@@ -1090,7 +1089,7 @@ export function ContributionPage() {
                         </button>
                       ))}
                     <span
-                      className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                      className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
                     >
                       {statusLabel(s.status)}
                     </span>

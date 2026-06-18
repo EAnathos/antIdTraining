@@ -223,7 +223,7 @@ export type Suggestion = {
   userId?: string | null
   title?: string | null
   message: string
-  status: 'PENDING' | 'PROCESSED' | 'REJECTED'
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
   rejectionMessage?: string | null
   createdAt: string
   processedAt?: string | null
