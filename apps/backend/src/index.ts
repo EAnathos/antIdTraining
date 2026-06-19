@@ -8,7 +8,16 @@ import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
 import { logger } from './lib/logger.js'
 import { recordHttpRequest } from './lib/monitoring.js'
-import { register } from './lib/metrics.js'
+import {
+  register,
+  registeredUsersTotal,
+  observationEntriesTotal,
+  entryImagesTotal,
+  suggestionsTotal,
+  entryProposalsTotal,
+  gameSessionsTotal,
+} from './lib/metrics.js'
+import { prisma } from './prisma.js'
 import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
 import { healthRouter } from './routes/health.js'
@@ -210,6 +219,52 @@ app.use(errorHandler)
 const server = app.listen(config.port, () => {
   logger.info({ port: config.port }, 'API démarrée')
 })
+
+async function syncBusinessMetrics() {
+  const [users, entries, images, suggestions, proposals, sessions] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.observationEntry.count(),
+      prisma.entryImage.count(),
+      prisma.suggestion.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.entryProposal.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.gameSession.groupBy({
+        by: ['level', 'finalCorrect'],
+        _count: { _all: true },
+      }),
+    ])
+
+  registeredUsersTotal.set(users)
+  observationEntriesTotal.set(entries)
+  entryImagesTotal.set(images)
+
+  for (const row of suggestions) {
+    suggestionsTotal.set({ status: row.status.toLowerCase() }, row._count._all)
+  }
+
+  for (const row of proposals) {
+    entryProposalsTotal.set(
+      { status: row.status.toLowerCase() },
+      row._count._all,
+    )
+  }
+
+  for (const row of sessions) {
+    const outcome =
+      row.finalCorrect === true
+        ? 'correct'
+        : row.finalCorrect === false
+          ? 'incorrect'
+          : 'abandoned'
+    gameSessionsTotal.set(
+      { level: row.level.toLowerCase(), outcome },
+      row._count._all,
+    )
+  }
+}
+
+void syncBusinessMetrics()
+setInterval(() => void syncBusinessMetrics(), 60_000)
 
 // Graceful shutdown
 async function gracefulShutdown(signal: string) {

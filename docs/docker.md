@@ -90,21 +90,16 @@ docker compose restart backend
 
 ## Accès aux outils de monitoring
 
-Prometheus et Grafana sont liés à `127.0.0.1` — non exposés publiquement. Accès via tunnel SSH depuis ta machine locale :
+| Outil      | URL publique                | Accès                                                           |
+| ---------- | --------------------------- | --------------------------------------------------------------- |
+| Grafana    | `http://<domaine>/grafana/` | Public (auth Grafana requise)                                   |
+| Prometheus | tunnel SSH uniquement       | `ssh -L 9090:localhost:9090 user@vps` → `http://localhost:9090` |
 
-```bash
-# Prometheus
-ssh -L 9090:localhost:9090 user@vps
-# → http://localhost:9090
-
-# Grafana
-ssh -L 3000:localhost:3000 user@vps
-# → http://localhost:3000
-```
+Prometheus reste lié à `127.0.0.1` — pas d'interface publique. Grafana est proxifié par Nginx sur `/grafana/`.
 
 ## Grafana
 
-Grafana démarre avec la datasource Prometheus pré-configurée via [`grafana/provisioning/datasources/prometheus.yml`](../grafana/provisioning/datasources/prometheus.yml) — aucune configuration manuelle requise.
+Grafana est accessible publiquement via Nginx sur `/grafana/`. Il démarre avec la datasource Prometheus pré-configurée via [`grafana/provisioning/datasources/prometheus.yml`](../grafana/provisioning/datasources/prometheus.yml) — aucune configuration manuelle requise.
 
 Credentials définis dans `.env` (`GRAFANA_USER` / `GRAFANA_PASSWORD`).
 

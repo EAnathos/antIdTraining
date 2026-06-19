@@ -10,4 +10,5 @@ Point d'entrée de la documentation du projet Ant ID Training.
 4. [Dépendances](dependencies.md) — bibliothèques et leur rôle
 5. [Monitoring](monitoring.md) — endpoints de santé, Prometheus et alertes
 6. [Docker](docker.md) — services, réseaux, volumes, Prometheus
-7. [Sauvegardes](backups.md) — stratégie PostgreSQL + uploads
+7. [Métriques](metrics.md) — liste complète des métriques Prometheus par catégorie
+8. [Sauvegardes](backups.md) — stratégie PostgreSQL + uploads
