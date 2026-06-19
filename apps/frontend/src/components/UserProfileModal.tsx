@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errorUtils'
 import { resolveImageUrl } from '../lib/imageUrl'
 import type { UserProfile } from '../types/models'
 
@@ -30,11 +31,7 @@ export function UserProfileModal({
         setProfile(response.data)
       })
       .catch((err) => {
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : 'Impossible de charger le profil.',
-        )
+        setError(getErrorMessage(err, 'Impossible de charger le profil.'))
       })
       .finally(() => {
         setLoading(false)

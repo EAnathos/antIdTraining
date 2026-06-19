@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 export const adminSuggestionsRouter = Router()
 
@@ -48,6 +49,10 @@ adminSuggestionsRouter.get(
 adminSuggestionsRouter.put(
   '/:id',
   asyncHandler(async (req, res) => {
+    const suggestionId = cuidSchema.safeParse(req.params.id)
+    if (!suggestionId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = updateSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -67,7 +72,7 @@ adminSuggestionsRouter.put(
     }
 
     const updated = await prisma.suggestion.update({
-      where: { id: req.params.id as string },
+      where: { id: suggestionId.data },
       data,
       select: {
         id: true,
@@ -96,8 +101,13 @@ adminSuggestionsRouter.put(
 adminSuggestionsRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
+    const deleteId = cuidSchema.safeParse(req.params.id)
+    if (!deleteId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+
     const existing = await prisma.suggestion.findUnique({
-      where: { id: req.params.id as string },
+      where: { id: deleteId.data },
     })
 
     if (!existing) {
@@ -112,7 +122,7 @@ adminSuggestionsRouter.delete(
     }
 
     await prisma.suggestion.delete({
-      where: { id: req.params.id as string },
+      where: { id: deleteId.data },
     })
 
     await recordAdminAudit(req, {

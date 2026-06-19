@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errorUtils'
 
 type ResetPasswordResponse = {
   message: string
@@ -49,9 +50,10 @@ export function ResetPasswordPage() {
       }, 1800)
     } catch (err) {
       setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la réinitialisation du mot de passe.',
+        getErrorMessage(
+          err,
+          'Erreur lors de la réinitialisation du mot de passe.',
+        ),
       )
     } finally {
       setLoading(false)

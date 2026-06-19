@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { persistAuth } from '../lib/auth'
+import { getErrorMessage } from '../lib/errorUtils'
 import type { AuthResponse } from '../types/models'
 
 type Status =
@@ -24,7 +25,7 @@ export function ActivateAccountPage() {
     api
       .post<AuthResponse>('/auth/verify-email', { token })
       .then(({ data }) => {
-        persistAuth(data.role, data.user.username, data.user.email ?? null)
+        persistAuth(data.role, data.user.username)
         setStatus({ kind: 'success' })
         setTimeout(
           () =>
@@ -35,10 +36,10 @@ export function ActivateAccountPage() {
       .catch((err) => {
         setStatus({
           kind: 'error',
-          message:
-            err instanceof Error && err.message
-              ? err.message
-              : "Lien d'activation invalide ou expiré.",
+          message: getErrorMessage(
+            err,
+            "Lien d'activation invalide ou expiré.",
+          ),
         })
       })
   }, [searchParams, navigate])

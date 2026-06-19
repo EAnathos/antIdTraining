@@ -1,6 +1,7 @@
 import type { GameLevelStats, GameStatsPeriod } from '../../types/models'
 import { useState } from 'react'
 import { api } from '../../lib/api'
+import { getErrorMessage } from '../../lib/errorUtils'
 
 type Props = {
   stats: GameLevelStats[]
@@ -31,9 +32,7 @@ export function StatsPanel({ stats, period, setPeriod }: Props) {
       window.location.reload()
     } catch (error: unknown) {
       setResetError(
-        error instanceof Error && error.message
-          ? error.message
-          : 'Erreur lors de la réinitialisation',
+        getErrorMessage(error, 'Erreur lors de la réinitialisation'),
       )
     } finally {
       setResetLoading(false)

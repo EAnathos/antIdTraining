@@ -5,6 +5,7 @@ import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { requireAuth } from '../middleware/auth.js'
 import { MAX_SUGGESTIONS_PER_USER } from '../lib/suggestionConstants.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 export const suggestionsRouter = Router()
 
@@ -53,7 +54,11 @@ suggestionsRouter.patch(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const id = req.params.id as string
+    const idParsed = cuidSchema.safeParse(req.params.id)
+    if (!idParsed.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+    const id = idParsed.data
     const parsed = suggestionSchema.safeParse(req.body)
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Requête invalide.'

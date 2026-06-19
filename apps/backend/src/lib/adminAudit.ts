@@ -1,6 +1,7 @@
 import type { Request } from 'express'
 import { prisma } from '../prisma.js'
 import { createAdminHistoryEvent } from '../services/adminHistory.js'
+import { logger } from './logger.js'
 
 type AdminHistoryTone = 'SUCCESS' | 'ERROR' | 'INFO'
 
@@ -44,6 +45,6 @@ export async function recordAdminAudit(
       entityId: input.entityId ?? null,
     })
   } catch (error) {
-    console.error('Erreur enregistrement historique admin:', error)
+    logger.error({ err: error }, 'Erreur enregistrement historique admin')
   }
 }

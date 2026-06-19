@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { enforceIpRateLimit } from '../lib/rateLimit.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import {
@@ -7,6 +8,31 @@ import {
   validateGameAnswerSchema,
 } from '../services/game.js'
 import { optionalAuth } from '../middleware/auth.js'
+
+const gameQuestionQuerySchema = z.object({
+  level: z.string().optional(),
+  departments: z
+    .string()
+    .optional()
+    .transform((v) =>
+      v
+        ? v
+            .split(',')
+            .map((d) => d.trim())
+            .filter(Boolean)
+        : [],
+    ),
+  swarmingMonths: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (!v) return []
+      return v
+        .split(',')
+        .map((m) => parseInt(m, 10))
+        .filter((m) => !isNaN(m) && m >= 1 && m <= 12)
+    }),
+})
 
 const GAME_QUESTION_WINDOW_MS = 60 * 1000
 const GAME_QUESTION_MAX_ATTEMPTS = 30
@@ -27,17 +53,11 @@ gameRouter.get(
       'Trop de requêtes de jeu depuis cette adresse IP. Réessayez plus tard.',
     )
 
-    const departments =
-      typeof req.query.departments === 'string'
-        ? req.query.departments.split(',').filter((d) => d.trim())
-        : []
-    const swarmingMonths =
-      typeof req.query.swarmingMonths === 'string'
-        ? req.query.swarmingMonths
-            .split(',')
-            .map((m) => parseInt(m, 10))
-            .filter((m) => !isNaN(m) && m >= 1 && m <= 12)
-        : []
+    const parsed = gameQuestionQuerySchema.safeParse(req.query)
+    if (!parsed.success) {
+      throw parsed.error
+    }
+    const { level, departments, swarmingMonths } = parsed.data
 
     const filters = {
       departments: departments.length > 0 ? departments : undefined,
@@ -45,7 +65,7 @@ gameRouter.get(
     }
 
     const question = await getGameQuestion(
-      req.query.level,
+      level,
       req.user?.userId ?? null,
       filters,
     )
