@@ -16,11 +16,15 @@ Le fichier [`docker-compose.yml`](../docker-compose.yml) orchestre l'ensemble de
 
 ### Services de monitoring
 
-| Service             | Image                                          | Port interne | Rôle                               |
-| ------------------- | ---------------------------------------------- | ------------ | ---------------------------------- |
-| `prometheus`        | `prom/prometheus:latest`                       | `9090`       | Collecte et stockage des métriques |
-| `postgres-exporter` | `prometheuscommunity/postgres-exporter:latest` | `9187`       | Métriques PostgreSQL               |
-| `redis-exporter`    | `oliver006/redis_exporter:latest`              | `9121`       | Métriques Redis                    |
+| Service             | Image                                          | Port   | Rôle                                              |
+| ------------------- | ---------------------------------------------- | ------ | ------------------------------------------------- |
+| `prometheus`        | `prom/prometheus:latest`                       | `9090` | Collecte et stockage des métriques                |
+| `grafana`           | `grafana/grafana:latest`                       | `3000` | Visualisation des métriques (dashboards)          |
+| `node-exporter`     | `prom/node-exporter:latest`                    | `9100` | Métriques système hôte (CPU, RAM, disque, réseau) |
+| `postgres-exporter` | `prometheuscommunity/postgres-exporter:latest` | `9187` | Métriques PostgreSQL                              |
+| `redis-exporter`    | `oliver006/redis_exporter:latest`              | `9121` | Métriques Redis                                   |
+
+> Prometheus et Grafana sont liés à `127.0.0.1` uniquement — accessibles via tunnel SSH, jamais exposés publiquement.
 
 ### Réseaux
 
@@ -42,6 +46,7 @@ Le fichier [`docker-compose.yml`](../docker-compose.yml) orchestre l'ensemble de
 | `frontend_dist`   | `frontend`   | `/dist`                    | Le frontend **écrit** le build Vite ici                                    |
 | `frontend_dist`   | `nginx`      | `/usr/share/nginx/html`    | Nginx **sert** le build Vite depuis ce volume                              |
 | `prometheus_data` | `prometheus` | `/prometheus`              | Séries temporelles Prometheus                                              |
+| `grafana_data`    | `grafana`    | `/var/lib/grafana`         | Dashboards et configuration Grafana                                        |
 
 `backend_uploads` et `frontend_dist` sont des volumes **partagés entre deux containers** : un producer (backend/frontend) qui y écrit, et nginx qui les sert directement en statique — sans proxy HTTP intermédiaire.
 
@@ -83,11 +88,29 @@ docker compose restart backend
 
 `docker:up` et `docker:watch` sont complémentaires : `up` pour le premier démarrage, `watch` pour le développement itératif ensuite.
 
+## Accès aux outils de monitoring
+
+Prometheus et Grafana sont liés à `127.0.0.1` — non exposés publiquement. Accès via tunnel SSH depuis ta machine locale :
+
+```bash
+# Prometheus
+ssh -L 9090:localhost:9090 user@vps
+# → http://localhost:9090
+
+# Grafana
+ssh -L 3000:localhost:3000 user@vps
+# → http://localhost:3000
+```
+
+## Grafana
+
+Grafana démarre avec la datasource Prometheus pré-configurée via [`grafana/provisioning/datasources/prometheus.yml`](../grafana/provisioning/datasources/prometheus.yml) — aucune configuration manuelle requise.
+
+Credentials définis dans `.env` (`GRAFANA_USER` / `GRAFANA_PASSWORD`).
+
+Les dashboards créés dans l'UI sont persistés dans le volume `grafana_data`.
+
 ## Prometheus
-
-Prometheus est accessible sur `http://<VPS_IP>:9090` (ou localement sur `http://localhost:9090`).
-
-> **Sécurité** : en production, restreindre l'accès au port `9090` via le pare-feu du VPS (UFW, iptables) pour qu'il ne soit pas exposé publiquement.
 
 ### Targets scrapées
 
@@ -95,6 +118,7 @@ Prometheus est accessible sur `http://<VPS_IP>:9090` (ou localement sur `http://
 | ------------ | ------------------------ | -------------------------------------------------------- |
 | `prometheus` | `localhost:9090`         | Métriques internes de Prometheus                         |
 | `backend`    | `backend:4000/metrics`   | Node.js runtime + compteurs HTTP (`http_requests_total`) |
+| `node`       | `node-exporter:9100`     | CPU, RAM, disque, réseau du système hôte                 |
 | `postgres`   | `postgres-exporter:9187` | Connexions, transactions, taille des tables              |
 | `redis`      | `redis-exporter:9121`    | Commandes, mémoire, clients connectés                    |
 

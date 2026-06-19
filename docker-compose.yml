@@ -148,6 +148,22 @@ services:
       redis:
         condition: service_healthy
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: antidtraining-node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - backend_net
+
   prometheus:
     image: prom/prometheus:latest
     container_name: antidtraining-prometheus
@@ -168,9 +184,28 @@ services:
       backend:
         condition: service_healthy
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: antidtraining-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - '127.0.0.1:${GRAFANA_PORT}:3000'
+    networks:
+      - backend_net
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
   redis_data:
   backend_uploads:
   frontend_dist:
   prometheus_data:
+  grafana_data:
