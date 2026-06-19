@@ -16,6 +16,7 @@
     "backup:db": "bash scripts/backup-db.sh",
     "restore:db": "bash scripts/restore-db.sh",
     "docker:up": "docker compose build --no-cache frontend && docker compose up -d --build",
+    "docker:watch": "docker compose watch",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },

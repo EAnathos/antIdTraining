@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { httpRequestsTotal } from './metrics.js'
 
 type DependencyStatus = {
   ok: boolean
@@ -55,15 +56,18 @@ export function recordHttpRequest(statusCode: number) {
   if (statusCode >= 500) {
     requestMetrics.serverErrors += 1
     requestMetrics.lastErrorAt = requestMetrics.lastRequestAt
+    httpRequestsTotal.inc({ status_class: '5xx' })
     return
   }
 
   if (statusCode >= 400) {
     requestMetrics.clientErrors += 1
+    httpRequestsTotal.inc({ status_class: '4xx' })
     return
   }
 
   requestMetrics.successful += 1
+  httpRequestsTotal.inc({ status_class: '2xx' })
 }
 
 export function getRequestMetrics(): RequestMetrics {

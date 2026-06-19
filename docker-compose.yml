@@ -63,7 +63,7 @@ services:
       - ./apps/backend/.env
       - ./.env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
     volumes:
       - backend_uploads:/app/uploads
@@ -76,6 +76,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    develop:
+      watch:
+        - action: rebuild
+          path: ./apps/backend/src
+        - action: rebuild
+          path: ./apps/backend/package.json
+        - action: rebuild
+          path: ./apps/backend/prisma
 
   frontend:
     build:
@@ -88,6 +96,14 @@ services:
     restart: 'no'
     volumes:
       - frontend_dist:/dist
+    develop:
+      watch:
+        - action: rebuild
+          path: ./apps/frontend/src
+        - action: rebuild
+          path: ./apps/frontend/public
+        - action: rebuild
+          path: ./apps/frontend/package.json
 
   nginx:
     image: nginx:1.27-alpine
@@ -107,8 +123,54 @@ services:
     networks:
       - frontend_net
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: antidtraining-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    networks:
+      - backend_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: antidtraining-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - backend_net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: antidtraining-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    ports:
+      - '${PROMETHEUS_PORT}:9090'
+    networks:
+      - backend_net
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
   backend_uploads:
   frontend_dist:
+  prometheus_data:

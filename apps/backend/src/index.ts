@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
 import { logger } from './lib/logger.js'
 import { recordHttpRequest } from './lib/monitoring.js'
+import { register } from './lib/metrics.js'
 import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
 import { healthRouter } from './routes/health.js'
@@ -122,6 +123,11 @@ app.use((req, res, next) => {
   })
 
   next()
+})
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType)
+  res.end(await register.metrics())
 })
 
 app.use('/api/health', healthRouter)
