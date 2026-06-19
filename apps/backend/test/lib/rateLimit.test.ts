@@ -1,8 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+function makePipelineMock(incrResult: number) {
+  const pipeline = {
+    set: vi.fn().mockReturnThis(),
+    incr: vi.fn().mockReturnThis(),
+    exec: vi.fn().mockResolvedValue([
+      [null, 'OK'],
+      [null, incrResult],
+    ]),
+  }
+  return pipeline
+}
+
 const redisMock = {
-  incr: vi.fn(),
-  expire: vi.fn(),
+  pipeline: vi.fn(),
   del: vi.fn(),
 }
 
@@ -19,8 +30,7 @@ import {
 } from '../../src/lib/rateLimit.js'
 
 beforeEach(() => {
-  redisMock.incr.mockReset()
-  redisMock.expire.mockReset()
+  redisMock.pipeline.mockReset()
   redisMock.del.mockReset()
 })
 
@@ -29,31 +39,34 @@ describe('enforceIpRateLimit', () => {
     await expect(
       enforceIpRateLimit('ns', null, 60000, 5, 'Trop de tentatives'),
     ).rejects.toMatchObject({ status: 429 })
-    expect(redisMock.incr).not.toHaveBeenCalled()
+    expect(redisMock.pipeline).not.toHaveBeenCalled()
   })
 
   it('allows request within limit', async () => {
-    redisMock.incr.mockResolvedValue(1)
-    redisMock.expire.mockResolvedValue(1)
+    const pipeline = makePipelineMock(1)
+    redisMock.pipeline.mockReturnValue(pipeline)
 
     await expect(
       enforceIpRateLimit('ns', '1.2.3.4', 60000, 5, 'Trop'),
     ).resolves.toBeUndefined()
 
-    expect(redisMock.incr).toHaveBeenCalledWith('ns:1.2.3.4')
-    expect(redisMock.expire).toHaveBeenCalledWith('ns:1.2.3.4', 60)
+    expect(pipeline.set).toHaveBeenCalledWith('ns:1.2.3.4', 0, 'EX', 60, 'NX')
+    expect(pipeline.incr).toHaveBeenCalledWith('ns:1.2.3.4')
+    expect(pipeline.exec).toHaveBeenCalled()
   })
 
-  it('does not set expiry when key already exists (count > 1)', async () => {
-    redisMock.incr.mockResolvedValue(3)
+  it('allows request when count is within limit (count > 1)', async () => {
+    const pipeline = makePipelineMock(3)
+    redisMock.pipeline.mockReturnValue(pipeline)
 
-    await enforceIpRateLimit('ns', '1.2.3.4', 60000, 5, 'Trop')
-
-    expect(redisMock.expire).not.toHaveBeenCalled()
+    await expect(
+      enforceIpRateLimit('ns', '1.2.3.4', 60000, 5, 'Trop'),
+    ).resolves.toBeUndefined()
   })
 
   it('throws 429 when limit exceeded', async () => {
-    redisMock.incr.mockResolvedValue(6)
+    const pipeline = makePipelineMock(6)
+    redisMock.pipeline.mockReturnValue(pipeline)
 
     await expect(
       enforceIpRateLimit('ns', '1.2.3.4', 60000, 5, 'Trop de tentatives'),
@@ -61,12 +74,13 @@ describe('enforceIpRateLimit', () => {
   })
 
   it('normalizes IPv4-mapped IPv6 address', async () => {
-    redisMock.incr.mockResolvedValue(1)
-    redisMock.expire.mockResolvedValue(1)
+    const pipeline = makePipelineMock(1)
+    redisMock.pipeline.mockReturnValue(pipeline)
 
     await enforceIpRateLimit('ns', '::ffff:1.2.3.4', 60000, 5, 'Trop')
 
-    expect(redisMock.incr).toHaveBeenCalledWith('ns:1.2.3.4')
+    expect(pipeline.set).toHaveBeenCalledWith('ns:1.2.3.4', 0, 'EX', 60, 'NX')
+    expect(pipeline.incr).toHaveBeenCalledWith('ns:1.2.3.4')
   })
 })
 
