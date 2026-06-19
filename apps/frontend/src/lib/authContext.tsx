@@ -60,7 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         | 'USER'
         | null
       setRole(stored)
-      if (!stored) setProfile(null)
+      if (stored) {
+        void refresh()
+      } else {
+        setProfile(null)
+      }
     }
 
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
