@@ -6,6 +6,244 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                              String              @id @default(cuid())
+  passwordHash                    String
+  role                            UserRole            @default(USER)
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @updatedAt
+  username                        String              @unique
+  points                          Int                 @default(0)
+  email                           String?             @unique
+  emailVerificationTokenExpiresAt DateTime?
+  emailVerificationToken          String?
+  emailVerifiedAt                 DateTime?
+  avatar                          String?
+  bio                             String?
+  passwordResetRequestedAt        DateTime?
+  passwordResetToken              String?
+  passwordResetTokenExpiresAt     DateTime?
+  tokenVersion                    Int                 @default(0)
+  adminHistoryEvents              AdminHistoryEvent[]
+  entryProposals                  EntryProposal[]
+  gameSessions                    GameSession[]
+  suggestions                     Suggestion[]
+}
+
+model AdminHistoryEvent {
+  id            String           @id @default(cuid())
+  createdAt     DateTime         @default(now())
+  action        String
+  detail        String
+  tone          AdminHistoryTone @default(INFO)
+  actorUserId   String?
+  entityType    String?
+  entityId      String?
+  actorUsername String?
+  actor         User?            @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+}
+
+model Taxon {
+  id                 String             @id @default(cuid())
+  subfamily          String
+  tribe              String?
+  genus              String
+  subgenus           String?
+  speciesGroup       String?
+  species            String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  swarmingEndMonth   Int?
+  swarmingStartMonth Int?
+  distribution       Json?
+  invasive           Boolean            @default(false)
+  entries            ObservationEntry[]
+  confusedBy         TaxonConfusion[]   @relation("TaxonConfusionTarget")
+  confusions         TaxonConfusion[]   @relation("TaxonConfusionSource")
+  references         Reference[]        @relation("ReferenceToTaxon")
+
+  @@unique([subfamily, tribe, genus, species])
+  @@index([subfamily])
+  @@index([genus])
+  @@index([species])
+}
+
+model TaxonConfusion {
+  id              String   @id @default(cuid())
+  taxonId         String
+  confusedTaxonId String
+  detail          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  confusedTaxon   Taxon    @relation("TaxonConfusionTarget", fields: [confusedTaxonId], references: [id], onDelete: Cascade)
+  taxon           Taxon    @relation("TaxonConfusionSource", fields: [taxonId], references: [id], onDelete: Cascade)
+
+  @@unique([taxonId, confusedTaxonId])
+  @@index([taxonId])
+  @@index([confusedTaxonId])
+}
+
+model TaxonLevelProfile {
+  id          String                @id @default(cuid())
+  level       TaxonLevel
+  value       String
+  description String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  sizeMale    String?
+  sizeQueen   String?
+  sizeWorker  String?
+  genusValue  String?
+  criteria    TaxonLevelCriterion[]
+
+  @@unique([level, value, genusValue])
+  @@index([level])
+  @@index([value])
+  @@index([level, value])
+}
+
+model TaxonLevelCriterion {
+  id        String            @id @default(cuid())
+  profileId String
+  label     String
+  position  Int
+  createdAt DateTime          @default(now())
+  profile   TaxonLevelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, position])
+}
+
+model ObservationEntry {
+  id           String        @id @default(cuid())
+  taxonId      String?
+  taxonLevel   TaxonLevel
+  taxonValue   String
+  subfamily    String
+  genus        String?
+  species      String?
+  department   String
+  observedAt   DateTime
+  biotope      String
+  photoCredit  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  size         String?
+  speciesGroup String?
+  subgenus     String?
+  caste        Caste
+  images       EntryImage[]
+  gameSessions GameSession[]
+  taxon        Taxon?        @relation(fields: [taxonId], references: [id], onDelete: SetNull)
+
+  @@index([taxonLevel])
+  @@index([taxonValue])
+  @@index([subfamily])
+  @@index([genus])
+  @@index([species])
+  @@index([department])
+  @@index([observedAt])
+}
+
+model GameSession {
+  id           String            @id @default(cuid())
+  level        GameDifficulty
+  entryId      String?
+  finalCorrect Boolean?
+  validatedAt  DateTime?
+  createdAt    DateTime          @default(now())
+  userId       String?
+  entry        ObservationEntry? @relation(fields: [entryId], references: [id], onDelete: SetNull)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([level])
+  @@index([createdAt])
+  @@index([finalCorrect])
+  @@index([userId])
+}
+
+model EntryImage {
+  id        String           @id @default(cuid())
+  entryId   String
+  imageUrl  String
+  createdAt DateTime         @default(now())
+  position  Int?
+  entry     ObservationEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+}
+
+model EntryProposal {
+  id               String               @id @default(cuid())
+  userId           String
+  taxonLevel       TaxonLevel
+  taxonValue       String
+  subfamily        String
+  genus            String?
+  subgenus         String?
+  species          String?
+  speciesGroup     String?
+  size             String?
+  caste            Caste
+  department       String
+  observedAt       DateTime
+  biotope          String
+  photoCredit      String
+  createdAt        DateTime             @default(now())
+  processedAt      DateTime?
+  rejectionMessage String?
+  status           EntryProposalStatus  @default(PENDING)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images           EntryProposalImage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model EntryProposalImage {
+  id         String        @id @default(cuid())
+  proposalId String
+  imageUrl   String
+  position   Int?
+  createdAt  DateTime      @default(now())
+  proposal   EntryProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+}
+
+model Reference {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  type        ReferenceType
+  url         String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  authors     String[]      @default([])
+  taxons      Taxon[]       @relation("ReferenceToTaxon")
+}
+
+model Suggestion {
+  id               String           @id @default(cuid())
+  name             String?
+  email            String?
+  message          String
+  status           SuggestionStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  processedAt      DateTime?
+  userId           String?
+  rejectionMessage String?
+  title            String?
+  user             User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 enum UserRole {
   ADMIN
   USER
@@ -31,9 +269,9 @@ enum AdminHistoryTone {
 enum TaxonLevel {
   SUBFAMILY
   GENUS
+  SPECIES
   SUBGENUS
   SPECIES_GROUP
-  SPECIES
 }
 
 enum Caste {
@@ -52,254 +290,4 @@ enum EntryProposalStatus {
   PENDING
   ACCEPTED
   REJECTED
-}
-
-model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  email        String?  @unique
-  emailVerifiedAt DateTime?
-  emailVerificationToken String?
-  emailVerificationTokenExpiresAt DateTime?
-  passwordHash String
-  role         UserRole @default(USER)
-  points       Int      @default(0)
-  avatar       String?
-  bio          String?
-  passwordResetRequestedAt DateTime?
-  passwordResetToken String?
-  passwordResetTokenExpiresAt DateTime?
-  tokenVersion Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  adminHistoryEvents AdminHistoryEvent[]
-  gameSessions       GameSession[]
-  suggestions        Suggestion[]
-  entryProposals     EntryProposal[]
-}
-
-model AdminHistoryEvent {
-  id             String           @id @default(cuid())
-  createdAt      DateTime         @default(now())
-  action         String
-  detail         String
-  tone           AdminHistoryTone @default(INFO)
-  actorUserId    String?
-  actorUsername  String?
-  entityType     String?
-  entityId       String?
-
-  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
-
-  @@index([createdAt])
-  @@index([actorUserId])
-  @@index([entityType, entityId])
-}
-
-model Taxon {
-  id           String   @id @default(cuid())
-  subfamily    String
-  tribe        String?
-  genus        String
-  subgenus     String?
-  speciesGroup String?
-  species      String
-  invasive     Boolean  @default(false)
-  swarmingStartMonth Int?
-  swarmingEndMonth   Int?
-  distribution Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  entries ObservationEntry[]
-  references Reference[]
-  confusions TaxonConfusion[] @relation("TaxonConfusionSource")
-  confusedBy TaxonConfusion[] @relation("TaxonConfusionTarget")
-
-  @@index([subfamily])
-  @@index([genus])
-  @@index([species])
-  @@unique([subfamily, tribe, genus, species])
-}
-
-model TaxonConfusion {
-  id              String   @id @default(cuid())
-  taxonId         String
-  confusedTaxonId String
-  detail          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  taxon         Taxon @relation("TaxonConfusionSource", fields: [taxonId], references: [id], onDelete: Cascade)
-  confusedTaxon Taxon @relation("TaxonConfusionTarget", fields: [confusedTaxonId], references: [id], onDelete: Cascade)
-
-  @@unique([taxonId, confusedTaxonId])
-  @@index([taxonId])
-  @@index([confusedTaxonId])
-}
-
-model TaxonLevelProfile {
-  id        String   @id @default(cuid())
-  level     TaxonLevel
-  value     String
-  genusValue String?
-  description String?
-  sizeWorker String?
-  sizeQueen  String?
-  sizeMale   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  criteria TaxonLevelCriterion[]
-
-  @@unique([level, value, genusValue])
-  @@index([level])
-  @@index([value])
-  @@index([level, value])
-}
-
-model TaxonLevelCriterion {
-  id        String   @id @default(cuid())
-  profileId String
-  label     String
-  position  Int
-  createdAt DateTime @default(now())
-
-  profile TaxonLevelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@index([profileId])
-  @@index([profileId, position])
-}
-
-model ObservationEntry {
-  id           String   @id @default(cuid())
-  taxonId      String?
-  taxonLevel   TaxonLevel
-  taxonValue   String
-  subfamily    String
-  genus        String?
-  subgenus     String?
-  species      String?
-  speciesGroup String?
-  size         String?
-  caste        Caste
-  department   String
-  observedAt   DateTime
-  biotope      String
-  photoCredit  String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  taxon Taxon? @relation(fields: [taxonId], references: [id], onDelete: SetNull)
-  images EntryImage[]
-  gameSessions GameSession[]
-
-  @@index([taxonLevel])
-  @@index([taxonValue])
-  @@index([subfamily])
-  @@index([genus])
-  @@index([species])
-  @@index([department])
-  @@index([observedAt])
-}
-
-model GameSession {
-  id            String         @id @default(cuid())
-  level         GameDifficulty
-  entryId       String?
-  userId        String?
-  finalCorrect  Boolean?
-  validatedAt   DateTime?
-  createdAt     DateTime       @default(now())
-
-  entry ObservationEntry? @relation(fields: [entryId], references: [id], onDelete: SetNull)
-  user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([level])
-  @@index([createdAt])
-  @@index([finalCorrect])
-  @@index([userId])
-}
-
-model EntryImage {
-  id        String   @id @default(cuid())
-  entryId   String
-  imageUrl  String
-  position  Int?
-  createdAt DateTime @default(now())
-
-  entry ObservationEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-}
-
-model EntryProposal {
-  id           String   @id @default(cuid())
-  userId       String
-  taxonLevel   TaxonLevel
-  taxonValue   String
-  subfamily    String
-  genus        String?
-  subgenus     String?
-  species      String?
-  speciesGroup String?
-  size         String?
-  caste        Caste
-  department   String
-  observedAt   DateTime
-  biotope      String
-  photoCredit  String
-  status       EntryProposalStatus @default(PENDING)
-  rejectionMessage String?
-  createdAt    DateTime @default(now())
-  processedAt  DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  images EntryProposalImage[]
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model EntryProposalImage {
-  id         String   @id @default(cuid())
-  proposalId String
-  imageUrl   String
-  position   Int?
-  createdAt  DateTime @default(now())
-
-  proposal EntryProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-
-  @@index([proposalId])
-}
-
-model Reference {
-  id          String        @id @default(cuid())
-  title       String
-  authors     String[]      @default([])
-  description String?
-  type        ReferenceType
-  url         String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  taxons      Taxon[]
-}
-
-model Suggestion {
-  id         String           @id @default(cuid())
-  userId     String?
-  name       String?
-  email      String?
-  title      String?
-  message    String
-  status     SuggestionStatus @default(PENDING)
-  rejectionMessage String?
-  createdAt  DateTime         @default(now())
-  processedAt DateTime?
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
 }
