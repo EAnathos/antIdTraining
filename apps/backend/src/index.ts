@@ -141,32 +141,34 @@ app.get('/metrics', async (_req, res) => {
 
 app.use('/api/health', healthRouter)
 
-app.get('/api/openapi.json', (_req, res) => {
-  res.json(openApiDocument)
-})
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/openapi.json', (_req, res) => {
+    res.json(openApiDocument)
+  })
 
-app.use(
-  '/api/docs',
-  swaggerUi.serve,
-  swaggerUi.setup(openApiDocument, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      authAction: {
-        bearerAuth: {
-          name: 'bearerAuth',
-          schema: {
-            type: 'http',
-            in: 'header',
-            name: 'Authorization',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openApiDocument, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        authAction: {
+          bearerAuth: {
+            name: 'bearerAuth',
+            schema: {
+              type: 'http',
+              in: 'header',
+              name: 'Authorization',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
+            value: '', // Laisser vide - l'utilisateur doit entrer son token
           },
-          value: '', // Laisser vide - l'utilisateur doit entrer son token
         },
       },
-    },
-  }),
-)
+    }),
+  )
+}
 
 app.use('/api/auth', authRouter)
 app.use('/api/game', gameRouter)
