@@ -9,6 +9,7 @@ import {
   updateReference,
 } from '../services/references.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 export const publicReferencesRouter = Router()
 export const adminReferencesRouter = Router()
@@ -44,12 +45,16 @@ adminReferencesRouter.post(
 adminReferencesRouter.put(
   '/:id',
   asyncHandler(async (req, res) => {
+    const refId = cuidSchema.safeParse(req.params.id)
+    if (!refId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = referenceSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
     }
 
-    const updated = await updateReference(req.params.id as string, parsed.data)
+    const updated = await updateReference(refId.data, parsed.data)
     await recordAdminAudit(req, {
       action: 'Référence modifiée',
       detail: updated.title,
@@ -64,7 +69,11 @@ adminReferencesRouter.put(
 adminReferencesRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const deleted = await deleteReference(req.params.id as string)
+    const refId = cuidSchema.safeParse(req.params.id)
+    if (!refId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+    const deleted = await deleteReference(refId.data)
     await recordAdminAudit(req, {
       action: 'Référence supprimée',
       detail: deleted.title,

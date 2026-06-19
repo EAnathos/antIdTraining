@@ -12,13 +12,14 @@ import {
   sendLoginNotificationEmail,
   sendVerificationEmail,
 } from '../lib/mail.js'
-
-const REGISTRATION_WINDOW_MS = 24 * 60 * 60 * 1000
-const REGISTRATION_MAX_ATTEMPTS = 5
-const LOGIN_WINDOW_MS = 15 * 60 * 1000
-const LOGIN_MAX_ATTEMPTS = 5
-const VERIFICATION_WINDOW_MS = 15 * 60 * 1000
-const VERIFICATION_MAX_ATTEMPTS = 10
+import {
+  LOGIN_MAX_ATTEMPTS,
+  LOGIN_WINDOW_MS,
+  REGISTRATION_MAX_ATTEMPTS,
+  REGISTRATION_WINDOW_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+  VERIFICATION_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 
 function buildUserSummary(user: {
   id: string

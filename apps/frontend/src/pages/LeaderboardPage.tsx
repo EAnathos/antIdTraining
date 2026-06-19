@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { AUTH_ROLE_KEY } from '../lib/authKeys'
+import { getErrorMessage } from '../lib/errorUtils'
 import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
 import { UserProfileModal } from '../components/UserProfileModal'
 
@@ -44,11 +45,7 @@ export function LeaderboardPage() {
       setCurrentUserPoints(currentUserResponse?.data.points ?? null)
     } catch (err) {
       if (!cancelled.value) {
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : 'Impossible de charger le classement.',
-        )
+        setError(getErrorMessage(err, 'Impossible de charger le classement.'))
         setCurrentUserPoints(null)
       }
     } finally {

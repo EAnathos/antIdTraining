@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { buildUserPointRows } from '../services/stats.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 const updatePointsSchema = z.object({
   points: z
@@ -49,13 +50,17 @@ adminUsersRouter.get(
 adminUsersRouter.put(
   '/:id/points',
   asyncHandler(async (req, res) => {
+    const userId = cuidSchema.safeParse(req.params.id)
+    if (!userId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = updatePointsSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: req.params.id as string },
+      where: { id: userId.data },
       select: { id: true, username: true, role: true },
     })
 

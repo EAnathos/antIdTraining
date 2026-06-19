@@ -173,7 +173,7 @@ describe('publicTaxonsRouter', () => {
 
   it('lists taxons with filters', async () => {
     mocks.listTaxons.mockResolvedValue({
-      items: [{ id: 'taxon_1' }],
+      items: [{ id: 'dw5agfvayj927h26bzemp7zc' }],
       pagination: { page: 1 },
     })
 
@@ -183,7 +183,7 @@ describe('publicTaxonsRouter', () => {
 
     expect(response.status).toBe(200)
     expect(json).toEqual({
-      items: [{ id: 'taxon_1' }],
+      items: [{ id: 'dw5agfvayj927h26bzemp7zc' }],
       pagination: { page: 1 },
     })
     expect(mocks.listTaxons).toHaveBeenCalledWith({
@@ -216,7 +216,7 @@ describe('adminTaxonsRouter', () => {
       },
     })
     mocks.createTaxon.mockResolvedValue({
-      id: 'taxon_1',
+      id: 'dw5agfvayj927h26bzemp7zc',
       subfamily: 'Formicinae',
       genus: 'Formica',
       species: 'rufibarbis',
@@ -239,24 +239,27 @@ describe('adminTaxonsRouter', () => {
       data: { subfamily: 'Formicinae', genus: 'Formica', species: 'fusca' },
     })
     mocks.updateTaxon.mockResolvedValue({
-      id: 'taxon_1',
+      id: 'dw5agfvayj927h26bzemp7zc',
       subfamily: 'Formicinae',
       genus: 'Formica',
       species: 'fusca',
     })
 
-    const response = await fetch(`${baseUrl}/api/admin/taxons/taxon_1`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subfamily: 'Formicinae',
-        genus: 'Formica',
-        species: 'fusca',
-      }),
-    })
+    const response = await fetch(
+      `${baseUrl}/api/admin/taxons/dw5agfvayj927h26bzemp7zc`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subfamily: 'Formicinae',
+          genus: 'Formica',
+          species: 'fusca',
+        }),
+      },
+    )
 
     expect(response.status).toBe(200)
-    expect(mocks.updateTaxon).toHaveBeenCalledWith('taxon_1', {
+    expect(mocks.updateTaxon).toHaveBeenCalledWith('dw5agfvayj927h26bzemp7zc', {
       subfamily: 'Formicinae',
       genus: 'Formica',
       species: 'fusca',
@@ -266,18 +269,21 @@ describe('adminTaxonsRouter', () => {
 
   it('deletes a taxon and records audit log', async () => {
     mocks.deleteTaxon.mockResolvedValue({
-      id: 'taxon_1',
+      id: 'dw5agfvayj927h26bzemp7zc',
       subfamily: 'Formicinae',
       genus: 'Formica',
       species: 'rufibarbis',
     })
 
-    const response = await fetch(`${baseUrl}/api/admin/taxons/taxon_1`, {
-      method: 'DELETE',
-    })
+    const response = await fetch(
+      `${baseUrl}/api/admin/taxons/dw5agfvayj927h26bzemp7zc`,
+      {
+        method: 'DELETE',
+      },
+    )
 
     expect(response.status).toBe(204)
-    expect(mocks.deleteTaxon).toHaveBeenCalledWith('taxon_1')
+    expect(mocks.deleteTaxon).toHaveBeenCalledWith('dw5agfvayj927h26bzemp7zc')
     expect(mocks.recordAdminAudit).toHaveBeenCalledTimes(1)
   })
 })

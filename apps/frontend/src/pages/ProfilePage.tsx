@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { clearAuth } from '../lib/auth'
 import { useAuth } from '../lib/authContext'
 import { AUTH_THEME_KEY } from '../lib/authKeys'
+import { getErrorMessage } from '../lib/errorUtils'
 import { resolveImageUrl } from '../lib/imageUrl'
 import type { AuthMeResponse } from '../types/models'
 
@@ -158,11 +159,7 @@ export function ProfilePage() {
       setSuccessMessage('Profil mis à jour avec succès.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la mise à jour du profil.',
-      )
+      setError(getErrorMessage(err, 'Erreur lors de la mise à jour du profil.'))
     } finally {
       setSaving(false)
     }
@@ -184,11 +181,7 @@ export function ProfilePage() {
       setSuccessMessage('Avatar mis à jour.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : "Erreur lors de l'upload de l'avatar.",
-      )
+      setError(getErrorMessage(err, "Erreur lors de l'upload de l'avatar."))
     } finally {
       setAvatarUploading(false)
     }
@@ -207,9 +200,7 @@ export function ProfilePage() {
       setTimeout(() => setSuccessMessage(''), 5000)
     } catch (err) {
       setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la demande de réinitialisation.',
+        getErrorMessage(err, 'Erreur lors de la demande de réinitialisation.'),
       )
     } finally {
       setPasswordResetLoading(false)
@@ -224,11 +215,7 @@ export function ProfilePage() {
       clearAuth()
       navigate('/connexion', { replace: true })
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la suppression du compte.',
-      )
+      setError(getErrorMessage(err, 'Erreur lors de la suppression du compte.'))
     }
   }
 

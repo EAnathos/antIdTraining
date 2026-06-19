@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { persistAuth } from '../lib/auth'
+import { getErrorMessage } from '../lib/errorUtils'
 import type { AuthRegistrationResponse, AuthResponse } from '../types/models'
 
 type AuthMode = 'login' | 'register'
@@ -27,7 +28,7 @@ export function AuthPage() {
           email,
           password,
         })
-        persistAuth(data.role, data.user.username, data.user.email ?? null)
+        persistAuth(data.role, data.user.username)
         navigate(data.role === 'ADMIN' ? '/admin' : '/', { replace: true })
         return
       }
@@ -38,11 +39,7 @@ export function AuthPage() {
       )
       setRegistered(data.email)
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Identifiants invalides',
-      )
+      setError(getErrorMessage(err, 'Identifiants invalides'))
     }
   }
 

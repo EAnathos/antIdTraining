@@ -118,16 +118,38 @@ export async function requireAuth(
   }
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
   const token = getAuthToken(req)
   if (!token) {
     return next()
   }
 
+  let payload: JwtPayload
   try {
-    req.user = getJwtPayload(token)
+    payload = getJwtPayload(token)
   } catch {
     // Ignore invalid tokens for optional auth.
+    return next()
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true, tokenVersion: true },
+    })
+    if (user && user.tokenVersion === payload.tokenVersion) {
+      req.user = {
+        userId: payload.userId,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
+      }
+    }
+  } catch {
+    // DB error: proceed without auth rather than blocking the request.
   }
 
   return next()

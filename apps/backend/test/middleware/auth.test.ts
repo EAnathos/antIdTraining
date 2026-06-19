@@ -192,39 +192,46 @@ describe('requireAdmin middleware', () => {
 })
 
 describe('optionalAuth middleware', () => {
-  it('calls next without user when no token', () => {
+  it('calls next without user when no token', async () => {
     const req = makeReq() as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    optionalAuth(req, res as any, next)
+    await optionalAuth(req, res as any, next)
 
     expect(next).toHaveBeenCalled()
     expect(req.user).toBeUndefined()
   })
 
-  it('sets user when valid token present', () => {
-    const token = jwt.sign({ userId: 'u2', role: 'USER' }, JWT_SECRET)
+  it('sets user when valid token present', async () => {
+    const token = jwt.sign(
+      { userId: 'u2', role: 'USER', tokenVersion: 1 },
+      JWT_SECRET,
+    )
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      role: 'USER',
+      tokenVersion: 1,
+    })
     const req = makeReq({
       headers: { authorization: `Bearer ${token}` },
     }) as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    optionalAuth(req, res as any, next)
+    await optionalAuth(req, res as any, next)
 
     expect(next).toHaveBeenCalled()
     expect(req.user).toMatchObject({ userId: 'u2' })
   })
 
-  it('calls next without user when token is invalid', () => {
+  it('calls next without user when token is invalid', async () => {
     const req = makeReq({
       headers: { authorization: 'Bearer bad.token' },
     }) as any
     const res = makeRes()
     const next = vi.fn() as unknown as NextFunction
 
-    optionalAuth(req, res as any, next)
+    await optionalAuth(req, res as any, next)
 
     expect(next).toHaveBeenCalled()
     expect(req.user).toBeUndefined()

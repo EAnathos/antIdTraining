@@ -22,10 +22,9 @@ export function encryptSensitiveText(value: string | null | undefined) {
 
   const key = getKeyMaterial()
   if (!key) {
-    logger.warn(
-      'encryptSensitiveText: DATA_ENCRYPTION_KEY absent, valeur stockée en clair',
+    throw new Error(
+      'DATA_ENCRYPTION_KEY is required to encrypt sensitive data. Configure this environment variable.',
     )
-    return value
   }
 
   if (isEncrypted(value)) return value

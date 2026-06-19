@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errorUtils'
 
 type ForgotPasswordResponse = {
   message: string
@@ -27,9 +28,10 @@ export function ForgotPasswordPage() {
       setSuccess(data.message)
     } catch (err) {
       setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de l’envoi du lien de réinitialisation.',
+        getErrorMessage(
+          err,
+          'Erreur lors de l’envoi du lien de réinitialisation.',
+        ),
       )
     } finally {
       setLoading(false)

@@ -13,6 +13,10 @@ import { prisma } from '../prisma.js'
 import { logger } from '../lib/logger.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
+import {
+  PASSWORD_RESET_REQUEST_MAX_ATTEMPTS,
+  PASSWORD_RESET_REQUEST_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 import { upload } from '../middleware/upload.js'
 import crypto from 'node:crypto'
 import { hashToken } from '../lib/token.js'
@@ -68,16 +72,8 @@ const verifyEmailSchema = z.object({
 })
 
 const avatarSchema = z
-  .union([
-    z
-      .string()
-      .url()
-      .refine(
-        (u) => /^https?:\/\//i.test(u),
-        "Schéma d'URL non autorisé (http/https uniquement)",
-      ),
-    z.string().regex(/^\/uploads\/[\w.\-/]+$/, "Chemin d'avatar invalide"),
-  ])
+  .string()
+  .regex(/^\/uploads\/[\w.\-/]+$/, "Chemin d'avatar invalide")
   .nullable()
   .optional()
 
@@ -108,8 +104,6 @@ const passwordResetRequestSchema = z.object({
   email: emailSchema.optional(),
 })
 
-const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
-const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 const publicPasswordResetMessage =
   "Si un compte existe pour cette adresse et qu'aucune autre demande n'a été faite dans la semaine, un e-mail de réinitialisation a été envoyé."
 

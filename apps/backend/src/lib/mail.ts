@@ -9,7 +9,7 @@ function buildFrontendUrl(
   const query = Object.entries(params)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&')
-  return `${base}/#/${path}?${query}`
+  return `${base}/${path}?${query}`
 }
 
 function escapeHtml(value: string): string {
