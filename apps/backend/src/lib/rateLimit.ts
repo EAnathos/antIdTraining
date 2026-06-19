@@ -26,10 +26,14 @@ export async function enforceIpRateLimit(
   const key = `${namespace}:${ip}`
   const ttl = Math.ceil(windowMs / 1000)
 
-  const attempts = await redis.incr(key)
-  if (attempts === 1) {
-    await redis.expire(key, ttl)
-  }
+  // Atomic: SET NX initialises with TTL, INCR counts within the window.
+  // Two separate INCR+EXPIRE calls would leave a permanent key if the process
+  // crashes between them, blocking the IP forever.
+  const pipeline = redis.pipeline()
+  pipeline.set(key, 0, 'EX', ttl, 'NX')
+  pipeline.incr(key)
+  const results = await pipeline.exec()
+  const attempts = (results?.[1]?.[1] as number | null) ?? 1
 
   if (attempts > maxAttempts) {
     throw new AppError(429, message)
