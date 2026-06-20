@@ -1,5 +1,9 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "SuggestionStatus" AS ENUM ('PENDING', 'PROCESSED', 'REJECTED');
+DO $$ BEGIN
+    CREATE TYPE "SuggestionStatus" AS ENUM ('PENDING', 'PROCESSED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "Suggestion" (

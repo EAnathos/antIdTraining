@@ -1,5 +1,9 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "EntryProposalStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+DO $$ BEGIN
+    CREATE TYPE "EntryProposalStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterTable
 ALTER TABLE "Suggestion" ADD COLUMN IF NOT EXISTS     "rejectionMessage" TEXT,

@@ -1,11 +1,23 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "UserRole" AS ENUM ('ADMIN', 'USER');
+DO $$ BEGIN
+    CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "ReferenceType" AS ENUM ('WEBSITE', 'MYRMECOLOGY');
+DO $$ BEGIN
+    CREATE TYPE "ReferenceType" AS ENUM ('WEBSITE', 'MYRMECOLOGY');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "TaxonLevel" AS ENUM ('SUBFAMILY', 'GENUS', 'SPECIES');
+DO $$ BEGIN
+    CREATE TYPE "TaxonLevel" AS ENUM ('SUBFAMILY', 'GENUS', 'SPECIES');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "User" (

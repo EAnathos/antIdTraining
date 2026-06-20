@@ -1,5 +1,9 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "AdminHistoryTone" AS ENUM ('SUCCESS', 'ERROR', 'INFO');
+DO $$ BEGIN
+    CREATE TYPE "AdminHistoryTone" AS ENUM ('SUCCESS', 'ERROR', 'INFO');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "AdminHistoryEvent" (

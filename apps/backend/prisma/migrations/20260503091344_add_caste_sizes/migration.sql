@@ -1,5 +1,9 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "Caste" AS ENUM ('WORKER', 'QUEEN', 'MALE');
+DO $$ BEGIN
+    CREATE TYPE "Caste" AS ENUM ('WORKER', 'QUEEN', 'MALE');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterTable
 ALTER TABLE "ObservationEntry" ADD COLUMN IF NOT EXISTS    "caste" "Caste";
