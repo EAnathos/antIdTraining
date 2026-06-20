@@ -49,7 +49,7 @@
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
     "typescript-eslint": "^8.59.4",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "allowScripts": {
     "@prisma/engines@7.8.0": true,
