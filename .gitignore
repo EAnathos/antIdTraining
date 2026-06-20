@@ -29,6 +29,9 @@ pnpm-debug.log*
 # Uploads / local generated assets
 apps/backend/uploads/
 
+# Backups
+backups/
+
 # Coverage
 coverage/
 *.lcov
