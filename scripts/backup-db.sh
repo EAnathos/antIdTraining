@@ -5,35 +5,48 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_ROOT="${BACKUP_ROOT:-$REPO_DIR/backups}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
-UPLOADS_DIR="${UPLOADS_DIR:-$REPO_DIR/apps/backend/uploads}"
-DATABASE_URL="${DATABASE_URL:-}"
+ENV_FILE="$REPO_DIR/.env"
 
-if [[ -z "$DATABASE_URL" ]]; then
-  echo "ERROR: DATABASE_URL is required."
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "ERROR: .env introuvable à $ENV_FILE"
   exit 1
 fi
 
-if ! command -v pg_dump >/dev/null 2>&1; then
-  echo "ERROR: pg_dump not found. Install PostgreSQL client tools first."
+source <(grep -E '^(POSTGRES_USER|POSTGRES_PASSWORD|POSTGRES_DB)=' "$ENV_FILE")
+
+if [[ -z "${POSTGRES_USER:-}" || -z "${POSTGRES_PASSWORD:-}" || -z "${POSTGRES_DB:-}" ]]; then
+  echo "ERROR: POSTGRES_USER, POSTGRES_PASSWORD et POSTGRES_DB sont requis dans .env"
+  exit 1
+fi
+
+if ! docker compose -f "$REPO_DIR/docker-compose.yml" ps postgres --quiet 2>/dev/null | grep -q .; then
+  echo "ERROR: le container postgres n'est pas en cours d'exécution. Lance 'npm run docker:up' d'abord."
   exit 1
 fi
 
 mkdir -p "$BACKUP_DIR"
 
-echo "==> Exporting PostgreSQL dump"
-pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file "$BACKUP_DIR/database.dump"
+echo "==> Export PostgreSQL (via Docker)"
+docker compose -f "$REPO_DIR/docker-compose.yml" exec -T postgres \
+  pg_dump \
+    --username="$POSTGRES_USER" \
+    --dbname="$POSTGRES_DB" \
+    --format=custom \
+    --no-owner \
+    --no-acl \
+  > "$BACKUP_DIR/database.dump"
 
-if [[ -d "$UPLOADS_DIR" ]]; then
-  echo "==> Archiving uploads"
-  tar -czf "$BACKUP_DIR/uploads.tar.gz" -C "$UPLOADS_DIR" .
-fi
+echo "==> Archive des uploads (via Docker)"
+docker compose -f "$REPO_DIR/docker-compose.yml" exec -T backend \
+  tar -czf - /app/uploads 2>/dev/null \
+  > "$BACKUP_DIR/uploads.tar.gz" || echo "  (aucun fichier uploads à archiver)"
 
 cat > "$BACKUP_DIR/manifest.json" <<EOF
 {
   "createdAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "databaseDump": "database.dump",
-  "uploadsArchive": "$([[ -f "$BACKUP_DIR/uploads.tar.gz" ]] && echo uploads.tar.gz || echo null)"
+  "uploadsArchive": "uploads.tar.gz"
 }
 EOF
 
-echo "Backup created at: $BACKUP_DIR"
+echo "Backup créé : $BACKUP_DIR"

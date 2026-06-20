@@ -1,35 +1,36 @@
 # Sauvegardes
 
-Stratégie de sauvegarde PostgreSQL + uploads, sans dépendance à Docker.
+Stratégie de sauvegarde PostgreSQL + uploads via Docker.
+
+Les scripts s'exécutent entièrement dans les containers Docker — aucun client PostgreSQL requis sur l'hôte. Le container `postgres` doit être en cours d'exécution.
 
 ## Ce qui est sauvegardé
 
-- `database.dump` : dump PostgreSQL au format custom (`pg_dump`)
-- `uploads.tar.gz` : fichiers uploadés (`apps/backend/uploads`)
+- `database.dump` : dump complet de la base au format custom (`pg_dump`) — inclut utilisateurs, sessions, taxons, contributions, suggestions, historique admin
+- `uploads.tar.gz` : fichiers uploadés depuis le volume Docker `backend_uploads`
 - `manifest.json` : métadonnées horodatées
 
 ## Commandes
 
 ```bash
-npm run backup:db    # crée un backup daté dans backups/
-npm run restore:db   # restaure depuis un répertoire de backup
+npm run backup:db                             # crée un backup dans backups/<timestamp>/
+npm run restore:db -- backups/20260620T120000Z  # restaure depuis un répertoire de backup
 ```
 
-Les scripts sous-jacents sont `scripts/backup-db.sh` et `scripts/restore-db.sh`.
+Les scripts sous-jacents sont [`scripts/backup-db.sh`](../scripts/backup-db.sh) et [`scripts/restore-db.sh`](../scripts/restore-db.sh).
 
-### Variables requises
+### Variables lues automatiquement
 
-- `DATABASE_URL` : connexion PostgreSQL à sauvegarder/restaurer
+Les credentials sont lus depuis `.env` à la racine du projet (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`). Aucune variable à passer manuellement.
 
-### Variables optionnelles
+### Variable optionnelle
 
 - `BACKUP_ROOT` : répertoire racine des backups (défaut : `./backups`)
-- `UPLOADS_DIR` : répertoire des uploads (défaut : `apps/backend/uploads`)
 
 ### Exemple de restauration
 
 ```bash
-DATABASE_URL="postgresql://..." npm run restore:db -- ./backups/20260524T120000Z
+npm run restore:db -- backups/20260620T120000Z
 ```
 
 ## Objectifs
