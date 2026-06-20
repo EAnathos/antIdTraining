@@ -22,6 +22,11 @@ import {
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { MAX_SUGGESTIONS_PER_USER } from '../lib/suggestionConstants.js'
+import { enforceIpRateLimit } from '../lib/rateLimit.js'
+import {
+  FILE_UPLOAD_MAX_ATTEMPTS,
+  FILE_UPLOAD_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 
 ensureUploadsDir()
 
@@ -262,6 +267,14 @@ entryProposalsRouter.post(
       throw new AppError(401, 'Non autorisé.')
     }
 
+    await enforceIpRateLimit(
+      'proposal-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de propositions depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = proposalSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -342,6 +355,14 @@ entryProposalsRouter.patch(
   uploadProposalImages,
   asyncHandler(async (req, res) => {
     if (!req.user) throw new AppError(401, 'Non autorisé.')
+
+    await enforceIpRateLimit(
+      'proposal-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de propositions depuis cette adresse IP. Réessayez plus tard.',
+    )
 
     const id = req.params.id as string
 

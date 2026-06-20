@@ -12,14 +12,7 @@ import {
   sendLoginNotificationEmail,
   sendVerificationEmail,
 } from '../lib/mail.js'
-import {
-  LOGIN_MAX_ATTEMPTS,
-  LOGIN_WINDOW_MS,
-  REGISTRATION_MAX_ATTEMPTS,
-  REGISTRATION_WINDOW_MS,
-  VERIFICATION_MAX_ATTEMPTS,
-  VERIFICATION_WINDOW_MS,
-} from '../lib/rateLimitConfig.js'
+import { LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS } from '../lib/rateLimitConfig.js'
 
 function buildUserSummary(user: {
   id: string
@@ -120,14 +113,6 @@ export async function registerUser(
   password: string,
   ip?: string | null,
 ) {
-  await enforceIpRateLimit(
-    'registration',
-    ip,
-    REGISTRATION_WINDOW_MS,
-    REGISTRATION_MAX_ATTEMPTS,
-    'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
-  )
-
   const existingUser = await prisma.user.findUnique({ where: { username } })
   if (existingUser) {
     throw new AppError(409, 'Ce nom d’utilisateur est déjà utilisé.')
@@ -184,14 +169,6 @@ export async function verifyRegistrationEmail(
   activationToken: string,
   ip?: string | null,
 ) {
-  await enforceIpRateLimit(
-    'email-verification',
-    ip,
-    ACTIVATION_TOKEN_EXPIRY_MS,
-    VERIFICATION_MAX_ATTEMPTS,
-    'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
-  )
-
   const tokenHash = hashToken(activationToken)
   const user = await prisma.user.findFirst({
     where: { emailVerificationToken: tokenHash },

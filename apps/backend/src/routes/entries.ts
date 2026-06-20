@@ -27,6 +27,11 @@ import {
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
 import { cuidSchema } from '../lib/zodUtils.js'
+import { enforceIpRateLimit } from '../lib/rateLimit.js'
+import {
+  FILE_UPLOAD_MAX_ATTEMPTS,
+  FILE_UPLOAD_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 
 ensureUploadsDir()
 
@@ -261,6 +266,14 @@ entriesRouter.post(
   '/',
   uploadEntryImages,
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'admin-entry-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de créations depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = entrySchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')

@@ -150,13 +150,6 @@ describe('auth service', () => {
       message: 'Ce nom d’utilisateur est déjà utilisé.',
     })
 
-    expect(commonMocks.enforceIpRateLimit).toHaveBeenCalledWith(
-      'registration',
-      '127.0.0.1',
-      24 * 60 * 60 * 1000,
-      5,
-      'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
-    )
     expect(prismaMocks.user.create).not.toHaveBeenCalled()
     expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith(
       'registration',
