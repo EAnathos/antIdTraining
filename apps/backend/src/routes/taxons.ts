@@ -15,6 +15,7 @@ import {
   updateTaxon,
 } from '../services/taxons.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 export const publicTaxonsRouter = Router()
 export const adminTaxonsRouter = Router()
@@ -116,12 +117,16 @@ adminTaxonsRouter.post(
 adminTaxonsRouter.put(
   '/:id',
   asyncHandler(async (req, res) => {
+    const id = cuidSchema.safeParse(req.params.id)
+    if (!id.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = taxonSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
     }
 
-    const updated = await updateTaxon(req.params.id as string, parsed.data)
+    const updated = await updateTaxon(id.data, parsed.data)
     await recordAdminAudit(req, {
       action: 'Taxon modifié',
       detail: formatTaxonLabel(updated),
@@ -137,7 +142,11 @@ adminTaxonsRouter.put(
 adminTaxonsRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const deletedTaxon = await deleteTaxon(req.params.id as string)
+    const id = cuidSchema.safeParse(req.params.id)
+    if (!id.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+    const deletedTaxon = await deleteTaxon(id.data)
 
     const taxonLabel = [
       deletedTaxon.subfamily,

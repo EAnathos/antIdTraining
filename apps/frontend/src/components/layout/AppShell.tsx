@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { AUTH_THEME_KEY } from '../../lib/authKeys'
+import { useAuth } from '../../lib/authContext'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -21,25 +23,13 @@ function adminNavClass({ isActive }: { isActive: boolean }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { role } = useAuth()
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [installPromptEvent, setInstallPromptEvent] =
     useState<BeforeInstallPromptEvent | null>(null)
-  const [authState, setAuthState] = useState(() => ({
-    token:
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null,
-    role:
-      typeof window !== 'undefined'
-        ? (window.localStorage.getItem('antidtraining-auth-role') as
-            | 'ADMIN'
-            | 'USER'
-            | null)
-        : null,
-  }))
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -47,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     const applyTheme = () => {
-      const stored = window.localStorage.getItem('antidtraining-theme')
+      const stored = window.localStorage.getItem(AUTH_THEME_KEY)
       const themePreference =
         stored === 'light' || stored === 'dark' || stored === 'system'
           ? stored
@@ -77,26 +67,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     mediaQuery.addEventListener('change', applyTheme)
     return () => mediaQuery.removeEventListener('change', applyTheme)
-  }, [])
-
-  useEffect(() => {
-    const syncAuthState = () => {
-      setAuthState({
-        token: window.localStorage.getItem('antidtraining-auth-token'),
-        role: window.localStorage.getItem('antidtraining-auth-role') as
-          | 'ADMIN'
-          | 'USER'
-          | null,
-      })
-    }
-
-    window.addEventListener('antidtraining-auth-changed', syncAuthState)
-    window.addEventListener('storage', syncAuthState)
-
-    return () => {
-      window.removeEventListener('antidtraining-auth-changed', syncAuthState)
-      window.removeEventListener('storage', syncAuthState)
-    }
   }, [])
 
   useEffect(() => {
@@ -248,9 +218,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="app-nav__group app-nav__group--push-right">
-              {authState.token ? (
+              {role ? (
                 <>
-                  {authState.role === 'ADMIN' && (
+                  {role === 'ADMIN' && (
                     <span className="hidden sm:contents">
                       <NavLink className={adminNavClass} to="/admin">
                         Admin
@@ -272,7 +242,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => void installApp()}
                 >
-                  Installer l’app
+                  Installer l'app
                 </button>
               )}
             </div>

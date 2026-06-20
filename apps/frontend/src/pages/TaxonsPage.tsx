@@ -1088,91 +1088,89 @@ export function TaxonsPage() {
       {!isLoadingTaxons && (
         <>
           {treeMode ? (
-            <div className="mt-4 tree-landscape-wrap">
-              <div className="tree-landscape-inner">
-                <TreeView
-                  root={buildTreeFromTaxons(filteredTaxons)}
-                  onNodeClick={(node, coords) => {
-                    // find representative taxon for the node or its descendants
-                    function findTaxon(n: TreeNode | undefined): Taxon | null {
-                      if (!n) return null
-                      if (n.taxon) return n.taxon
-                      if (!n.children) return null
-                      for (const c of n.children) {
-                        const r = findTaxon(c)
-                        if (r) return r
-                      }
-                      return null
+            <div className="mt-4 h-[80dvh] w-full overflow-hidden rounded-[var(--app-radius-xl)] border border-[color:var(--app-border)]">
+              <TreeView
+                root={buildTreeFromTaxons(filteredTaxons)}
+                onNodeClick={(node, coords) => {
+                  // find representative taxon for the node or its descendants
+                  function findTaxon(n: TreeNode | undefined): Taxon | null {
+                    if (!n) return null
+                    if (n.taxon) return n.taxon
+                    if (!n.children) return null
+                    for (const c of n.children) {
+                      const r = findTaxon(c)
+                      if (r) return r
                     }
+                    return null
+                  }
 
-                    const rep = node.taxon ?? findTaxon(node)
-                    if (!rep) return
+                  const rep = node.taxon ?? findTaxon(node)
+                  if (!rep) return
 
-                    if (node.depth === 1) {
-                      openSelectedDetail(
-                        rep,
-                        'subfamily',
-                        node.name,
-                        rep.levelDetails.subfamily,
-                        coords,
-                      )
-                    } else if (node.depth === 2) {
-                      // Tribe: map to subfamily detail (no tribe-level detail available)
-                      openSelectedDetail(
-                        rep,
-                        'subfamily',
-                        node.name,
-                        rep.levelDetails.subfamily,
-                        coords,
-                      )
-                    } else if (node.depth === 3) {
-                      openSelectedDetail(
-                        rep,
-                        'genus',
-                        node.name,
-                        rep.levelDetails.genus,
-                        coords,
-                      )
-                    } else if (node.depth === 4) {
-                      openSelectedDetail(
-                        rep,
-                        'subgenus',
-                        node.name,
-                        rep.levelDetails.subgenus ?? {
-                          description: null,
-                          sizeWorker: null,
-                          sizeQueen: null,
-                          sizeMale: null,
-                          criteria: [],
-                        },
-                        coords,
-                      )
-                    } else if (node.depth === 5) {
-                      openSelectedDetail(
-                        rep,
-                        'speciesGroup',
-                        node.name,
-                        rep.levelDetails.speciesGroup ?? {
-                          description: null,
-                          sizeWorker: null,
-                          sizeQueen: null,
-                          sizeMale: null,
-                          criteria: [],
-                        },
-                        coords,
-                      )
-                    } else {
-                      openSelectedDetail(
-                        rep,
-                        'species',
-                        rep.species,
-                        rep.levelDetails.species,
-                        coords,
-                      )
-                    }
-                  }}
-                />
-              </div>
+                  if (node.depth === 1) {
+                    openSelectedDetail(
+                      rep,
+                      'subfamily',
+                      node.name,
+                      rep.levelDetails.subfamily,
+                      coords,
+                    )
+                  } else if (node.depth === 2) {
+                    // Tribe: map to subfamily detail (no tribe-level detail available)
+                    openSelectedDetail(
+                      rep,
+                      'subfamily',
+                      node.name,
+                      rep.levelDetails.subfamily,
+                      coords,
+                    )
+                  } else if (node.depth === 3) {
+                    openSelectedDetail(
+                      rep,
+                      'genus',
+                      node.name,
+                      rep.levelDetails.genus,
+                      coords,
+                    )
+                  } else if (node.depth === 4) {
+                    openSelectedDetail(
+                      rep,
+                      'subgenus',
+                      node.name,
+                      rep.levelDetails.subgenus ?? {
+                        description: null,
+                        sizeWorker: null,
+                        sizeQueen: null,
+                        sizeMale: null,
+                        criteria: [],
+                      },
+                      coords,
+                    )
+                  } else if (node.depth === 5) {
+                    openSelectedDetail(
+                      rep,
+                      'speciesGroup',
+                      node.name,
+                      rep.levelDetails.speciesGroup ?? {
+                        description: null,
+                        sizeWorker: null,
+                        sizeQueen: null,
+                        sizeMale: null,
+                        criteria: [],
+                      },
+                      coords,
+                    )
+                  } else {
+                    openSelectedDetail(
+                      rep,
+                      'species',
+                      rep.species,
+                      rep.levelDetails.species,
+                      coords,
+                    )
+                  }
+                }}
+              />
             </div>
           ) : (
             <div

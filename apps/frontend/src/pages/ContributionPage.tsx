@@ -1,9 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { api } from '../lib/api'
+import {
+  AUTH_CHANGED_EVENT,
+  AUTH_ROLE_KEY,
+  AUTH_USERNAME_KEY,
+} from '../lib/authKeys'
 import { resolveImageUrl } from '../lib/imageUrl'
 import { getResponsiveImageProps } from '../lib/image'
 import type { EntryProposal, Suggestion } from '../types/models'
+
+type StatusFilter = 'all' | 'pending' | 'processed' | 'rejected'
+
+function statusLabel(status: string): string {
+  if (status === 'PENDING') return 'En attente'
+  if (status === 'ACCEPTED') return 'Accepté'
+  if (status === 'REJECTED') return 'Refusé'
+  return status
+}
 
 const departmentOptions = [
   { code: '01', name: 'Ain' },
@@ -167,158 +181,72 @@ const emptyEntryForm: EntryForm = {
   caste: '',
 }
 
-export function ContributionPage() {
-  const [isConnected, setIsConnected] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      !!window.localStorage.getItem('antidtraining-auth-token'),
-  )
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [view, setView] = useState<'contributions' | 'entry' | 'suggestion'>(
-    'contributions',
-  )
-  const [proposals, setProposals] = useState<EntryProposal[]>([])
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [counts, setCounts] = useState({
-    proposalCount: 0,
-    proposalLimit: 20,
-    suggestionCount: 0,
-    suggestionLimit: 10,
-  })
-  const [subfamilies, setSubfamilies] = useState<string[]>([])
+function ProposalFormFields({
+  form,
+  onPatch,
+  onFiles,
+  subfamilies,
+  isSubmitting,
+  onSubmit,
+  submitLabel,
+  imageRequired = false,
+  onCancel,
+  existingImages,
+  deletedImageIds,
+  onToggleDeleteImage,
+}: {
+  form: EntryForm
+  onPatch: (patch: Partial<EntryForm>) => void
+  onFiles: (f: FileList | null) => void
+  subfamilies: string[]
+  isSubmitting: boolean
+  onSubmit: () => void
+  submitLabel: string
+  imageRequired?: boolean
+  onCancel?: () => void
+  existingImages?: { id: string; imageUrl: string }[]
+  deletedImageIds?: Set<string>
+  onToggleDeleteImage?: (id: string) => void
+}) {
   const [generaOptions, setGeneraOptions] = useState<string[]>([])
   const [subgenusOptions, setSubgenusOptions] = useState<string[]>([])
   const [speciesGroupOptions, setSpeciesGroupOptions] = useState<string[]>([])
   const [speciesOptions, setSpeciesOptions] = useState<string[]>([])
-  const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
-  const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntryForm)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [proposalPreview, setProposalPreview] = useState<{
-    images: string[]
-    index: number
-    alt: string
-  } | null>(null)
-  const suggestionFormRef = useRef<HTMLFormElement | null>(null)
-
-  const token =
-    typeof window !== 'undefined'
-      ? window.localStorage.getItem('antidtraining-auth-token')
-      : null
-  const username =
-    typeof window !== 'undefined'
-      ? (window.localStorage.getItem('antidtraining-auth-username') ?? '')
-      : ''
-
-  const authApi = useMemo(
-    () =>
-      api.create({
-        baseURL: '/api',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }),
-    [token],
-  )
-
-  function patchEntryForm(patch: Partial<EntryForm>) {
-    setEntryForm({ ...entryForm, ...patch })
-  }
-
-  async function handleSpeciesSelectChange(e: ChangeEvent<HTMLSelectElement>) {
-    const value = e.target.value
-    const genus = entryForm.genus
-    const baseForm = { ...entryForm, species: value }
-    setEntryForm(baseForm)
-
-    if (!value || !genus) return
-
-    try {
-      const { data } = await api.get<SpeciesMetadata>(
-        '/taxons/species-metadata',
-        {
-          params: { genus, species: value },
-        },
-      )
-      setEntryForm({
-        ...baseForm,
-        subgenus: data.subgenus ?? '',
-        speciesGroup: data.speciesGroup ?? '',
-      })
-    } catch {
-      // ignore errors
-    }
-  }
 
   useEffect(() => {
-    const syncAuthState = () => {
-      setIsConnected(!!window.localStorage.getItem('antidtraining-auth-token'))
-    }
-
-    window.addEventListener('antidtraining-auth-changed', syncAuthState)
-    window.addEventListener('storage', syncAuthState)
-
-    return () => {
-      window.removeEventListener('antidtraining-auth-changed', syncAuthState)
-      window.removeEventListener('storage', syncAuthState)
-    }
-  }, [])
-
-  useEffect(() => {
-    void api
-      .get<string[]>('/taxons/subfamilies')
-      .then(({ data }) => setSubfamilies(data))
-      .catch(() => setSubfamilies([]))
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!entryForm.subfamily) {
+    if (!form.subfamily) {
       setGeneraOptions([])
-      return () => {
-        cancelled = true
-      }
+      return
     }
-
+    let cancelled = false
     void api
       .get<string[]>('/taxons/genera', {
-        params: { subfamily: entryForm.subfamily },
+        params: { subfamily: form.subfamily },
       })
       .then(({ data }) => {
-        if (!cancelled) {
-          setGeneraOptions(data)
-        }
+        if (!cancelled) setGeneraOptions(data)
       })
       .catch(() => {
-        if (!cancelled) {
-          setGeneraOptions([])
-        }
+        if (!cancelled) setGeneraOptions([])
       })
-
     return () => {
       cancelled = true
     }
-  }, [entryForm.subfamily])
+  }, [form.subfamily])
 
   useEffect(() => {
-    let cancelled = false
-    if (!entryForm.genus) {
+    if (!form.genus) {
       setSpeciesOptions([])
       setSubgenusOptions([])
       setSpeciesGroupOptions([])
-      return () => {
-        cancelled = true
-      }
+      return
     }
-
+    let cancelled = false
     void Promise.all([
-      api.get<string[]>('/taxons/species', {
-        params: { genus: entryForm.genus },
-      }),
-      api.get<string[]>('/taxons/subgenera', {
-        params: { genus: entryForm.genus },
-      }),
+      api.get<string[]>('/taxons/species', { params: { genus: form.genus } }),
+      api.get<string[]>('/taxons/subgenera', { params: { genus: form.genus } }),
       api.get<string[]>('/taxons/species-groups', {
-        params: { genus: entryForm.genus },
+        params: { genus: form.genus },
       }),
     ])
       .then(([speciesRes, subgenusRes, groupRes]) => {
@@ -335,14 +263,351 @@ export function ContributionPage() {
           setSpeciesGroupOptions([])
         }
       })
-
     return () => {
       cancelled = true
     }
-  }, [entryForm.genus])
+  }, [form.genus])
+
+  async function handleSpeciesChange(e: ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
+    const genus = form.genus
+    onPatch({ species: value })
+    if (!value || !genus) return
+    try {
+      const { data } = await api.get<SpeciesMetadata>(
+        '/taxons/species-metadata',
+        { params: { genus, species: value } },
+      )
+      onPatch({
+        species: value,
+        subgenus: data.subgenus ?? '',
+        speciesGroup: data.speciesGroup ?? '',
+      })
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit()
+      }}
+    >
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
+          Sélection du taxon
+        </h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          <select
+            className="ui-select"
+            value={form.subfamily}
+            onChange={(e) =>
+              onPatch({
+                subfamily: e.target.value,
+                genus: '',
+                species: '',
+                subgenus: '',
+                speciesGroup: '',
+              })
+            }
+            required
+          >
+            <option value="">Sous-famille</option>
+            {subfamilies.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.genus}
+            onChange={(e) =>
+              onPatch({
+                genus: e.target.value,
+                species: '',
+                subgenus: '',
+                speciesGroup: '',
+              })
+            }
+            disabled={!form.subfamily}
+          >
+            <option value="">Genre (optionnel)</option>
+            {generaOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.subgenus}
+            onChange={(e) => onPatch({ subgenus: e.target.value, species: '' })}
+            disabled={!form.genus}
+          >
+            <option value="">Sous-genre (optionnel)</option>
+            {subgenusOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.speciesGroup}
+            onChange={(e) =>
+              onPatch({ speciesGroup: e.target.value, species: '' })
+            }
+            disabled={!form.genus}
+          >
+            <option value="">Groupe d'espèce (optionnel)</option>
+            {speciesGroupOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.species}
+            onChange={handleSpeciesChange}
+            disabled={!form.genus}
+          >
+            <option value="">Espèce (optionnel)</option>
+            {speciesOptions.map((v) => (
+              <option key={`${form.genus}-${v}`} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="ui-select"
+            value={form.caste}
+            onChange={(e) =>
+              onPatch({ caste: e.target.value as EntryCaste | '' })
+            }
+            required
+          >
+            <option value="">Choisir la caste</option>
+            <option value="WORKER">Ouvrière</option>
+            <option value="QUEEN">Reine</option>
+            <option value="MALE">Mâle</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="surface-panel surface-panel--solid p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
+          Détails de l'observation
+        </h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          <input
+            className="ui-select"
+            list="department-suggestions"
+            placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
+            value={form.department}
+            onChange={(e) => onPatch({ department: e.target.value })}
+            onBlur={(e) =>
+              onPatch({ department: parseDepartmentInput(e.target.value) })
+            }
+            required
+          />
+          <datalist id="department-suggestions">
+            {departmentOptions.map((d) => (
+              <option key={d.code} value={`${d.code} - ${d.name}`} />
+            ))}
+          </datalist>
+          <input
+            className="ui-select"
+            type="date"
+            value={form.observedAt}
+            onChange={(e) => onPatch({ observedAt: e.target.value })}
+            required
+          />
+          <div className="space-y-1">
+            <textarea
+              className="ui-input min-h-[80px] resize-y"
+              placeholder="Biotope (ex: forêt mixte, prairie sèche...)"
+              value={form.biotope}
+              maxLength={50}
+              onChange={(e) => onPatch({ biotope: e.target.value })}
+              required
+            />
+            <p className="text-right text-xs text-[color:var(--app-text-soft)]">
+              {form.biotope.length}/50
+            </p>
+          </div>
+          <input
+            className="ui-input"
+            placeholder="Crédit photo (votre pseudo par défaut)"
+            value={form.photoCredit}
+            minLength={3}
+            required
+            onChange={(e) => onPatch({ photoCredit: e.target.value })}
+          />
+          <div className="space-y-2 md:col-span-2">
+            {existingImages && existingImages.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-[color:var(--app-text-muted)]">
+                  Photos actuelles
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {existingImages.map((img) => {
+                    const isDeleted = deletedImageIds?.has(img.id)
+                    return (
+                      <div key={img.id} className="relative">
+                        <img
+                          src={resolveImageUrl(img.imageUrl)}
+                          alt="Photo actuelle"
+                          className={`h-16 w-16 rounded-lg border object-cover transition-opacity ${isDeleted ? 'opacity-30' : 'border-[color:var(--app-border)]'}`}
+                          loading="lazy"
+                          decoding="async"
+                          width={64}
+                          height={64}
+                        />
+                        <button
+                          type="button"
+                          className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold shadow ${isDeleted ? 'bg-[color:var(--app-surface-strong)] text-[color:var(--app-text)]' : 'bg-red-500 text-white'}`}
+                          onClick={() => onToggleDeleteImage?.(img.id)}
+                          title={
+                            isDeleted ? 'Annuler la suppression' : 'Supprimer'
+                          }
+                        >
+                          {isDeleted ? '↩' : '×'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <input
+                className="ui-input"
+                type="file"
+                accept="image/*"
+                multiple
+                required={imageRequired}
+                onChange={(e) => onFiles(e.target.files)}
+              />
+              <p className="text-xs text-[color:var(--app-text-soft)]">
+                {imageRequired
+                  ? "Au moins 1 photo requise · 8 Mo max par fichier (jusqu'à 3)."
+                  : "Laisser vide pour conserver les photos actuelles · 8 Mo max (jusqu'à 3)."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {onCancel && (
+          <button type="button" className="ui-button" onClick={onCancel}>
+            Annuler
+          </button>
+        )}
+        <button
+          type="submit"
+          className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Envoi...' : submitLabel}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export function ContributionPage() {
+  const [isConnected, setIsConnected] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      !!window.localStorage.getItem(AUTH_ROLE_KEY),
+  )
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [view, setView] = useState<'contributions' | 'entry' | 'suggestion'>(
+    'contributions',
+  )
+  const [proposals, setProposals] = useState<EntryProposal[]>([])
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [counts, setCounts] = useState({
+    proposalCount: 0,
+    proposalLimit: 20,
+    suggestionCount: 0,
+    suggestionLimit: 10,
+  })
+  const [subfamilies, setSubfamilies] = useState<string[]>([])
+  const [entryFiles, setEntryFiles] = useState<FileList | null>(null)
+  const [entryForm, setEntryForm] = useState<EntryForm>(() => ({
+    ...emptyEntryForm,
+    photoCredit:
+      typeof window !== 'undefined'
+        ? (window.localStorage.getItem(AUTH_USERNAME_KEY) ?? '')
+        : '',
+  }))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [proposalPreview, setProposalPreview] = useState<{
+    images: string[]
+    index: number
+    alt: string
+  } | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+
+  const [editingProposalId, setEditingProposalId] = useState<string | null>(
+    null,
+  )
+  const [editingProposalForm, setEditingProposalForm] =
+    useState<EntryForm>(emptyEntryForm)
+  const [editingProposalFiles, setEditingProposalFiles] =
+    useState<FileList | null>(null)
+  const [deletedImageIds, setDeletedImageIds] = useState<Set<string>>(new Set())
+  const [editingSuggestionId, setEditingSuggestionId] = useState<string | null>(
+    null,
+  )
+  const [editingSuggestionTitle, setEditingSuggestionTitle] = useState('')
+  const [editingSuggestionMessage, setEditingSuggestionMessage] = useState('')
+  const [newSuggestionTitle, setNewSuggestionTitle] = useState('')
+  const [newSuggestionMessage, setNewSuggestionMessage] = useState('')
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+
+  const username =
+    typeof window !== 'undefined'
+      ? (window.localStorage.getItem(AUTH_USERNAME_KEY) ?? '')
+      : ''
+
+  const authApi = useMemo(() => api.create({ baseURL: '/api' }), [])
+
+  function patchEntryForm(patch: Partial<EntryForm>) {
+    setEntryForm((f) => ({ ...f, ...patch }))
+  }
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      setIsConnected(!!window.localStorage.getItem(AUTH_ROLE_KEY))
+    }
+
+    window.addEventListener(AUTH_CHANGED_EVENT, syncAuthState)
+    window.addEventListener('storage', syncAuthState)
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, syncAuthState)
+      window.removeEventListener('storage', syncAuthState)
+    }
+  }, [])
+
+  useEffect(() => {
+    void api
+      .get<string[]>('/taxons/subfamilies')
+      .then(({ data }) => setSubfamilies(data))
+      .catch(() => setSubfamilies([]))
+  }, [])
 
   const load = useCallback(async () => {
-    if (!token) return
+    if (!isConnected) return
     setLoading(true)
     try {
       const [contribRes, countsRes] = await Promise.all([
@@ -369,29 +634,139 @@ export function ContributionPage() {
     } finally {
       setLoading(false)
     }
-  }, [authApi, token])
+  }, [authApi, isConnected])
 
   useEffect(() => {
     if (view !== 'contributions') return
     void load()
   }, [view, load])
 
+  const filteredProposals = useMemo(() => {
+    if (statusFilter === 'pending')
+      return proposals.filter((p) => p.status === 'PENDING')
+    if (statusFilter === 'processed')
+      return proposals.filter((p) => p.status === 'ACCEPTED')
+    if (statusFilter === 'rejected')
+      return proposals.filter((p) => p.status === 'REJECTED')
+    return proposals
+  }, [proposals, statusFilter])
+
+  const filteredSuggestions = useMemo(() => {
+    if (statusFilter === 'pending')
+      return suggestions.filter((s) => s.status === 'PENDING')
+    if (statusFilter === 'processed')
+      return suggestions.filter((s) => s.status === 'ACCEPTED')
+    if (statusFilter === 'rejected')
+      return suggestions.filter((s) => s.status === 'REJECTED')
+    return suggestions
+  }, [suggestions, statusFilter])
+
+  const statusCounts = useMemo(() => {
+    let pending = 0,
+      processed = 0,
+      rejected = 0
+    for (const x of [...proposals, ...suggestions]) {
+      if (x.status === 'PENDING') pending++
+      else if (x.status === 'ACCEPTED') processed++
+      else if (x.status === 'REJECTED') rejected++
+    }
+    return {
+      all: proposals.length + suggestions.length,
+      pending,
+      processed,
+      rejected,
+    }
+  }, [proposals, suggestions])
+
+  async function submitEditSuggestion(id: string) {
+    setIsEditSubmitting(true)
+    try {
+      const { data } = await authApi.patch<Suggestion>(`/suggestions/${id}`, {
+        title: editingSuggestionTitle.trim() || null,
+        message: editingSuggestionMessage,
+      })
+      setSuggestions((prev) => prev.map((s) => (s.id === id ? data : s)))
+      setEditingSuggestionId(null)
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de la modification.',
+      )
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
+  async function submitEditProposal(id: string) {
+    setIsEditSubmitting(true)
+    try {
+      const formData = new FormData()
+      const taxonLevel = editingProposalForm.species
+        ? 'SPECIES'
+        : editingProposalForm.genus
+          ? 'GENUS'
+          : 'SUBFAMILY'
+      const taxonValue = editingProposalForm.species
+        ? editingProposalForm.species.trim()
+        : editingProposalForm.genus
+          ? editingProposalForm.genus.trim()
+          : editingProposalForm.subfamily.trim()
+
+      formData.append('taxonLevel', taxonLevel)
+      formData.append('taxonValue', taxonValue)
+      if (editingProposalForm.species) {
+        formData.append('taxonGenus', editingProposalForm.genus.trim())
+      }
+      formData.append('subgenus', editingProposalForm.subgenus.trim())
+      formData.append('speciesGroup', editingProposalForm.speciesGroup.trim())
+      formData.append(
+        'department',
+        parseDepartmentInput(editingProposalForm.department),
+      )
+      formData.append('observedAt', editingProposalForm.observedAt)
+      formData.append('biotope', editingProposalForm.biotope.trim())
+      formData.append(
+        'photoCredit',
+        editingProposalForm.photoCredit.trim() || username,
+      )
+      formData.append('caste', editingProposalForm.caste || 'WORKER')
+      if (editingProposalFiles) {
+        Array.from(editingProposalFiles).forEach((f) =>
+          formData.append('images', f),
+        )
+      }
+      formData.append('deleteImageIds', JSON.stringify([...deletedImageIds]))
+
+      const { data } = await authApi.patch<EntryProposal>(
+        `/entry-proposals/${id}`,
+        formData,
+      )
+      setProposals((prev) => prev.map((p) => (p.id === id ? data : p)))
+      setEditingProposalId(null)
+      setEditingProposalFiles(null)
+      setDeletedImageIds(new Set())
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de la modification.',
+      )
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
   async function submitSuggestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
-    const formElement = suggestionFormRef.current
-    if (!formElement) {
-      setMessage('Impossible de retrouver le formulaire de suggestion.')
-      return
-    }
-    const form = new FormData(formElement)
     try {
       await api.post('/suggestions', {
-        name: username || null,
-        email: null,
-        message: String(form.get('message') ?? '').trim(),
+        title: newSuggestionTitle.trim() || null,
+        message: newSuggestionMessage.trim(),
       })
-      formElement.reset()
+      setNewSuggestionTitle('')
+      setNewSuggestionMessage('')
       await load()
       setView('contributions')
       setMessage('Suggestion envoyée.')
@@ -399,17 +774,22 @@ export function ContributionPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Impossible d’envoyer la suggestion.',
+          : "Impossible d'envoyer la suggestion.",
       )
     }
   }
 
-  async function submitProposal(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function submitProposal() {
     setMessage('')
     setIsSubmitting(true)
 
     try {
+      if (!entryFiles || entryFiles.length === 0) {
+        setMessage('Au moins une photo est requise.')
+        setIsSubmitting(false)
+        return
+      }
+
       const formData = new FormData()
       const taxonLevel = entryForm.species
         ? 'SPECIES'
@@ -443,7 +823,7 @@ export function ContributionPage() {
 
       await authApi.post('/entry-proposals', formData)
 
-      setEntryForm(emptyEntryForm)
+      setEntryForm({ ...emptyEntryForm, photoCredit: username })
       setEntryFiles(null)
       await load()
       setView('contributions')
@@ -452,7 +832,7 @@ export function ContributionPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Impossible d’envoyer la proposition.',
+          : "Impossible d'envoyer la proposition.",
       )
     } finally {
       setIsSubmitting(false)
@@ -480,19 +860,19 @@ export function ContributionPage() {
         </h2>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:justify-end">
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'contributions' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'contributions' ? 'nav-action--active' : ''}`}
             onClick={() => setView('contributions')}
           >
             Mes contributions
           </button>
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'entry' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'entry' ? 'nav-action--active' : ''}`}
             onClick={() => setView('entry')}
           >
             Proposer une entrée
           </button>
           <button
-            className={`ui-tab w-full text-left sm:w-auto ${view === 'suggestion' ? 'ui-tab--active' : ''}`}
+            className={`nav-action w-full sm:w-auto ${view === 'suggestion' ? 'nav-action--active' : ''}`}
             onClick={() => setView('suggestion')}
           >
             Suggestion
@@ -507,22 +887,44 @@ export function ContributionPage() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
               <p className="text-[color:var(--app-text-muted)]">
-                Entrées proposées
+                Entrées en attente
               </p>
               <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.proposalCount}/{counts.proposalLimit}
               </p>
             </div>
             <div className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3">
-              <p className="text-[color:var(--app-text-muted)]">Suggestions</p>
+              <p className="text-[color:var(--app-text-muted)]">
+                Suggestions en attente
+              </p>
               <p className="text-2xl font-bold text-[color:var(--app-text)]">
                 {counts.suggestionCount}/{counts.suggestionLimit}
               </p>
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-2 text-xs">
+            {(
+              [
+                ['all', 'Tous'],
+                ['pending', 'En attente'],
+                ['processed', 'Accepté'],
+                ['rejected', 'Refusé'],
+              ] as [StatusFilter, string][]
+            ).map(([f, label]) => (
+              <button
+                key={f}
+                className={`ui-tab ${statusFilter === f ? 'ui-tab--active' : ''}`}
+                onClick={() => setStatusFilter(f)}
+              >
+                {label}{' '}
+                <span className="ml-1 opacity-70">({statusCounts[f]})</span>
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-3">
-            {proposals.map((p) => (
+            {filteredProposals.map((p) => (
               <div
                 key={p.id}
                 className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
@@ -536,12 +938,77 @@ export function ContributionPage() {
                       {p.department} · {p.caste}
                     </p>
                   </div>
-                  <span
-                    className={`ui-chip text-xs ${p.status === 'PENDING' ? '' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
-                  >
-                    {p.status}
-                  </span>
+                  <div className="flex shrink-0 items-start gap-2">
+                    {p.status === 'PENDING' &&
+                      (editingProposalId === p.id ? (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => setEditingProposalId(null)}
+                        >
+                          Annuler
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => {
+                            setEditingProposalId(p.id)
+                            setEditingProposalForm({
+                              subfamily: p.subfamily,
+                              genus: p.genus ?? '',
+                              subgenus: p.subgenus ?? '',
+                              species: p.species ?? '',
+                              speciesGroup: p.speciesGroup ?? '',
+                              department: p.department,
+                              observedAt: p.observedAt.slice(0, 10),
+                              biotope: p.biotope,
+                              photoCredit: p.photoCredit,
+                              caste: (p.caste as EntryCaste | null) ?? '',
+                            })
+                            setEditingProposalFiles(null)
+                            setDeletedImageIds(new Set())
+                          }}
+                        >
+                          Modifier
+                        </button>
+                      ))}
+                    <span
+                      className={`ui-chip text-xs ${p.status === 'PENDING' ? '' : p.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                    >
+                      {statusLabel(p.status)}
+                    </span>
+                  </div>
                 </div>
+                {editingProposalId === p.id && (
+                  <div className="mt-3 border-t border-[color:var(--app-border)] pt-3">
+                    <ProposalFormFields
+                      form={editingProposalForm}
+                      onPatch={(patch) =>
+                        setEditingProposalForm((f) => ({ ...f, ...patch }))
+                      }
+                      onFiles={setEditingProposalFiles}
+                      subfamilies={subfamilies}
+                      isSubmitting={isEditSubmitting}
+                      onSubmit={() => void submitEditProposal(p.id)}
+                      submitLabel="Sauvegarder"
+                      onCancel={() => setEditingProposalId(null)}
+                      existingImages={p.images}
+                      deletedImageIds={deletedImageIds}
+                      onToggleDeleteImage={(id) =>
+                        setDeletedImageIds((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(id)) {
+                            next.delete(id)
+                          } else {
+                            next.add(id)
+                          }
+                          return next
+                        })
+                      }
+                    />
+                  </div>
+                )}
                 {p.images.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {p.images.map((image, index) => (
@@ -582,19 +1049,83 @@ export function ContributionPage() {
                 )}
               </div>
             ))}
-            {suggestions.map((s) => (
+            {filteredSuggestions.map((s) => (
               <div
                 key={s.id}
                 className="rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-3 text-sm"
               >
                 <div className="flex justify-between gap-3">
-                  <p className="whitespace-pre-wrap">{s.message}</p>
-                  <span
-                    className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'PROCESSED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
-                  >
-                    {s.status}
-                  </span>
+                  <div className="min-w-0">
+                    {s.title && (
+                      <p className="mb-1 font-medium text-[color:var(--app-text)]">
+                        {s.title}
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap text-[color:var(--app-text-muted)]">
+                      {s.message}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-start gap-2">
+                    {s.status === 'PENDING' &&
+                      (editingSuggestionId === s.id ? (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => setEditingSuggestionId(null)}
+                        >
+                          Annuler
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ui-tab text-xs"
+                          onClick={() => {
+                            setEditingSuggestionId(s.id)
+                            setEditingSuggestionTitle(s.title ?? '')
+                            setEditingSuggestionMessage(s.message)
+                          }}
+                        >
+                          Modifier
+                        </button>
+                      ))}
+                    <span
+                      className={`ui-chip text-xs ${s.status === 'PENDING' ? '' : s.status === 'ACCEPTED' ? 'ui-chip--success' : 'ui-chip--danger'}`}
+                    >
+                      {statusLabel(s.status)}
+                    </span>
+                  </div>
                 </div>
+                {editingSuggestionId === s.id && (
+                  <div className="mt-3 space-y-2 border-t border-[color:var(--app-border)] pt-3">
+                    <input
+                      className="ui-input"
+                      placeholder="Titre (optionnel)"
+                      value={editingSuggestionTitle}
+                      maxLength={150}
+                      onChange={(e) =>
+                        setEditingSuggestionTitle(e.target.value)
+                      }
+                    />
+                    <textarea
+                      className="ui-textarea"
+                      value={editingSuggestionMessage}
+                      minLength={10}
+                      maxLength={5000}
+                      onChange={(e) =>
+                        setEditingSuggestionMessage(e.target.value)
+                      }
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isEditSubmitting}
+                      onClick={() => void submitEditSuggestion(s.id)}
+                    >
+                      {isEditSubmitting ? 'Enregistrement...' : 'Sauvegarder'}
+                    </button>
+                  </div>
+                )}
                 {s.rejectionMessage && (
                   <div className="mt-2 rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-3 py-2 text-xs text-[color:var(--app-text-muted)]">
                     <p className="mb-1 font-semibold uppercase tracking-wide">
@@ -610,196 +1141,33 @@ export function ContributionPage() {
       )}
 
       {view === 'entry' && (
-        <form className="space-y-4" onSubmit={submitProposal}>
-          <div className="surface-panel surface-panel--solid p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
-              Sélection du taxon
-            </h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              <select
-                className="ui-select"
-                value={entryForm.subfamily}
-                onChange={(e) =>
-                  patchEntryForm({
-                    subfamily: e.target.value,
-                    genus: '',
-                    species: '',
-                    subgenus: '',
-                    speciesGroup: '',
-                  })
-                }
-                required
-              >
-                <option value="">Sous-famille</option>
-                {subfamilies.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.genus}
-                onChange={(e) =>
-                  patchEntryForm({
-                    genus: e.target.value,
-                    species: '',
-                    subgenus: '',
-                    speciesGroup: '',
-                  })
-                }
-                disabled={!entryForm.subfamily}
-              >
-                <option value="">Genre (optionnel)</option>
-                {generaOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.subgenus}
-                onChange={(e) =>
-                  patchEntryForm({ subgenus: e.target.value, species: '' })
-                }
-                disabled={!entryForm.genus}
-              >
-                <option value="">Sous-genre (optionnel)</option>
-                {subgenusOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.speciesGroup}
-                onChange={(e) =>
-                  patchEntryForm({ speciesGroup: e.target.value, species: '' })
-                }
-                disabled={!entryForm.genus}
-              >
-                <option value="">Groupe d'espèce (optionnel)</option>
-                {speciesGroupOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.species}
-                onChange={handleSpeciesSelectChange}
-                disabled={!entryForm.genus}
-              >
-                <option value="">Espèce (optionnel)</option>
-                {speciesOptions.map((value) => (
-                  <option key={`${entryForm.genus}-${value}`} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="ui-select"
-                value={entryForm.caste}
-                onChange={(e) =>
-                  patchEntryForm({ caste: e.target.value as EntryCaste | '' })
-                }
-                required
-              >
-                <option value="">Choisir la caste</option>
-                <option value="WORKER">Ouvrière</option>
-                <option value="QUEEN">Reine</option>
-                <option value="MALE">Mâle</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="surface-panel surface-panel--solid p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[color:var(--app-text-muted)]">
-              Détails de l'observation
-            </h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              <input
-                className="ui-select"
-                list="department-suggestions"
-                placeholder="Département (ex: 53 - Mayenne, 2A, 974)"
-                value={entryForm.department}
-                onChange={(e) => patchEntryForm({ department: e.target.value })}
-                onBlur={(e) =>
-                  patchEntryForm({
-                    department: parseDepartmentInput(e.target.value),
-                  })
-                }
-                required
-              />
-              <datalist id="department-suggestions">
-                {departmentOptions.map((department) => (
-                  <option
-                    key={department.code}
-                    value={`${department.code} - ${department.name}`}
-                  />
-                ))}
-              </datalist>
-              <input
-                className="ui-select"
-                type="date"
-                value={entryForm.observedAt}
-                onChange={(e) => patchEntryForm({ observedAt: e.target.value })}
-                required
-              />
-              <input
-                className="ui-input"
-                placeholder="Biotope"
-                value={entryForm.biotope}
-                onChange={(e) => patchEntryForm({ biotope: e.target.value })}
-                required
-              />
-              <input
-                className="ui-input"
-                placeholder="Crédit photo"
-                value={entryForm.photoCredit}
-                onChange={(e) =>
-                  patchEntryForm({ photoCredit: e.target.value })
-                }
-              />
-              <div className="space-y-1">
-                <input
-                  className="ui-input"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => setEntryFiles(e.target.files)}
-                />
-                <p className="text-xs text-[color:var(--app-text-soft)]">
-                  Images: 8 Mo max par fichier (jusqu'à 3).
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <button
-            className="ui-button ui-button--primary disabled:cursor-not-allowed disabled:opacity-60"
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Envoi...' : 'Envoyer la proposition'}
-          </button>
-        </form>
+        <ProposalFormFields
+          form={entryForm}
+          onPatch={patchEntryForm}
+          onFiles={setEntryFiles}
+          subfamilies={subfamilies}
+          isSubmitting={isSubmitting}
+          onSubmit={() => void submitProposal()}
+          submitLabel="Envoyer la proposition"
+          imageRequired
+        />
       )}
 
       {view === 'suggestion' && (
-        <form
-          ref={suggestionFormRef}
-          className="space-y-3"
-          onSubmit={submitSuggestion}
-        >
+        <form className="space-y-3" onSubmit={submitSuggestion}>
+          <input
+            className="ui-input"
+            placeholder="Titre (optionnel)"
+            maxLength={150}
+            value={newSuggestionTitle}
+            onChange={(e) => setNewSuggestionTitle(e.target.value)}
+          />
           <textarea
-            name="message"
             className="ui-textarea"
             placeholder="Votre suggestion"
             required
+            value={newSuggestionMessage}
+            onChange={(e) => setNewSuggestionMessage(e.target.value)}
           />
           <button
             className="ui-button ui-button--primary"

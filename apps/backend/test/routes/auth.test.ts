@@ -313,9 +313,9 @@ describe('authRouter', () => {
       },
     })
 
+    const fakeToken = 'a'.repeat(48)
     const { response, json } = await post('/api/auth/verify-email', {
-      email: 'new_user@example.com',
-      code: '123456',
+      token: fakeToken,
     })
 
     expect(response.status).toBe(200)
@@ -330,8 +330,7 @@ describe('authRouter', () => {
       },
     })
     expect((commonMocks as any).verifyRegistrationEmail).toHaveBeenCalledWith(
-      'new_user@example.com',
-      '123456',
+      fakeToken,
       '::ffff:127.0.0.1',
     )
   })
@@ -566,6 +565,7 @@ describe('authRouter', () => {
           passwordResetToken: null,
           passwordResetTokenExpiresAt: null,
           passwordResetRequestedAt: null,
+          tokenVersion: { increment: 1 },
         },
       }),
     )

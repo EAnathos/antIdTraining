@@ -1,0 +1,1 @@
+ALTER TABLE "Suggestion" ADD COLUMN IF NOT EXISTS "title" TEXT;

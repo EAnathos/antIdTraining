@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
+vi.mock('../../src/lib/rateLimit.js', () => ({
+  enforceIpRateLimit: vi.fn().mockResolvedValue(undefined),
+}))
 vi.mock('../../src/lib/encryption.js', () => ({
   decryptSensitiveText: mocks.decryptSensitiveText,
   encryptSensitiveText: mocks.encryptSensitiveText,
@@ -111,7 +114,7 @@ describe('entriesRouter', () => {
   it('lists entries with pagination and decrypted photo credit', async () => {
     ;(prismaMocks as any).observationEntry.findMany.mockResolvedValue([
       {
-        id: 'entry_1',
+        id: 'm87udhtl8kyafchoykmbx0nx',
         photoCredit: 'enc:alice',
         images: [],
       },
@@ -148,7 +151,7 @@ describe('entriesRouter', () => {
       species: 'rufibarbis',
     })
     ;(prismaMocks as any).observationEntry.create.mockResolvedValue({
-      id: 'entry_1',
+      id: 'm87udhtl8kyafchoykmbx0nx',
       subfamily: 'Formicinae',
       genus: 'Formica',
       species: 'rufibarbis',
@@ -203,7 +206,7 @@ describe('entriesRouter', () => {
       species: 'rubra',
     })
     ;(prismaMocks as any).observationEntry.update.mockResolvedValue({
-      id: 'entry_2',
+      id: 'jtyjsvwheii47f3lrykak02k',
       subfamily: 'Myrmicinae',
       genus: 'Myrmica',
       species: 'rubra',
@@ -212,23 +215,26 @@ describe('entriesRouter', () => {
       images: [],
     })
 
-    const response = await fetch(`${baseUrl}/api/entries/entry_2`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taxonLevel: 'SPECIES',
-        taxonValue: 'rubra',
-        taxonGenus: 'Myrmica',
-        subgenus: null,
-        speciesGroup: null,
-        department: '33',
-        observedAt: '2026-05-02T00:00:00.000Z',
-        biotope: 'Prairie',
-        photoCredit: 'bob',
-        size: '5-7 mm',
-        caste: 'WORKER',
-      }),
-    })
+    const response = await fetch(
+      `${baseUrl}/api/entries/jtyjsvwheii47f3lrykak02k`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taxonLevel: 'SPECIES',
+          taxonValue: 'rubra',
+          taxonGenus: 'Myrmica',
+          subgenus: null,
+          speciesGroup: null,
+          department: '33',
+          observedAt: '2026-05-02T00:00:00.000Z',
+          biotope: 'Prairie',
+          photoCredit: 'bob',
+          size: '5-7 mm',
+          caste: 'WORKER',
+        }),
+      },
+    )
 
     expect(response.status).toBe(200)
     expect(prismaMocks.observationEntry.update).toHaveBeenCalledTimes(1)
@@ -239,17 +245,37 @@ describe('entriesRouter', () => {
   it('reorders entry images', async () => {
     ;(prismaMocks as any).entryImage.findMany
       .mockResolvedValueOnce([
-        { id: 'img_1', entryId: 'entry_1', position: 0, createdAt: new Date() },
-        { id: 'img_2', entryId: 'entry_1', position: 1, createdAt: new Date() },
+        {
+          id: 'img_1',
+          entryId: 'm87udhtl8kyafchoykmbx0nx',
+          position: 0,
+          createdAt: new Date(),
+        },
+        {
+          id: 'img_2',
+          entryId: 'm87udhtl8kyafchoykmbx0nx',
+          position: 1,
+          createdAt: new Date(),
+        },
       ])
       .mockResolvedValueOnce([
-        { id: 'img_2', entryId: 'entry_1', position: 0, createdAt: new Date() },
-        { id: 'img_1', entryId: 'entry_1', position: 1, createdAt: new Date() },
+        {
+          id: 'img_2',
+          entryId: 'm87udhtl8kyafchoykmbx0nx',
+          position: 0,
+          createdAt: new Date(),
+        },
+        {
+          id: 'img_1',
+          entryId: 'm87udhtl8kyafchoykmbx0nx',
+          position: 1,
+          createdAt: new Date(),
+        },
       ])
     ;(prismaMocks as any).$transaction.mockResolvedValue(undefined)
 
     const response = await fetch(
-      `${baseUrl}/api/entries/entry_1/images/order`,
+      `${baseUrl}/api/entries/m87udhtl8kyafchoykmbx0nx/images/order`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -268,9 +294,12 @@ describe('entriesRouter', () => {
   it('returns 404 when deleting missing entry', async () => {
     ;(prismaMocks as any).observationEntry.findUnique.mockResolvedValue(null)
 
-    const response = await fetch(`${baseUrl}/api/entries/missing`, {
-      method: 'DELETE',
-    })
+    const response = await fetch(
+      `${baseUrl}/api/entries/dw5agfvayj927h26bzemp7zc`,
+      {
+        method: 'DELETE',
+      },
+    )
 
     const json = await response.json()
     expect(response.status).toBe(404)
@@ -279,20 +308,23 @@ describe('entriesRouter', () => {
 
   it('deletes an entry and removes uploaded files', async () => {
     ;(prismaMocks as any).observationEntry.findUnique.mockResolvedValue({
-      images: [{ imageUrl: '/uploads/entry_1.webp' }],
+      images: [{ imageUrl: '/uploads/m87udhtl8kyafchoykmbx0nx.webp' }],
     })
     ;(prismaMocks as any).observationEntry.delete.mockResolvedValue({
-      id: 'entry_1',
+      id: 'm87udhtl8kyafchoykmbx0nx',
     })
 
-    const response = await fetch(`${baseUrl}/api/entries/entry_1`, {
-      method: 'DELETE',
-    })
+    const response = await fetch(
+      `${baseUrl}/api/entries/m87udhtl8kyafchoykmbx0nx`,
+      {
+        method: 'DELETE',
+      },
+    )
 
     expect(response.status).toBe(204)
     expect(prismaMocks.observationEntry.delete).toHaveBeenCalledTimes(1)
     expect(mocks.deleteUploadFilesForImageUrl).toHaveBeenCalledWith(
-      '/uploads/entry_1.webp',
+      '/uploads/m87udhtl8kyafchoykmbx0nx.webp',
     )
     expect(mocks.recordAdminAudit).toHaveBeenCalledTimes(1)
     expect(mocks.invalidateGameEntryCacheSafely).toHaveBeenCalledTimes(1)

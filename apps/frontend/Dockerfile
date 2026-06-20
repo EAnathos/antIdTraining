@@ -14,8 +14,7 @@ ENV VITE_BACKEND_ORIGIN=$VITE_BACKEND_ORIGIN
 
 RUN npm run build
 
-FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-EXPOSE 80
+FROM alpine:3.21
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+CMD ["sh", "-c", "cp -r /app/dist/. /dist/"]

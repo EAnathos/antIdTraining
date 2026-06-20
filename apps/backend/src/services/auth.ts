@@ -1,10 +1,10 @@
-import { randomInt, createHash } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
-import { enforceIpRateLimit, resetIpRateLimit } from '../lib/rateLimit.js'
+import { resetIpRateLimit } from '../lib/rateLimit.js'
+import { generateToken, hashToken } from '../lib/token.js'
 import { UserRole } from '@prisma/client'
 import { emailSchema } from '../lib/zodUtils.js'
 import { logger } from '../lib/logger.js'
@@ -12,13 +12,6 @@ import {
   sendLoginNotificationEmail,
   sendVerificationEmail,
 } from '../lib/mail.js'
-
-const REGISTRATION_WINDOW_MS = 24 * 60 * 60 * 1000
-const REGISTRATION_MAX_ATTEMPTS = 5
-const LOGIN_WINDOW_MS = 15 * 60 * 1000
-const LOGIN_MAX_ATTEMPTS = 5
-const VERIFICATION_WINDOW_MS = 15 * 60 * 1000
-const VERIFICATION_MAX_ATTEMPTS = 10
 
 function buildUserSummary(user: {
   id: string
@@ -34,13 +27,7 @@ function buildUserSummary(user: {
   }
 }
 
-function generateVerificationCode() {
-  return randomInt(0, 1_000_000).toString().padStart(6, '0')
-}
-
-function hashVerificationCode(code: string) {
-  return createHash('sha256').update(code).digest('hex')
-}
+const ACTIVATION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000
 
 export async function loginAdmin(
   email: string,
@@ -57,29 +44,16 @@ export async function loginAdmin(
       role: true,
       emailVerifiedAt: true,
       passwordHash: true,
+      tokenVersion: true,
     },
   })
 
   if (!user) {
-    await enforceIpRateLimit(
-      'login',
-      ip,
-      LOGIN_WINDOW_MS,
-      LOGIN_MAX_ATTEMPTS,
-      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
-    )
     throw new AppError(401, 'Identifiants invalides.')
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash)
   if (!isValid) {
-    await enforceIpRateLimit(
-      'login',
-      ip,
-      LOGIN_WINDOW_MS,
-      LOGIN_MAX_ATTEMPTS,
-      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
-    )
     throw new AppError(401, 'Identifiants invalides.')
   }
 
@@ -93,7 +67,7 @@ export async function loginAdmin(
   await resetIpRateLimit('login', ip)
 
   const token = jwt.sign(
-    { userId: user.id, role: user.role },
+    { userId: user.id, role: user.role, tokenVersion: user.tokenVersion },
     config.jwtSecret,
     {
       expiresIn: '12h',
@@ -124,14 +98,6 @@ export async function registerUser(
   password: string,
   ip?: string | null,
 ) {
-  await enforceIpRateLimit(
-    'registration',
-    ip,
-    REGISTRATION_WINDOW_MS,
-    REGISTRATION_MAX_ATTEMPTS,
-    'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
-  )
-
   const existingUser = await prisma.user.findUnique({ where: { username } })
   if (existingUser) {
     throw new AppError(409, 'Ce nom d’utilisateur est déjà utilisé.')
@@ -145,10 +111,10 @@ export async function registerUser(
     throw new AppError(409, 'Cette adresse e-mail est déjà utilisée.')
   }
 
-  const verificationCode = generateVerificationCode()
-  const verificationCodeHash = hashVerificationCode(verificationCode)
-  const verificationCodeExpiresAt = new Date(
-    Date.now() + VERIFICATION_WINDOW_MS,
+  const activationToken = generateToken()
+  const activationTokenHash = hashToken(activationToken)
+  const activationTokenExpiresAt = new Date(
+    Date.now() + ACTIVATION_TOKEN_EXPIRY_MS,
   )
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
@@ -156,8 +122,8 @@ export async function registerUser(
       username,
       email: normalizedEmail,
       emailVerifiedAt: null,
-      emailVerificationCodeHash: verificationCodeHash,
-      emailVerificationCodeExpiresAt: verificationCodeExpiresAt,
+      emailVerificationToken: activationTokenHash,
+      emailVerificationTokenExpiresAt: activationTokenExpiresAt,
       passwordHash,
       role: UserRole.USER,
     },
@@ -170,11 +136,7 @@ export async function registerUser(
   })
 
   try {
-    await sendVerificationEmail(
-      user.email ?? normalizedEmail,
-      user.username,
-      verificationCode,
-    )
+    await sendVerificationEmail(normalizedEmail, user.username, activationToken)
   } catch (error) {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined)
     throw error
@@ -184,35 +146,24 @@ export async function registerUser(
 
   return {
     requiresEmailVerification: true as const,
-    email: user.email ?? normalizedEmail,
+    email: normalizedEmail,
   }
 }
 
 export async function verifyRegistrationEmail(
-  email: string,
-  code: string,
+  activationToken: string,
   ip?: string | null,
 ) {
-  await enforceIpRateLimit(
-    'email-verification',
-    ip,
-    VERIFICATION_WINDOW_MS,
-    VERIFICATION_MAX_ATTEMPTS,
-    'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
-  )
-
-  const normalizedEmail = emailSchema.parse(email)
-  const normalizedCode = code.trim()
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
+  const tokenHash = hashToken(activationToken)
+  const user = await prisma.user.findFirst({
+    where: { emailVerificationToken: tokenHash },
     select: {
       id: true,
       username: true,
       email: true,
       role: true,
       emailVerifiedAt: true,
-      emailVerificationCodeHash: true,
-      emailVerificationCodeExpiresAt: true,
+      emailVerificationTokenExpiresAt: true,
     },
   })
 
@@ -220,39 +171,36 @@ export async function verifyRegistrationEmail(
     !user ||
     !user.email ||
     user.emailVerifiedAt ||
-    !user.emailVerificationCodeHash ||
-    !user.emailVerificationCodeExpiresAt
+    !user.emailVerificationTokenExpiresAt ||
+    user.emailVerificationTokenExpiresAt.getTime() < Date.now()
   ) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
-  }
-
-  if (user.emailVerificationCodeExpiresAt.getTime() < Date.now()) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
-  }
-
-  if (hashVerificationCode(normalizedCode) !== user.emailVerificationCodeHash) {
-    throw new AppError(400, 'Code de vérification invalide ou expiré.')
+    throw new AppError(400, "Lien d'activation invalide ou expiré.")
   }
 
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: {
       emailVerifiedAt: new Date(),
-      emailVerificationCodeHash: null,
-      emailVerificationCodeExpiresAt: null,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
     },
     select: {
       id: true,
       username: true,
       email: true,
       role: true,
+      tokenVersion: true,
     },
   })
 
   await resetIpRateLimit('email-verification', ip)
 
   const token = jwt.sign(
-    { userId: updatedUser.id, role: updatedUser.role },
+    {
+      userId: updatedUser.id,
+      role: updatedUser.role,
+      tokenVersion: updatedUser.tokenVersion,
+    },
     config.jwtSecret,
     {
       expiresIn: '12h',

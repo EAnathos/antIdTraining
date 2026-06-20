@@ -31,7 +31,10 @@ let server: ReturnType<express.Express['listen']>
 let baseUrl = ''
 
 function authHeader(role: 'USER' | 'ADMIN' = 'USER') {
-  const token = jwt.sign({ userId: 'user-1', role }, JWT_SECRET)
+  const token = jwt.sign(
+    { userId: 'user-1', role, tokenVersion: 0 },
+    JWT_SECRET,
+  )
   return { Authorization: `Bearer ${token}` }
 }
 
@@ -60,6 +63,10 @@ afterAll(async () => {
 
 beforeEach(() => {
   resetSharedMocks()
+  prismaMocks.user.findUnique.mockResolvedValue({
+    role: 'USER',
+    tokenVersion: 0,
+  })
   mocks.encryptSensitiveText.mockImplementation((v: string) => `enc:${v}`)
   mocks.decryptSensitiveText.mockImplementation((v: string) =>
     v.replace(/^enc:/, ''),
@@ -100,12 +107,11 @@ describe('POST /api/suggestions', () => {
     expect(body.message).toMatch(/Limite/)
   })
 
-  it('creates suggestion and returns 201 with encrypted fields', async () => {
+  it('creates suggestion with title and returns 201', async () => {
     const created = {
       id: 's1',
       userId: 'user-1',
-      name: 'enc:Alice',
-      email: 'enc:alice@example.com',
+      title: 'Mon titre',
       message: 'Une suggestion valide de test',
       createdAt: new Date().toISOString(),
     }
@@ -118,33 +124,29 @@ describe('POST /api/suggestions', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({
-        name: 'Alice',
-        email: 'alice@example.com',
+        title: 'Mon titre',
         message: 'Une suggestion valide de test',
       }),
     })
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.name).toBe('Alice')
-    expect(body.email).toBe('alice@example.com')
+    expect(body.title).toBe('Mon titre')
     expect(prismaMocks.suggestion.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          name: 'enc:Alice',
-          email: 'enc:alice@example.com',
+          title: 'Mon titre',
         }),
       }),
     )
   })
 
-  it('creates suggestion without name/email', async () => {
+  it('creates suggestion without title', async () => {
     const created = {
       id: 's2',
       userId: 'user-1',
-      name: null,
-      email: null,
-      message: 'Message anonyme valide pour le test',
+      title: null,
+      message: 'Message valide pour le test',
       createdAt: new Date().toISOString(),
     }
     prismaMocks.suggestion = {
@@ -155,12 +157,112 @@ describe('POST /api/suggestions', () => {
     const res = await fetch(`${baseUrl}/api/suggestions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ message: 'Message anonyme valide pour le test' }),
+      body: JSON.stringify({ message: 'Message valide pour le test' }),
     })
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.name).toBeNull()
-    expect(body.email).toBeNull()
+    expect(body.title).toBeNull()
+  })
+})
+
+describe('PATCH /api/suggestions/:id', () => {
+  it('returns 401 when not authenticated', async () => {
+    const res = await fetch(`${baseUrl}/api/suggestions/s1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Message modifié valide pour le test' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 when message is too short', async () => {
+    const res = await fetch(`${baseUrl}/api/suggestions/s1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ message: 'court' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 when suggestion not found', async () => {
+    prismaMocks.suggestion = {
+      findUnique: vi.fn().mockResolvedValue(null),
+    } as any
+
+    const res = await fetch(`${baseUrl}/api/suggestions/missing`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ message: 'Message modifié valide pour le test' }),
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when suggestion belongs to another user', async () => {
+    prismaMocks.suggestion = {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 's1',
+        userId: 'other-user',
+        status: 'PENDING',
+      }),
+    } as any
+
+    const res = await fetch(`${baseUrl}/api/suggestions/s1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ message: 'Message modifié valide pour le test' }),
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 400 when suggestion is not PENDING', async () => {
+    prismaMocks.suggestion = {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 's1',
+        userId: 'user-1',
+        status: 'PROCESSED',
+      }),
+    } as any
+
+    const res = await fetch(`${baseUrl}/api/suggestions/s1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ message: 'Message modifié valide pour le test' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('updates and returns the suggestion when valid', async () => {
+    const updated = {
+      id: 's1',
+      userId: 'user-1',
+      name: null,
+      email: null,
+      message: 'Message modifié valide pour le test',
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    }
+    prismaMocks.suggestion = {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 's1',
+        userId: 'user-1',
+        status: 'PENDING',
+      }),
+      update: vi.fn().mockResolvedValue(updated),
+    } as any
+
+    const res = await fetch(`${baseUrl}/api/suggestions/s1`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ message: 'Message modifié valide pour le test' }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.message).toBe('Message modifié valide pour le test')
+    expect(prismaMocks.suggestion.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { message: 'Message modifié valide pour le test' },
+      }),
+    )
   })
 })

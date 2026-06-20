@@ -1,8 +1,28 @@
 import { config } from '../config.js'
 import { logger } from './logger.js'
 
+function buildFrontendUrl(
+  path: string,
+  params: Record<string, string>,
+): string {
+  const base = config.frontendUrl.replace(/\/$/, '')
+  const query = Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&')
+  return `${base}/${path}?${query}`
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 type ResendMessage = {
-  from: string
+  from?: string
   to: string
   subject: string
   text: string
@@ -53,22 +73,21 @@ export async function sendLoginNotificationEmail(
   email: string,
   username: string,
 ) {
+  const safeUsername = escapeHtml(username)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
       subject: 'Connexion à Ant ID Training',
       text: [
         `Bonjour ${username},`,
         '',
-        'Une connexion à votre compte Ant ID Training vient d’être effectuée.',
-        'Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.',
+        "Une connexion à votre compte Ant ID Training vient d'être effectuée.",
+        "Si vous n'êtes pas à l'origine de cette connexion, changez votre mot de passe.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
-      <p>Une connexion à votre compte Ant ID Training vient d’être effectuée.</p>
-      <p>Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe.</p>
+      <p>Bonjour ${safeUsername},</p>
+      <p>Une connexion à votre compte Ant ID Training vient d'être effectuée.</p>
+      <p>Si vous n'êtes pas à l'origine de cette connexion, changez votre mot de passe.</p>
     `,
     },
     'Email de connexion',
@@ -78,36 +97,40 @@ export async function sendLoginNotificationEmail(
 export async function sendVerificationEmail(
   email: string,
   username: string,
-  code: string,
+  token: string,
 ) {
   if (!config.resendApiKey) {
     throw new Error(
-      'RESEND_API_KEY non configurée, impossible d’envoyer le code de vérification',
+      "RESEND_API_KEY non configurée, impossible d'envoyer le lien d'activation",
     )
   }
 
+  const activationUrl = buildFrontendUrl('activate', { token })
+  const safeUsername = escapeHtml(username)
+  const safeActivationUrl = escapeHtml(activationUrl)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
-      subject: 'Validez votre adresse e-mail',
+      subject: 'Activez votre compte',
       text: [
         `Bonjour ${username},`,
         '',
-        `Voici votre code de vérification : ${code}`,
+        'Cliquez sur le lien ci-dessous pour activer votre compte :',
         '',
-        'Ce code expire dans 15 minutes.',
-        'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.',
+        activationUrl,
+        '',
+        'Ce lien expire dans 24 heures.',
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
-      <p>Voici votre code de vérification : <strong>${code}</strong></p>
-      <p>Ce code expire dans 15 minutes.</p>
-      <p>Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.</p>
+      <p>Bonjour ${safeUsername},</p>
+      <p>Cliquez sur le lien ci-dessous pour activer votre compte :</p>
+      <p><a href="${safeActivationUrl}">Activer mon compte</a></p>
+      <p>Ce lien expire dans 24 heures.</p>
+      <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
     },
-    'Email de vérification',
+    "Email d'activation",
   )
 }
 
@@ -122,29 +145,26 @@ export async function sendPasswordResetEmail(
     )
   }
 
-  const resetUrl = `${config.frontendUrl.replace(/\/$/, '')}/#/reset-password?token=${encodeURIComponent(
-    token,
-  )}`
-
+  const resetUrl = buildFrontendUrl('reset-password', { token })
+  const safeUsername = escapeHtml(username)
+  const safeResetUrl = escapeHtml(resetUrl)
   await sendResendEmail(
     {
-      from:
-        config.resendFrom ?? 'Ant ID Training <no-reply@ant-id-training.local>',
       to: email,
       subject: 'Réinitialisez votre mot de passe',
       text: [
         `Bonjour ${username},`,
         '',
-        `Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :`,
+        'Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :',
         '',
         resetUrl,
         '',
         "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
       ].join('\n'),
       html: `
-      <p>Bonjour ${username},</p>
+      <p>Bonjour ${safeUsername},</p>
       <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
-      <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
+      <p><a href="${safeResetUrl}">Réinitialiser mon mot de passe</a></p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.</p>
     `,
     },

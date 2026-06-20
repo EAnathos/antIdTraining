@@ -1,6 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { clearAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
+import { AUTH_THEME_KEY } from '../lib/authKeys'
+import { getErrorMessage } from '../lib/errorUtils'
 import { resolveImageUrl } from '../lib/imageUrl'
 import type { AuthMeResponse } from '../types/models'
 
@@ -53,7 +57,7 @@ function getStoredThemePreference(): ThemePreference {
     return 'system'
   }
 
-  const stored = window.localStorage.getItem('antidtraining-theme')
+  const stored = window.localStorage.getItem(AUTH_THEME_KEY)
   return stored === 'light' || stored === 'dark' || stored === 'system'
     ? stored
     : 'system'
@@ -74,7 +78,7 @@ function applyTheme(themePreference: ThemePreference) {
     return
   }
 
-  window.localStorage.setItem('antidtraining-theme', themePreference)
+  window.localStorage.setItem(AUTH_THEME_KEY, themePreference)
 
   let resolvedTheme: 'light' | 'dark'
   if (themePreference === 'system') {
@@ -111,28 +115,12 @@ function formatMemberSince(createdAt: string | null | undefined) {
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const token = useMemo(
-    () =>
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('antidtraining-auth-token')
-        : null,
-    [],
-  )
-
-  const authApi = useMemo(
-    () =>
-      api.create({
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }),
-    [token],
-  )
-  const [profile, setProfile] = useState<AuthMeResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { profile, isLoading, refresh } = useAuth()
   const [error, setError] = useState('')
   const [editMode, setEditMode] = useState(false)
-  const [avatar, setAvatar] = useState('')
+  const [avatar, setAvatar] = useState(profile?.avatar ?? '')
   const [avatarUploading, setAvatarUploading] = useState(false)
-  const [bio, setBio] = useState('')
+  const [bio, setBio] = useState(profile?.bio ?? '')
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [passwordResetConfirm, setPasswordResetConfirm] = useState(false)
@@ -142,57 +130,36 @@ export function ProfilePage() {
     getStoredThemePreference(),
   )
 
+  // Sync edit-form fields when the context profile first arrives
+  useEffect(() => {
+    if (profile) {
+      setAvatar(profile.avatar ?? '')
+      setBio(profile.bio ?? '')
+    }
+  }, [profile])
+
   function handleThemeChange(newTheme: ThemePreference) {
     setThemePreference(newTheme)
     applyTheme(newTheme)
   }
 
-  useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    authApi
-      .get<AuthMeResponse>('/auth/me')
-      .then((response) => {
-        setProfile(response.data)
-        setAvatar(response.data.avatar || '')
-        setBio(response.data.bio || '')
-      })
-      .catch((err) => {
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : 'Impossible de charger le profil.',
-        )
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [token, authApi])
-
   async function handleSaveProfile() {
-    if (!token || !profile) return
+    if (!profile) return
     setSaving(true)
     setError('')
     setSuccessMessage('')
 
     try {
-      const updated = await authApi.patch<AuthMeResponse>('/auth/profile', {
+      await api.patch<AuthMeResponse>('/auth/profile', {
         avatar: avatar || null,
         bio: bio || null,
       })
-      setProfile(updated.data)
+      await refresh()
       setEditMode(false)
       setSuccessMessage('Profil mis à jour avec succès.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la mise à jour du profil.',
-      )
+      setError(getErrorMessage(err, 'Erreur lors de la mise à jour du profil.'))
     } finally {
       setSaving(false)
     }
@@ -202,36 +169,30 @@ export function ProfilePage() {
     e: React.ChangeEvent<HTMLInputElement>,
   ) {
     const file = e.target.files?.[0]
-    if (!file || !token) return
+    if (!file) return
     setAvatarUploading(true)
     setError('')
 
     try {
       const form = new FormData()
       form.append('avatar', file)
-      const updated = await authApi.post<AuthMeResponse>('/auth/avatar', form)
-      setProfile(updated.data)
-      setAvatar(updated.data.avatar || '')
+      await api.post<AuthMeResponse>('/auth/avatar', form)
+      await refresh()
       setSuccessMessage('Avatar mis à jour.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de l’upload de l’avatar.',
-      )
+      setError(getErrorMessage(err, "Erreur lors de l'upload de l'avatar."))
     } finally {
       setAvatarUploading(false)
     }
   }
 
   async function handlePasswordResetRequest() {
-    if (!token) return
     setPasswordResetLoading(true)
     setError('')
 
     try {
-      await authApi.post('/auth/password-reset-request')
+      await api.post('/auth/password-reset-request')
       setPasswordResetConfirm(false)
       setSuccessMessage(
         'Demande de réinitialisation enregistrée. Vous pouvez en faire une nouvelle dans 7 jours.',
@@ -239,9 +200,7 @@ export function ProfilePage() {
       setTimeout(() => setSuccessMessage(''), 5000)
     } catch (err) {
       setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la demande de réinitialisation.',
+        getErrorMessage(err, 'Erreur lors de la demande de réinitialisation.'),
       )
     } finally {
       setPasswordResetLoading(false)
@@ -249,63 +208,33 @@ export function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    if (!token || !deleteConfirm) return
+    if (!deleteConfirm) return
 
     try {
-      await authApi.post('/auth/delete-account')
-      window.localStorage.removeItem('antidtraining-auth-token')
-      window.localStorage.removeItem('antidtraining-auth-role')
-      window.localStorage.removeItem('antidtraining-auth-username')
-      window.localStorage.removeItem('antidtraining-auth-email')
-      window.dispatchEvent(new Event('antidtraining-auth-changed'))
+      await api.post('/auth/delete-account')
+      clearAuth()
       navigate('/connexion', { replace: true })
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Erreur lors de la suppression du compte.',
-      )
+      setError(getErrorMessage(err, 'Erreur lors de la suppression du compte.'))
     }
   }
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => undefined)
-    window.localStorage.removeItem('antidtraining-auth-token')
-    window.localStorage.removeItem('antidtraining-auth-role')
-    window.localStorage.removeItem('antidtraining-auth-username')
-    window.localStorage.removeItem('antidtraining-auth-email')
-    window.dispatchEvent(new Event('antidtraining-auth-changed'))
+    clearAuth()
     navigate('/connexion', { replace: true })
   }
 
-  if (!token) {
+  if (!isLoading && !profile) {
     return <Navigate to="/connexion" replace />
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
         <p className="text-[color:var(--app-text-muted)]">
           Chargement du profil…
         </p>
-      </section>
-    )
-  }
-
-  if (error && !profile) {
-    return (
-      <section className="surface-panel surface-panel--solid mx-auto max-w-2xl p-6">
-        <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
-          Profil
-        </h2>
-        <p className="mt-3 text-sm text-[color:var(--app-danger)]">{error}</p>
-        <button
-          className="ui-action ui-action--secondary mt-4"
-          type="button"
-          onClick={() => void handleLogout()}
-        >
-          Se déconnecter
-        </button>
       </section>
     )
   }
@@ -534,7 +463,7 @@ export function ProfilePage() {
             {passwordResetConfirm && (
               <div className="profile-action-card__panel space-y-3">
                 <p className="text-sm text-[color:var(--app-text-muted)]">
-                  Le lien sera envoyé à l’adresse associée au compte.
+                  Le lien sera envoyé à l'adresse associée au compte.
                 </p>
                 <div className="profile-action-card__actions sm:flex-row">
                   <button

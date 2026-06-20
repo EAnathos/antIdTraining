@@ -2,11 +2,29 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const authMocks = vi.hoisted(() => ({
+  role: null as 'ADMIN' | 'USER' | null,
+  profile: null as null,
+  isLoading: false,
+  refresh: vi.fn(),
+}))
+
+vi.mock('../../../src/lib/authContext', () => ({
+  useAuth: () => ({
+    role: authMocks.role,
+    profile: authMocks.profile,
+    isLoading: authMocks.isLoading,
+    refresh: authMocks.refresh,
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}))
+
 import { AppShell } from '../../../src/components/layout/AppShell'
 
 beforeEach(() => {
   localStorage.clear()
   vi.clearAllMocks()
+  authMocks.role = null
   window.matchMedia = vi.fn().mockReturnValue({
     matches: false,
     addEventListener: vi.fn(),
@@ -29,10 +47,7 @@ describe('AppShell', () => {
   })
 
   it('shows profile navigation when authenticated', () => {
-    localStorage.setItem('antidtraining-auth-token', 'token_1')
-    localStorage.setItem('antidtraining-auth-role', 'USER')
-    localStorage.setItem('antidtraining-auth-username', 'alice')
-    localStorage.setItem('antidtraining-auth-email', 'alice@example.com')
+    authMocks.role = 'USER'
 
     render(
       <MemoryRouter>
@@ -46,8 +61,7 @@ describe('AppShell', () => {
   })
 
   it('shows admin, offline and install states', async () => {
-    localStorage.setItem('antidtraining-auth-token', 'token_1')
-    localStorage.setItem('antidtraining-auth-role', 'ADMIN')
+    authMocks.role = 'ADMIN'
     localStorage.setItem('antidtraining-theme', 'dark')
 
     const prompt = vi.fn().mockResolvedValue(undefined)
@@ -74,9 +88,9 @@ describe('AppShell', () => {
     fireEvent(window, beforeInstallPrompt)
 
     expect(
-      screen.getByRole('button', { name: 'Installer l’app' }),
+      screen.getByRole('button', { name: /Installer/i }),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Installer l’app' }))
+    fireEvent.click(screen.getByRole('button', { name: /Installer/i }))
     await waitFor(() => expect(prompt).toHaveBeenCalled())
 
     expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()

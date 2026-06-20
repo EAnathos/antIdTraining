@@ -15,7 +15,8 @@
     "db:migrate": "npm run prisma:migrate -w apps/backend",
     "backup:db": "bash scripts/backup-db.sh",
     "restore:db": "bash scripts/restore-db.sh",
-    "docker:up": "docker compose up -d --build",
+    "docker:up": "docker compose build --no-cache frontend && docker compose up -d --build",
+    "docker:watch": "docker compose watch",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
@@ -42,7 +43,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/jsdom": "^28.0.3",
     "@vitest/coverage-v8": "^4.1.7",
-    "concurrently": "^9.2.1",
+    "concurrently": "^9.2.3",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",

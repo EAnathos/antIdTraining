@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
+import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import { getResponsiveImageProps } from '../lib/image'
 import type { GameQuestion } from '../types/models'
 
@@ -24,29 +25,113 @@ type GameValidation = {
 type ActiveLevel = 'easy' | 'medium'
 type MediumStep = 'subfamily' | 'genus' | 'done'
 
-function formatDepartment(value: string) {
-  const normalized = value.trim().replace(/\s+/g, ' ')
-  if (!normalized) return ''
+const DEPARTMENT_NAMES: Record<string, string> = {
+  '01': 'Ain',
+  '02': 'Aisne',
+  '03': 'Allier',
+  '04': 'Alpes-de-Haute-Provence',
+  '05': 'Hautes-Alpes',
+  '06': 'Alpes-Maritimes',
+  '07': 'Ardèche',
+  '08': 'Ardennes',
+  '09': 'Ariège',
+  '10': 'Aube',
+  '11': 'Aude',
+  '12': 'Aveyron',
+  '13': 'Bouches-du-Rhône',
+  '14': 'Calvados',
+  '15': 'Cantal',
+  '16': 'Charente',
+  '17': 'Charente-Maritime',
+  '18': 'Cher',
+  '19': 'Corrèze',
+  '2A': 'Corse-du-Sud',
+  '2B': 'Haute-Corse',
+  '21': "Côte-d'Or",
+  '22': "Côtes-d'Armor",
+  '23': 'Creuse',
+  '24': 'Dordogne',
+  '25': 'Doubs',
+  '26': 'Drôme',
+  '27': 'Eure',
+  '28': 'Eure-et-Loir',
+  '29': 'Finistère',
+  '30': 'Gard',
+  '31': 'Haute-Garonne',
+  '32': 'Gers',
+  '33': 'Gironde',
+  '34': 'Hérault',
+  '35': 'Ille-et-Vilaine',
+  '36': 'Indre',
+  '37': 'Indre-et-Loire',
+  '38': 'Isère',
+  '39': 'Jura',
+  '40': 'Landes',
+  '41': 'Loir-et-Cher',
+  '42': 'Loire',
+  '43': 'Haute-Loire',
+  '44': 'Loire-Atlantique',
+  '45': 'Loiret',
+  '46': 'Lot',
+  '47': 'Lot-et-Garonne',
+  '48': 'Lozère',
+  '49': 'Maine-et-Loire',
+  '50': 'Manche',
+  '51': 'Marne',
+  '52': 'Haute-Marne',
+  '53': 'Mayenne',
+  '54': 'Meurthe-et-Moselle',
+  '55': 'Meuse',
+  '56': 'Morbihan',
+  '57': 'Moselle',
+  '58': 'Nièvre',
+  '59': 'Nord',
+  '60': 'Oise',
+  '61': 'Orne',
+  '62': 'Pas-de-Calais',
+  '63': 'Puy-de-Dôme',
+  '64': 'Pyrénées-Atlantiques',
+  '65': 'Hautes-Pyrénées',
+  '66': 'Pyrénées-Orientales',
+  '67': 'Bas-Rhin',
+  '68': 'Haut-Rhin',
+  '69': 'Rhône',
+  '71': 'Saône-et-Loire',
+  '72': 'Sarthe',
+  '73': 'Savoie',
+  '74': 'Haute-Savoie',
+  '75': 'Paris',
+  '76': 'Seine-Maritime',
+  '77': 'Seine-et-Marne',
+  '78': 'Yvelines',
+  '79': 'Deux-Sèvres',
+  '80': 'Somme',
+  '81': 'Tarn',
+  '82': 'Tarn-et-Garonne',
+  '83': 'Var',
+  '84': 'Vaucluse',
+  '85': 'Vendée',
+  '86': 'Vienne',
+  '87': 'Haute-Vienne',
+  '88': 'Vosges',
+  '89': 'Yonne',
+  '90': 'Territoire de Belfort',
+  '91': 'Essonne',
+  '92': 'Hauts-de-Seine',
+  '93': 'Seine-Saint-Denis',
+  '94': 'Val-de-Marne',
+  '95': "Val-d'Oise",
+  '971': 'Guadeloupe',
+  '972': 'Martinique',
+  '973': 'Guyane',
+  '974': 'La Réunion',
+  '976': 'Mayotte',
+}
 
-  const hyphenMatch = normalized.match(/^([0-9]{1,3}[A-Za-z]?)\s*-\s*(.+)$/)
-  if (hyphenMatch) {
-    const [, code, label] = hyphenMatch
-    const formattedCode = /^\d+$/.test(code)
-      ? code.padStart(2, '0')
-      : code.toUpperCase()
-    return `${formattedCode} - ${label.toLowerCase()}`
-  }
-
-  const spacedMatch = normalized.match(/^([0-9]{1,3}[A-Za-z]?)\s+(.+)$/)
-  if (spacedMatch) {
-    const [, code, label] = spacedMatch
-    const formattedCode = /^\d+$/.test(code)
-      ? code.padStart(2, '0')
-      : code.toUpperCase()
-    return `${formattedCode} - ${label.toLowerCase()}`
-  }
-
-  return normalized
+const CASTE_LABELS: Record<string, string> = {
+  WORKER: 'Ouvrière',
+  QUEEN: 'Reine',
+  MALE: 'Mâle',
 }
 
 export function GamePage() {
@@ -63,6 +148,7 @@ export function GamePage() {
   const [subfamilyOptions, setSubfamilyOptions] = useState<string[]>([])
   const [dynamicGenusOptions, setDynamicGenusOptions] = useState<string[]>([])
   const [imageLoadFailed, setImageLoadFailed] = useState(false)
+  const [casteRevealed, setCasteRevealed] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{
     url: string
   } | null>(null)
@@ -70,7 +156,7 @@ export function GamePage() {
   const fullscreenTouchStartX = useRef<number | null>(null)
   const isConnected =
     typeof window !== 'undefined' &&
-    !!window.localStorage.getItem('antidtraining-auth-token')
+    !!window.localStorage.getItem(AUTH_ROLE_KEY)
 
   useEffect(() => {
     let cancelled = false
@@ -137,6 +223,7 @@ export function GamePage() {
         params: { level },
       })
       setQuestion(data)
+      setCasteRevealed(false)
     } finally {
       setIsLoadingQuestion(false)
     }
@@ -442,7 +529,13 @@ export function GamePage() {
                 )}
                 <p>
                   <span className="font-semibold">Département :</span>{' '}
-                  {formatDepartment(question.details.department)}
+                  {(() => {
+                    const code = question.details.department.padStart(2, '0')
+                    const name =
+                      DEPARTMENT_NAMES[code] ??
+                      DEPARTMENT_NAMES[question.details.department]
+                    return name ? `${code} – ${name}` : code
+                  })()}
                 </p>
                 <p>
                   <span className="font-semibold">Date :</span>{' '}
@@ -454,6 +547,27 @@ export function GamePage() {
                   <span className="font-semibold">Biotope :</span>{' '}
                   {question.details.biotope}
                 </p>
+                {question.details.caste && (
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold">Caste :</span>{' '}
+                    {casteRevealed ? (
+                      <span>
+                        {CASTE_LABELS[question.details.caste] ??
+                          question.details.caste}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rounded bg-[color:var(--app-border)] px-2 py-0.5 text-xs text-transparent hover:opacity-80 select-none"
+                        onClick={() => setCasteRevealed(true)}
+                        title="Cliquer pour révéler"
+                      >
+                        {CASTE_LABELS[question.details.caste] ??
+                          question.details.caste}
+                      </button>
+                    )}
+                  </p>
+                )}
                 <p>
                   <span className="font-semibold">Crédit photo :</span>{' '}
                   {question.details.photoCredit}

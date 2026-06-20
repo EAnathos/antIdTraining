@@ -23,7 +23,7 @@ describe('encryption helpers', () => {
     expect(decryptSensitiveText(encrypted)).toBe('hello ants')
   })
 
-  it('returns plaintext in non-production mode without a key', async () => {
+  it('throws when encrypting without a key', async () => {
     vi.stubEnv('NODE_ENV', 'test')
     vi.stubEnv('DATA_ENCRYPTION_KEY', '')
     vi.stubEnv('ENCRYPTION_KEY', '')
@@ -31,7 +31,9 @@ describe('encryption helpers', () => {
     const { decryptSensitiveText, encryptSensitiveText } =
       await import('../../src/lib/encryption.js')
 
-    expect(encryptSensitiveText('plain text')).toBe('plain text')
+    expect(() => encryptSensitiveText('plain text')).toThrow(
+      'DATA_ENCRYPTION_KEY is required',
+    )
     expect(decryptSensitiveText('plain text')).toBe('plain text')
   })
 })

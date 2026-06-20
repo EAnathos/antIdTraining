@@ -1,10 +1,12 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { config } from '../config.js'
+import { prisma } from '../prisma.js'
 
 type JwtPayload = {
   userId: string
   role: 'ADMIN' | 'USER'
+  tokenVersion: number
 }
 
 const ADMIN_SESSION_COOKIE = 'adminToken'
@@ -80,31 +82,74 @@ export function getAdminCookieOptions() {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const token = getAuthToken(req)
   if (!token) {
     return res.status(401).json({ message: 'Non autorisé.' })
   }
 
+  let payload: JwtPayload
   try {
-    const payload = getJwtPayload(token)
-    req.user = payload
-    next()
+    payload = getJwtPayload(token)
   } catch {
     return res.status(401).json({ message: 'Jeton invalide.' })
   }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true, tokenVersion: true },
+    })
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      return res.status(401).json({ message: 'Session expirée.' })
+    }
+    req.user = {
+      userId: payload.userId,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    }
+    return next()
+  } catch {
+    return res.status(500).json({ message: 'Erreur interne.' })
+  }
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
   const token = getAuthToken(req)
   if (!token) {
     return next()
   }
 
+  let payload: JwtPayload
   try {
-    req.user = getJwtPayload(token)
+    payload = getJwtPayload(token)
   } catch {
     // Ignore invalid tokens for optional auth.
+    return next()
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true, tokenVersion: true },
+    })
+    if (user && user.tokenVersion === payload.tokenVersion) {
+      req.user = {
+        userId: payload.userId,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
+      }
+    }
+  } catch {
+    // DB error: proceed without auth rather than blocking the request.
   }
 
   return next()

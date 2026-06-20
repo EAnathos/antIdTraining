@@ -4,12 +4,12 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { prisma } from '../prisma.js'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
-import { publicSuggestion } from '../lib/suggestionFormatters.js'
+import { cuidSchema } from '../lib/zodUtils.js'
 
 export const adminSuggestionsRouter = Router()
 
 const updateSchema = z.object({
-  status: z.enum(['PENDING', 'PROCESSED', 'REJECTED']),
+  status: z.enum(['PENDING', 'ACCEPTED', 'REJECTED']),
   rejectionMessage: z
     .string()
     .min(3, 'Message trop court')
@@ -22,23 +22,37 @@ adminSuggestionsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const rawStatus = req.query.status
-    const statusSchema = z.enum(['PENDING', 'PROCESSED', 'REJECTED']).optional()
+    const statusSchema = z.enum(['PENDING', 'ACCEPTED', 'REJECTED']).optional()
     const parsed = statusSchema.safeParse(rawStatus)
     const where =
       parsed.success && parsed.data ? { status: parsed.data } : undefined
 
     const items = await prisma.suggestion.findMany({
       where,
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        title: true,
+        message: true,
+        status: true,
+        rejectionMessage: true,
+        createdAt: true,
+        processedAt: true,
+        user: { select: { username: true } },
+      },
       orderBy: { createdAt: 'desc' },
     })
-    return res.json(items.map((item) => publicSuggestion(item)))
+    return res.json(items)
   }),
 )
 
 adminSuggestionsRouter.put(
   '/:id',
   asyncHandler(async (req, res) => {
+    const suggestionId = cuidSchema.safeParse(req.params.id)
+    if (!suggestionId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = updateSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -46,7 +60,7 @@ adminSuggestionsRouter.put(
 
     const data: any = { status: parsed.data.status }
     if (
-      parsed.data.status === 'PROCESSED' ||
+      parsed.data.status === 'ACCEPTED' ||
       parsed.data.status === 'REJECTED'
     ) {
       data.processedAt = new Date()
@@ -58,9 +72,19 @@ adminSuggestionsRouter.put(
     }
 
     const updated = await prisma.suggestion.update({
-      where: { id: req.params.id as string },
+      where: { id: suggestionId.data },
       data,
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        title: true,
+        message: true,
+        status: true,
+        rejectionMessage: true,
+        createdAt: true,
+        processedAt: true,
+        user: { select: { username: true } },
+      },
     })
 
     await recordAdminAudit(req, {
@@ -70,15 +94,20 @@ adminSuggestionsRouter.put(
       entityType: 'suggestion',
       entityId: updated.id,
     })
-    return res.json(publicSuggestion(updated))
+    return res.json(updated)
   }),
 )
 
 adminSuggestionsRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
+    const deleteId = cuidSchema.safeParse(req.params.id)
+    if (!deleteId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+
     const existing = await prisma.suggestion.findUnique({
-      where: { id: req.params.id as string },
+      where: { id: deleteId.data },
     })
 
     if (!existing) {
@@ -93,7 +122,7 @@ adminSuggestionsRouter.delete(
     }
 
     await prisma.suggestion.delete({
-      where: { id: req.params.id as string },
+      where: { id: deleteId.data },
     })
 
     await recordAdminAudit(req, {

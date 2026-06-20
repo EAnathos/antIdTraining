@@ -1,0 +1,4 @@
+export const AUTH_ROLE_KEY = 'antidtraining-auth-role'
+export const AUTH_USERNAME_KEY = 'antidtraining-auth-username'
+export const AUTH_THEME_KEY = 'antidtraining-theme'
+export const AUTH_CHANGED_EVENT = 'antidtraining-auth-changed'

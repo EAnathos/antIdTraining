@@ -55,6 +55,7 @@ export async function getGameEntriesCache() {
       genus: true,
       species: true,
       size: true,
+      caste: true,
       department: true,
       observedAt: true,
       biotope: true,

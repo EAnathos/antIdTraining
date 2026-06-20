@@ -26,6 +26,12 @@ import {
 } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
+import { cuidSchema } from '../lib/zodUtils.js'
+import { enforceIpRateLimit } from '../lib/rateLimit.js'
+import {
+  FILE_UPLOAD_MAX_ATTEMPTS,
+  FILE_UPLOAD_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 
 ensureUploadsDir()
 
@@ -260,6 +266,14 @@ entriesRouter.post(
   '/',
   uploadEntryImages,
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'admin-entry-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de créations depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = entrySchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -311,6 +325,10 @@ entriesRouter.post(
 entriesRouter.put(
   '/:id',
   asyncHandler(async (req, res) => {
+    const entryId = cuidSchema.safeParse(req.params.id)
+    if (!entryId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
     const parsed = entrySchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -325,7 +343,7 @@ entriesRouter.put(
       buildEntryData(parsed.data, taxonSelection)
 
     const updated = await prisma.observationEntry.update({
-      where: { id: req.params.id as string },
+      where: { id: entryId.data },
       data: updateData,
       include: { images: true },
     })
@@ -359,7 +377,11 @@ entriesRouter.put(
     }
 
     const { imageIds } = parsed.data
-    const entryId = req.params.id as string
+    const entryIdParam = cuidSchema.safeParse(req.params.id)
+    if (!entryIdParam.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+    const entryId = entryIdParam.data
 
     const existing = await prisma.entryImage.findMany({ where: { entryId } })
     const existingIds = new Set(existing.map((i) => i.id))
@@ -406,8 +428,13 @@ entriesRouter.put(
 entriesRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
+    const entryId = cuidSchema.safeParse(req.params.id)
+    if (!entryId.success) {
+      throw new AppError(400, 'ID invalide.')
+    }
+
     const entry = await prisma.observationEntry.findUnique({
-      where: { id: req.params.id as string },
+      where: { id: entryId.data },
       select: {
         images: {
           select: {
@@ -422,7 +449,7 @@ entriesRouter.delete(
     }
 
     await prisma.observationEntry.delete({
-      where: { id: req.params.id as string },
+      where: { id: entryId.data },
     })
 
     for (const image of entry.images) {
@@ -431,10 +458,10 @@ entriesRouter.delete(
 
     await recordAdminAudit(req, {
       action: 'Entrée supprimée',
-      detail: `Entrée ${req.params.id as string}`,
+      detail: `Entrée ${entryId.data}`,
       tone: 'ERROR',
       entityType: 'entry',
-      entityId: req.params.id as string,
+      entityId: entryId.data,
     })
 
     invalidateGameEntryCacheSafely('entry deleted')

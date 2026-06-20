@@ -10,10 +10,24 @@ import {
   verifyRegistrationEmail,
 } from '../services/auth.js'
 import { prisma } from '../prisma.js'
+import { logger } from '../lib/logger.js'
 import { getUserPoints } from '../services/stats.js'
 import { emailSchema } from '../lib/zodUtils.js'
+import {
+  PASSWORD_RESET_REQUEST_MAX_ATTEMPTS,
+  PASSWORD_RESET_REQUEST_WINDOW_MS,
+  PASSWORD_RESET_MAX_ATTEMPTS,
+  PASSWORD_RESET_WINDOW_MS,
+  REGISTRATION_MAX_ATTEMPTS,
+  REGISTRATION_WINDOW_MS,
+  LOGIN_MAX_ATTEMPTS,
+  LOGIN_WINDOW_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+  VERIFICATION_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 import { upload } from '../middleware/upload.js'
-import crypto, { createHash } from 'node:crypto'
+import crypto from 'node:crypto'
+import { hashToken } from '../lib/token.js'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
@@ -62,25 +76,12 @@ const registerSchema = z
   })
 
 const verifyEmailSchema = z.object({
-  email: emailSchema,
-  code: z
-    .string()
-    .trim()
-    .min(6, 'Le code de vérification est requis')
-    .max(6, 'Le code de vérification est invalide'),
+  token: z.string().trim().length(48, "Lien d'activation invalide"),
 })
 
 const avatarSchema = z
-  .union([
-    z
-      .string()
-      .url()
-      .refine(
-        (u) => /^https?:\/\//i.test(u),
-        "Schéma d'URL non autorisé (http/https uniquement)",
-      ),
-    z.string().regex(/^\/uploads\/[\w.\-/]+$/, "Chemin d'avatar invalide"),
-  ])
+  .string()
+  .regex(/^\/uploads\/[\w.\-/]+$/, "Chemin d'avatar invalide")
   .nullable()
   .optional()
 
@@ -111,12 +112,6 @@ const passwordResetRequestSchema = z.object({
   email: emailSchema.optional(),
 })
 
-function hashResetToken(token: string) {
-  return createHash('sha256').update(token).digest('hex')
-}
-
-const PASSWORD_RESET_REQUEST_WINDOW_MS = 15 * 60 * 1000
-const PASSWORD_RESET_REQUEST_MAX_ATTEMPTS = 5
 const publicPasswordResetMessage =
   "Si un compte existe pour cette adresse et qu'aucune autre demande n'a été faite dans la semaine, un e-mail de réinitialisation a été envoyé."
 
@@ -125,6 +120,14 @@ export const authRouter = Router()
 authRouter.post(
   '/login',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'login',
+      req.ip,
+      LOGIN_WINDOW_MS,
+      LOGIN_MAX_ATTEMPTS,
+      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = loginSchema.safeParse(req.body)
     if (!parsed.success) {
       throw parsed.error
@@ -145,8 +148,25 @@ authRouter.post(
 authRouter.post(
   '/register',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'registration',
+      req.ip,
+      REGISTRATION_WINDOW_MS,
+      REGISTRATION_MAX_ATTEMPTS,
+      'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = registerSchema.safeParse(req.body)
     if (!parsed.success) {
+      const passwordIssues = parsed.error.issues.filter((i) =>
+        i.path.some((segment) => String(segment).includes('password')),
+      )
+      if (passwordIssues.length > 0) {
+        logger.warn(
+          { ip: req.ip, issues: passwordIssues.map((i) => i.message) },
+          "Tentative d'inscription avec un mot de passe non conforme",
+        )
+      }
       throw parsed.error
     }
 
@@ -164,16 +184,20 @@ authRouter.post(
 authRouter.post(
   '/verify-email',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'email-verification',
+      req.ip,
+      VERIFICATION_WINDOW_MS,
+      VERIFICATION_MAX_ATTEMPTS,
+      'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = verifyEmailSchema.safeParse(req.body)
     if (!parsed.success) {
       throw parsed.error
     }
 
-    const auth = await verifyRegistrationEmail(
-      parsed.data.email,
-      parsed.data.code,
-      req.ip,
-    )
+    const auth = await verifyRegistrationEmail(parsed.data.token, req.ip)
 
     res.cookie('adminToken', auth.token, getAdminCookieOptions())
 
@@ -181,10 +205,21 @@ authRouter.post(
   }),
 )
 
-authRouter.post('/logout', (_req, res) => {
-  res.clearCookie('adminToken', getAdminCookieOptions())
-  return res.status(204).send()
-})
+authRouter.post(
+  '/logout',
+  optionalAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user?.userId
+    if (userId) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { tokenVersion: { increment: 1 } },
+      })
+    }
+    res.clearCookie('adminToken', getAdminCookieOptions())
+    return res.status(204).send()
+  }),
+)
 
 authRouter.get(
   '/me',
@@ -227,14 +262,14 @@ authRouter.patch(
       throw new AppError(401, 'Non autorisé.')
     }
 
-    // normalize incoming body to be more permissive: treat empty strings as null
+    const body = (
+      typeof req.body === 'object' && req.body !== null ? req.body : {}
+    ) as Record<string, unknown>
+
+    // only extract the two allowed fields — no spread of req.body to prevent mass-assignment
     const incoming = {
-      ...(typeof req.body === 'object' && req.body !== null ? req.body : {}),
-      avatar: req.body && req.body.avatar === '' ? null : req.body?.avatar,
-      bio:
-        req.body && typeof req.body.bio === 'string' && req.body.bio === ''
-          ? null
-          : req.body?.bio,
+      avatar: body.avatar === '' ? null : body.avatar,
+      bio: typeof body.bio === 'string' && body.bio === '' ? null : body.bio,
     }
 
     const parsed = updateProfileSchema.safeParse(incoming)
@@ -371,7 +406,7 @@ authRouter.post(
 
     // generate a token and expiry (valid 24 hours)
     const token = crypto.randomBytes(24).toString('hex')
-    const tokenHash = hashResetToken(token)
+    const tokenHash = hashToken(token)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     // store hashed token — never the raw token — to limit exposure in case of DB breach
@@ -419,6 +454,14 @@ authRouter.post(
 authRouter.post(
   '/password-reset',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'password-reset',
+      req.ip,
+      PASSWORD_RESET_WINDOW_MS,
+      PASSWORD_RESET_MAX_ATTEMPTS,
+      'Trop de tentatives de réinitialisation depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = z
       .object({
         token: z.string().length(48, 'Token invalide'),
@@ -438,7 +481,7 @@ authRouter.post(
     const { token, password } = parsed.data
 
     const user = await prisma.user.findFirst({
-      where: { passwordResetToken: hashResetToken(token) },
+      where: { passwordResetToken: hashToken(token) },
       select: {
         id: true,
         passwordResetTokenExpiresAt: true,
@@ -462,6 +505,7 @@ authRouter.post(
         passwordResetToken: null,
         passwordResetTokenExpiresAt: null,
         passwordResetRequestedAt: null,
+        tokenVersion: { increment: 1 },
       },
     })
 

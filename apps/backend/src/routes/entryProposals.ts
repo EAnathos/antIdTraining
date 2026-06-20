@@ -21,10 +21,12 @@ import {
 } from '../lib/encryption.js'
 import { resolveEntryTaxonSelection } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
+import { MAX_SUGGESTIONS_PER_USER } from '../lib/suggestionConstants.js'
+import { enforceIpRateLimit } from '../lib/rateLimit.js'
 import {
-  MAX_SUGGESTIONS_PER_USER,
-  publicSuggestion,
-} from '../lib/suggestionFormatters.js'
+  FILE_UPLOAD_MAX_ATTEMPTS,
+  FILE_UPLOAD_WINDOW_MS,
+} from '../lib/rateLimitConfig.js'
 
 ensureUploadsDir()
 
@@ -50,7 +52,7 @@ const proposalSchema = z.object({
   biotope: z
     .string()
     .min(3, 'Biotope trop court')
-    .max(1000, 'Biotope trop long')
+    .max(50, 'Biotope trop long (50 caractères max)')
     .trim(),
   photoCredit: z
     .string()
@@ -207,15 +209,23 @@ entryProposalsRouter.get(
       }),
       prisma.suggestion.findMany({
         where: { userId: req.user.userId },
+        select: {
+          id: true,
+          userId: true,
+          title: true,
+          message: true,
+          status: true,
+          rejectionMessage: true,
+          createdAt: true,
+          processedAt: true,
+        },
         orderBy: { createdAt: 'desc' },
       }),
     ])
 
     return res.json({
       proposals: proposals.map((proposal) => publicProposal(proposal)),
-      suggestions: suggestions.map((suggestion) =>
-        publicSuggestion(suggestion),
-      ),
+      suggestions,
     })
   }),
 )
@@ -230,10 +240,10 @@ entryProposalsRouter.get(
 
     const [proposalCount, suggestionCount] = await Promise.all([
       prisma.entryProposal.count({
-        where: { userId: req.user.userId },
+        where: { userId: req.user.userId, status: 'PENDING' },
       }),
       prisma.suggestion.count({
-        where: { userId: req.user.userId },
+        where: { userId: req.user.userId, status: 'PENDING' },
       }),
     ])
 
@@ -257,6 +267,14 @@ entryProposalsRouter.post(
       throw new AppError(401, 'Non autorisé.')
     }
 
+    await enforceIpRateLimit(
+      'proposal-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de propositions depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = proposalSchema.safeParse(req.body)
     if (!parsed.success) {
       throw new AppError(400, 'Requête invalide.')
@@ -264,7 +282,7 @@ entryProposalsRouter.post(
 
     // Check proposal limit
     const proposalCount = await prisma.entryProposal.count({
-      where: { userId: req.user.userId },
+      where: { userId: req.user.userId, status: 'PENDING' },
     })
     if (proposalCount >= MAX_PROPOSALS_PER_USER) {
       throw new AppError(
@@ -279,6 +297,9 @@ entryProposalsRouter.post(
     }
 
     const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    if (files.length === 0) {
+      throw new AppError(400, 'Au moins une photo est requise.')
+    }
     const optimizedFileNames = await Promise.all(
       files.map(async (file, index) => {
         const result = await optimizeAndSaveImage(file, index)
@@ -323,5 +344,149 @@ entryProposalsRouter.post(
     })
 
     return res.status(201).json(publicProposal(created))
+  }),
+)
+
+const patchProposalSchema = proposalSchema.partial()
+
+// Edit a pending entry proposal
+entryProposalsRouter.patch(
+  '/:id',
+  uploadProposalImages,
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw new AppError(401, 'Non autorisé.')
+
+    await enforceIpRateLimit(
+      'proposal-upload',
+      req.ip,
+      FILE_UPLOAD_WINDOW_MS,
+      FILE_UPLOAD_MAX_ATTEMPTS,
+      'Trop de propositions depuis cette adresse IP. Réessayez plus tard.',
+    )
+
+    const id = req.params.id as string
+
+    const parsed = patchProposalSchema.safeParse(req.body)
+    if (!parsed.success) throw new AppError(400, 'Requête invalide.')
+
+    const existing = await prisma.entryProposal.findUnique({
+      where: { id },
+      include: { images: true },
+    })
+    if (!existing) throw new AppError(404, 'Proposition introuvable.')
+    if (existing.userId !== req.user.userId)
+      throw new AppError(403, 'Accès refusé.')
+    if (existing.status !== 'PENDING')
+      throw new AppError(
+        400,
+        'Seules les propositions en attente peuvent être modifiées.',
+      )
+
+    // Resolve taxon only when taxon fields are provided
+    let taxonSelection = null
+    if (parsed.data.taxonLevel || parsed.data.taxonValue) {
+      taxonSelection = await resolveEntryTaxonSelection({
+        taxonLevel: (parsed.data.taxonLevel ?? existing.taxonLevel) as
+          | 'SUBFAMILY'
+          | 'GENUS'
+          | 'SPECIES',
+        taxonValue: parsed.data.taxonValue ?? existing.taxonValue,
+        taxonGenus: parsed.data.taxonGenus ?? existing.genus ?? undefined,
+        subgenus: parsed.data.subgenus ?? existing.subgenus ?? undefined,
+        speciesGroup:
+          parsed.data.speciesGroup ?? existing.speciesGroup ?? undefined,
+        department: existing.department,
+        observedAt: existing.observedAt,
+        biotope: existing.biotope,
+        photoCredit: existing.photoCredit,
+      })
+      if (!taxonSelection)
+        throw new AppError(400, 'Taxon introuvable pour ce niveau.')
+    }
+
+    // Parse individual image IDs to delete
+    const rawDeleteIds = req.body.deleteImageIds as string | undefined
+    const deleteImageIds: string[] = rawDeleteIds
+      ? (JSON.parse(rawDeleteIds) as string[]).filter(
+          (imgId) => typeof imgId === 'string',
+        )
+      : []
+
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+
+    // Delete individually-selected images
+    if (deleteImageIds.length > 0) {
+      const toDelete = existing.images.filter((img) =>
+        deleteImageIds.includes(img.id),
+      )
+      await Promise.allSettled(
+        toDelete.map((img) => deleteUploadFilesForImageUrl(img.imageUrl)),
+      )
+      await prisma.entryProposalImage.deleteMany({
+        where: { id: { in: deleteImageIds }, proposalId: existing.id },
+      })
+    }
+
+    // Validate at least one image remains (considering deletions and uploads)
+    const remainingCount =
+      existing.images.length - deleteImageIds.length + files.length
+    if (remainingCount < 1) {
+      throw new AppError(400, 'La proposition doit avoir au moins une photo.')
+    }
+
+    // Save new uploaded images
+    let imageCreateData: { imageUrl: string; position: number }[] | undefined
+    if (files.length > 0) {
+      const keptImages = existing.images.filter(
+        (img) => !deleteImageIds.includes(img.id),
+      )
+      const nextPosition = keptImages.length
+      const optimizedFileNames = await Promise.all(
+        files.map((file, index) =>
+          optimizeAndSaveImage(file, index).then((r) => r.baseFileName),
+        ),
+      )
+      imageCreateData = optimizedFileNames.map((filename, i) => ({
+        imageUrl: `/uploads/${filename}`,
+        position: nextPosition + i,
+      }))
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (taxonSelection) {
+      updateData.taxonLevel = taxonSelection.taxonLevel
+      updateData.taxonValue = taxonSelection.taxonValue
+      updateData.subfamily = taxonSelection.subfamily
+      updateData.genus = taxonSelection.genus
+      updateData.species = taxonSelection.species
+    }
+    if (parsed.data.caste !== undefined) updateData.caste = parsed.data.caste
+    if (parsed.data.department !== undefined)
+      updateData.department = parsed.data.department
+    if (parsed.data.observedAt !== undefined)
+      updateData.observedAt = parsed.data.observedAt
+    if (parsed.data.biotope !== undefined)
+      updateData.biotope = parsed.data.biotope
+    if (parsed.data.photoCredit !== undefined)
+      updateData.photoCredit =
+        encryptSensitiveText(parsed.data.photoCredit) ?? parsed.data.photoCredit
+    if (parsed.data.size !== undefined) updateData.size = parsed.data.size
+    if (parsed.data.subgenus !== undefined)
+      updateData.subgenus = parsed.data.subgenus
+    if (parsed.data.speciesGroup !== undefined)
+      updateData.speciesGroup = parsed.data.speciesGroup
+
+    const updated = await prisma.entryProposal.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(imageCreateData
+          ? { images: { create: imageCreateData } }
+          : undefined),
+      },
+      include: { images: true },
+    })
+
+    return res.json(publicProposal(updated))
   }),
 )

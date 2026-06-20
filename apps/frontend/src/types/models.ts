@@ -112,6 +112,7 @@ export type GameQuestion = {
   prompt: string
   details?: {
     size: string | null
+    caste: string | null
     department: string
     observedAt: string
     biotope: string
@@ -220,10 +221,9 @@ export type EntryProposal = {
 export type Suggestion = {
   id: string
   userId?: string | null
-  name?: string | null
-  email?: string | null
+  title?: string | null
   message: string
-  status: 'PENDING' | 'PROCESSED' | 'REJECTED'
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
   rejectionMessage?: string | null
   createdAt: string
   processedAt?: string | null

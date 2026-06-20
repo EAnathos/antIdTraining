@@ -25,7 +25,7 @@ async function main() {
     )
   }
 
-  const role: UserRole = roleInput === 'USER' ? UserRole.USER : UserRole.ADMIN
+  const role: UserRole = roleInput === 'ADMIN' ? UserRole.ADMIN : UserRole.USER
 
   const passwordHash = await bcrypt.hash(password, 10)
 

@@ -97,6 +97,7 @@ function applyGameFilters(
 
 type GameQuestionDetails = {
   size: string | null
+  caste: string | null
   department: string
   observedAt: string
   biotope: string
@@ -175,6 +176,7 @@ function buildQuestionDetails(entry: {
   species?: string | null
   genus?: string | null
   subfamily: string
+  caste?: string | null
   department: string
   observedAt: Date
   biotope: string
@@ -182,6 +184,7 @@ function buildQuestionDetails(entry: {
 }) {
   return {
     size: null as string | null,
+    caste: entry.caste ?? null,
     department: entry.department,
     observedAt: entry.observedAt.toISOString(),
     biotope: entry.biotope,
