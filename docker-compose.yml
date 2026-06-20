@@ -13,8 +13,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - '${POSTGRES_PORT}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -36,8 +34,6 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    ports:
-      - '${REDIS_PORT}:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -76,14 +72,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    develop:
-      watch:
-        - action: rebuild
-          path: ./apps/backend/src
-        - action: rebuild
-          path: ./apps/backend/package.json
-        - action: rebuild
-          path: ./apps/backend/prisma
 
   frontend:
     build:
@@ -96,14 +84,6 @@ services:
     restart: 'no'
     volumes:
       - frontend_dist:/dist
-    develop:
-      watch:
-        - action: rebuild
-          path: ./apps/frontend/src
-        - action: rebuild
-          path: ./apps/frontend/public
-        - action: rebuild
-          path: ./apps/frontend/package.json
 
   nginx:
     image: nginx:1.27-alpine
@@ -124,7 +104,7 @@ services:
       - frontend_net
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
+    image: prometheuscommunity/postgres-exporter:v0.19.1
     container_name: antidtraining-postgres-exporter
     restart: unless-stopped
     environment:
@@ -136,7 +116,7 @@ services:
         condition: service_healthy
 
   redis-exporter:
-    image: oliver006/redis_exporter:latest
+    image: oliver006/redis_exporter:v1.86.0
     container_name: antidtraining-redis-exporter
     restart: unless-stopped
     environment:
@@ -149,7 +129,7 @@ services:
         condition: service_healthy
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.11.1
     container_name: antidtraining-node-exporter
     restart: unless-stopped
     pid: host
@@ -165,7 +145,7 @@ services:
       - backend_net
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.12.0
     container_name: antidtraining-prometheus
     restart: unless-stopped
     volumes:
@@ -176,8 +156,6 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-    ports:
-      - '${PROMETHEUS_PORT}:9090'
     networks:
       - backend_net
     depends_on:
@@ -185,7 +163,7 @@ services:
         condition: service_healthy
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.0.2
     container_name: antidtraining-grafana
     restart: unless-stopped
     environment:
