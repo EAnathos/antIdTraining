@@ -9,15 +9,19 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    target-branch: 'dev'
   - package-ecosystem: 'npm'
     directory: 'apps/backend'
     schedule:
       interval: 'weekly'
+    target-branch: 'dev'
   - package-ecosystem: 'npm'
     directory: 'apps/frontend'
     schedule:
       interval: 'weekly'
+    target-branch: 'dev'
   - package-ecosystem: 'docker'
     directory: '/'
     schedule:
       interval: 'weekly'
+    target-branch: 'dev'
