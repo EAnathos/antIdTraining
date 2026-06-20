@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../src/prisma.js', () => ({ prisma: prismaMocks }))
+vi.mock('../../src/lib/rateLimit.js', () => ({
+  enforceIpRateLimit: vi.fn().mockResolvedValue(undefined),
+}))
 vi.mock('../../src/lib/encryption.js', () => ({
   decryptSensitiveText: mocks.decryptSensitiveText,
   encryptSensitiveText: mocks.encryptSensitiveText,

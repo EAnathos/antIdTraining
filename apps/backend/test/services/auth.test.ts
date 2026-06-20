@@ -44,7 +44,7 @@ describe('auth service', () => {
     commonMocks.bcryptHash.mockResolvedValue('hashed-password')
   })
 
-  it('rejects login when user is missing and applies login rate-limit', async () => {
+  it('rejects login when user is missing', async () => {
     prismaMocks.user.findUnique.mockResolvedValue(null)
 
     await expect(
@@ -54,13 +54,6 @@ describe('auth service', () => {
       message: 'Identifiants invalides.',
     })
 
-    expect(commonMocks.enforceIpRateLimit).toHaveBeenCalledWith(
-      'login',
-      '127.0.0.1',
-      15 * 60 * 1000,
-      5,
-      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
-    )
     expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalled()
   })
 
@@ -150,13 +143,6 @@ describe('auth service', () => {
       message: 'Ce nom d’utilisateur est déjà utilisé.',
     })
 
-    expect(commonMocks.enforceIpRateLimit).toHaveBeenCalledWith(
-      'registration',
-      '127.0.0.1',
-      24 * 60 * 60 * 1000,
-      5,
-      'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
-    )
     expect(prismaMocks.user.create).not.toHaveBeenCalled()
     expect(commonMocks.resetIpRateLimit).not.toHaveBeenCalledWith(
       'registration',

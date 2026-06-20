@@ -16,6 +16,14 @@ import { emailSchema } from '../lib/zodUtils.js'
 import {
   PASSWORD_RESET_REQUEST_MAX_ATTEMPTS,
   PASSWORD_RESET_REQUEST_WINDOW_MS,
+  PASSWORD_RESET_MAX_ATTEMPTS,
+  PASSWORD_RESET_WINDOW_MS,
+  REGISTRATION_MAX_ATTEMPTS,
+  REGISTRATION_WINDOW_MS,
+  LOGIN_MAX_ATTEMPTS,
+  LOGIN_WINDOW_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+  VERIFICATION_WINDOW_MS,
 } from '../lib/rateLimitConfig.js'
 import { upload } from '../middleware/upload.js'
 import crypto from 'node:crypto'
@@ -112,6 +120,14 @@ export const authRouter = Router()
 authRouter.post(
   '/login',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'login',
+      req.ip,
+      LOGIN_WINDOW_MS,
+      LOGIN_MAX_ATTEMPTS,
+      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = loginSchema.safeParse(req.body)
     if (!parsed.success) {
       throw parsed.error
@@ -132,6 +148,14 @@ authRouter.post(
 authRouter.post(
   '/register',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'registration',
+      req.ip,
+      REGISTRATION_WINDOW_MS,
+      REGISTRATION_MAX_ATTEMPTS,
+      'Trop de créations de compte depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = registerSchema.safeParse(req.body)
     if (!parsed.success) {
       const passwordIssues = parsed.error.issues.filter((i) =>
@@ -160,6 +184,14 @@ authRouter.post(
 authRouter.post(
   '/verify-email',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'email-verification',
+      req.ip,
+      VERIFICATION_WINDOW_MS,
+      VERIFICATION_MAX_ATTEMPTS,
+      'Trop de tentatives de vérification depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = verifyEmailSchema.safeParse(req.body)
     if (!parsed.success) {
       throw parsed.error
@@ -422,6 +454,14 @@ authRouter.post(
 authRouter.post(
   '/password-reset',
   asyncHandler(async (req, res) => {
+    await enforceIpRateLimit(
+      'password-reset',
+      req.ip,
+      PASSWORD_RESET_WINDOW_MS,
+      PASSWORD_RESET_MAX_ATTEMPTS,
+      'Trop de tentatives de réinitialisation depuis cette adresse IP. Réessayez plus tard.',
+    )
+
     const parsed = z
       .object({
         token: z.string().length(48, 'Token invalide'),
