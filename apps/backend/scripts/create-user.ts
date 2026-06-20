@@ -5,15 +5,13 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
-  throw new Error('DATABASE_URL manquant')
+export function createPrisma() {
+  const connectionString = process.env.DATABASE_URL
+  if (!connectionString) throw new Error('DATABASE_URL manquant')
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 }
 
-const adapter = new PrismaPg({ connectionString })
-const prisma = new PrismaClient({ adapter })
-
-async function main() {
+export async function main(prisma = createPrisma()) {
   const username = process.env.USERNAME_TO_CREATE?.trim()
   const email = process.env.EMAIL_TO_CREATE?.trim()
   const password = process.env.PASSWORD_TO_CREATE?.trim()
@@ -34,8 +32,8 @@ async function main() {
     update: {
       email,
       emailVerifiedAt: new Date(),
-      emailVerificationCodeHash: null,
-      emailVerificationCodeExpiresAt: null,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
       passwordHash,
       role,
     },
@@ -43,8 +41,8 @@ async function main() {
       username,
       email,
       emailVerifiedAt: new Date(),
-      emailVerificationCodeHash: null,
-      emailVerificationCodeExpiresAt: null,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
       passwordHash,
       role,
     },
@@ -61,12 +59,15 @@ async function main() {
   )
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async (error) => {
-    console.error(error)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+if (process.env.NODE_ENV !== 'test') {
+  const prisma = createPrisma()
+  main(prisma)
+    .then(async () => {
+      await prisma.$disconnect()
+    })
+    .catch(async (error) => {
+      console.error(error)
+      await prisma.$disconnect()
+      process.exit(1)
+    })
+}
