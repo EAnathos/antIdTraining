@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
-import { enforceIpRateLimit, resetIpRateLimit } from '../lib/rateLimit.js'
+import { resetIpRateLimit } from '../lib/rateLimit.js'
 import { generateToken, hashToken } from '../lib/token.js'
 import { UserRole } from '@prisma/client'
 import { emailSchema } from '../lib/zodUtils.js'
@@ -12,7 +12,6 @@ import {
   sendLoginNotificationEmail,
   sendVerificationEmail,
 } from '../lib/mail.js'
-import { LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS } from '../lib/rateLimitConfig.js'
 
 function buildUserSummary(user: {
   id: string
@@ -50,25 +49,11 @@ export async function loginAdmin(
   })
 
   if (!user) {
-    await enforceIpRateLimit(
-      'login',
-      ip,
-      LOGIN_WINDOW_MS,
-      LOGIN_MAX_ATTEMPTS,
-      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
-    )
     throw new AppError(401, 'Identifiants invalides.')
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash)
   if (!isValid) {
-    await enforceIpRateLimit(
-      'login',
-      ip,
-      LOGIN_WINDOW_MS,
-      LOGIN_MAX_ATTEMPTS,
-      'Trop de tentatives de connexion depuis cette adresse IP. Réessayez plus tard.',
-    )
     throw new AppError(401, 'Identifiants invalides.')
   }
 
