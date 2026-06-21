@@ -30,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [installPromptEvent, setInstallPromptEvent] =
     useState<BeforeInstallPromptEvent | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -190,12 +191,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const closeMenu = () => setMenuOpen(false)
+
   return (
     <div className="app-shell app-shell--wide">
       <header className="app-header">
         <div className="app-header__top">
           <NavLink
             to="/"
+            onClick={closeMenu}
             className="app-brand no-underline hover:opacity-80 transition-opacity"
           >
             <h1 className="app-brand__title">Ant ID Training</h1>
@@ -204,7 +208,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </p>
           </NavLink>
 
-          <nav className="app-nav" aria-label="Navigation principale">
+          {/* Desktop nav */}
+          <nav
+            className="app-nav app-nav--desktop"
+            aria-label="Navigation principale"
+          >
             <div className="app-nav__group">
               <NavLink className={navClass} to="/taxons">
                 Taxons
@@ -216,16 +224,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Classement
               </NavLink>
             </div>
-
             <div className="app-nav__group app-nav__group--push-right">
               {role ? (
                 <>
                   {role === 'ADMIN' && (
-                    <span className="hidden sm:contents">
-                      <NavLink className={adminNavClass} to="/admin">
-                        Admin
-                      </NavLink>
-                    </span>
+                    <NavLink className={adminNavClass} to="/admin">
+                      Admin
+                    </NavLink>
                   )}
                   <NavLink className={adminNavClass} to="/profil">
                     Profil
@@ -237,19 +242,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </NavLink>
               )}
               {installPromptEvent && (
-                <span className="sm:hidden">
-                  <button
-                    className={buttonClass('primary')}
-                    type="button"
-                    onClick={() => void installApp()}
-                  >
-                    Installer l'app
-                  </button>
-                </span>
+                <button
+                  className={buttonClass('primary')}
+                  type="button"
+                  onClick={() => void installApp()}
+                >
+                  Installer l'app
+                </button>
               )}
             </div>
           </nav>
+
+          {/* Mobile burger button */}
+          <button
+            className="app-burger"
+            type="button"
+            aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="app-burger__bar" />
+            <span className="app-burger__bar" />
+            <span className="app-burger__bar" />
+          </button>
         </div>
+
+        {/* Mobile nav drawer */}
+        {menuOpen && (
+          <nav className="app-nav--mobile" aria-label="Navigation principale">
+            <NavLink className={navClass} to="/taxons" onClick={closeMenu}>
+              Taxons
+            </NavLink>
+            <NavLink className={navClass} to="/references" onClick={closeMenu}>
+              Références
+            </NavLink>
+            <NavLink className={navClass} to="/classement" onClick={closeMenu}>
+              Classement
+            </NavLink>
+            <div className="app-nav--mobile__divider" />
+            {role ? (
+              <>
+                {role === 'ADMIN' && (
+                  <NavLink
+                    className={adminNavClass}
+                    to="/admin"
+                    onClick={closeMenu}
+                  >
+                    Admin
+                  </NavLink>
+                )}
+                <NavLink
+                  className={adminNavClass}
+                  to="/profil"
+                  onClick={closeMenu}
+                >
+                  Profil
+                </NavLink>
+              </>
+            ) : (
+              <NavLink
+                className={adminNavClass}
+                to="/connexion"
+                onClick={closeMenu}
+              >
+                Connexion
+              </NavLink>
+            )}
+            {installPromptEvent && (
+              <button
+                className={buttonClass('primary')}
+                type="button"
+                onClick={() => {
+                  void installApp()
+                  closeMenu()
+                }}
+              >
+                Installer l'app
+              </button>
+            )}
+          </nav>
+        )}
       </header>
 
       {!isOnline && (
