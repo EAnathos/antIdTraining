@@ -13,8 +13,8 @@ Les scripts s'exécutent entièrement dans les containers Docker — aucun clien
 ## Commandes
 
 ```bash
-npm run backup:db                             # crée un backup dans backups/<timestamp>/
-npm run restore:db -- backups/20260620T120000Z  # restaure depuis un répertoire de backup
+npm run db:backup                             # crée un backup dans backups/<timestamp>/
+npm run db:restore -- backups/20260620T120000Z  # restaure depuis un répertoire de backup
 ```
 
 Les scripts sous-jacents sont [`scripts/backup-db.sh`](../scripts/backup-db.sh) et [`scripts/restore-db.sh`](../scripts/restore-db.sh).
@@ -30,7 +30,7 @@ Les credentials sont lus depuis `.env` à la racine du projet (`POSTGRES_USER`, 
 ### Exemple de restauration
 
 ```bash
-npm run restore:db -- backups/20260620T120000Z
+npm run db:restore -- backups/20260620T120000Z
 ```
 
 ## Objectifs
@@ -48,7 +48,7 @@ npm run restore:db -- backups/20260620T120000Z
 
 ## Runbook
 
-1. Créer le backup (`npm run backup:db`).
+1. Créer le backup (`npm run db:backup`).
 2. Copier le répertoire vers un stockage externe (S3, NAS, etc.).
 3. Tester une restauration sur une base de préproduction.
 4. Vérifier l'intégrité des données et des uploads.

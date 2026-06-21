@@ -13,8 +13,8 @@
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
     "db:generate": "npm run prisma:generate -w apps/backend",
     "db:migrate": "npm run prisma:migrate -w apps/backend",
-    "backup:db": "bash scripts/backup-db.sh",
-    "restore:db": "bash scripts/restore-db.sh",
+    "db:backup": "bash scripts/backup-db.sh",
+    "db:restore": "bash scripts/restore-db.sh",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

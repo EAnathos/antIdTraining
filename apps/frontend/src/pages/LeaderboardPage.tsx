@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import { getErrorMessage } from '../lib/errorUtils'
@@ -6,6 +6,99 @@ import type { AuthMeResponse, LeaderboardResponse } from '../types/models'
 import { UserProfileModal } from '../components/UserProfileModal'
 
 const MEDALS = ['🥇', '🥈', '🥉']
+
+function LeaderboardInfoTooltip() {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (
+        btnRef.current?.contains(e.target as Node) ||
+        panelRef.current?.contains(e.target as Node)
+      )
+        return
+      setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  function toggle() {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({
+        top: r.bottom + window.scrollY + 6,
+        left: r.left + window.scrollX,
+      })
+    }
+    setOpen((v) => !v)
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={toggle}
+        className="ml-2 w-5 h-5 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface)] text-[color:var(--app-text-muted)] text-xs font-semibold leading-none flex items-center justify-center hover:bg-[color:var(--app-surface-raised)] transition-colors"
+        aria-label="Informations sur le classement"
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          ref={panelRef}
+          style={{ position: 'fixed', top: pos.top, left: pos.left }}
+          className="z-50 w-72 rounded-[var(--app-radius-lg)] border border-[color:var(--app-border)] bg-[color:var(--app-surface)] shadow-lg p-4 text-sm text-[color:var(--app-text-muted)]"
+        >
+          <p className="mb-3">
+            Les meilleurs joueurs selon leurs points. Les points proviennent des
+            réponses correctes. Il vous faut{' '}
+            <span className="font-semibold text-[color:var(--app-text)]">
+              200 points
+            </span>{' '}
+            pour apparaître dans le classement.
+          </p>
+          <p className="mb-2 font-semibold text-[color:var(--app-text)]">
+            Points par niveau
+          </p>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="text-[color:var(--app-text-soft)]">
+                <th className="text-left pb-1 font-medium">Niveau</th>
+                <th className="text-center pb-1 font-medium">Bonne réponse</th>
+                <th className="text-center pb-1 font-medium">
+                  Mauvaise réponse
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[color:var(--app-border)]">
+              {[
+                { label: 'Facile', correct: '+5', wrong: '−2' },
+                { label: 'Moyen', correct: '+10', wrong: '−5' },
+                { label: 'Difficile', correct: '+15', wrong: '−5' },
+              ].map((row) => (
+                <tr key={row.label}>
+                  <td className="py-1">{row.label}</td>
+                  <td className="py-1 text-center text-[color:var(--app-success)]">
+                    {row.correct}
+                  </td>
+                  <td className="py-1 text-center text-[color:var(--app-danger)]">
+                    {row.wrong}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  )
+}
 
 function rankLabel(index: number): string {
   return MEDALS[index] ?? `#${index + 1}`
@@ -94,14 +187,12 @@ export function LeaderboardPage() {
 
   return (
     <section className="surface-panel surface-panel--solid p-6 overflow-hidden">
-      <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
-        Classement
-      </h2>
-      <p className="mt-2 text-sm text-[color:var(--app-text-muted)]">
-        Les meilleurs joueurs selon leurs points. Les points proviennent des
-        réponses correctes et des ajustements administrateur. Il vous faut 200
-        points pour apparaître dans le classement.
-      </p>
+      <div className="flex items-center">
+        <h2 className="text-xl font-semibold text-[color:var(--app-text)]">
+          Classement
+        </h2>
+        <LeaderboardInfoTooltip />
+      </div>
 
       {currentUserPoints !== null && (
         <div className="mt-4 ui-alert ui-alert--info">
