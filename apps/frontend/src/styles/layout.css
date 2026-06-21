@@ -330,5 +330,39 @@
     .app-footer__inner--inline {
       gap: 0.5rem;
     }
+
+    .app-header__top {
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+    }
+
+    .app-nav {
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+    }
+
+    .app-nav__group {
+      flex-wrap: nowrap;
+      gap: 0.3rem;
+    }
+
+    .nav-link {
+      padding: 0.3rem 0.1rem;
+      font-size: 0.8rem;
+    }
+
+    .nav-action {
+      padding: 0.35rem 0.6rem;
+      min-height: 2rem;
+      font-size: 0.8rem;
+    }
+
+    .app-brand {
+      gap: 0.4rem;
+    }
+
+    .app-brand__title {
+      font-size: 0.9rem;
+    }
   }
 }

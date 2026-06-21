@@ -290,12 +290,6 @@ describe('GamePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Démarrer ce niveau' }))
     await screen.findByText('Identifier la sous-famille')
 
-    expect(
-      screen.getByText(
-        /Le nombre de points gagnés ou perdus dépend du niveau de difficulté./,
-      ),
-    ).toBeInTheDocument()
-
     fireEvent.click(screen.getByAltText('Spécimen 1'))
     const fullscreenImg = await screen.findByAltText('Spécimen agrandis 1')
     expect(fullscreenImg).toBeInTheDocument()

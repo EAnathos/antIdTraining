@@ -237,13 +237,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </NavLink>
               )}
               {installPromptEvent && (
-                <button
-                  className={buttonClass('primary')}
-                  type="button"
-                  onClick={() => void installApp()}
-                >
-                  Installer l'app
-                </button>
+                <span className="sm:hidden">
+                  <button
+                    className={buttonClass('primary')}
+                    type="button"
+                    onClick={() => void installApp()}
+                  >
+                    Installer l'app
+                  </button>
+                </span>
               )}
             </div>
           </nav>

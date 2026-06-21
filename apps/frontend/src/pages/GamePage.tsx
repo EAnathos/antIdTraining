@@ -360,19 +360,12 @@ export function GamePage() {
         </span>
       </div>
       <div className="game-card__body space-y-4">
-        <p className="ui-alert ui-alert--success text-sm">
-          {isConnected ? (
-            <>
-              Le nombre de points gagnés ou perdus dépend du niveau de
-              difficulté.
-            </>
-          ) : (
-            <>
-              Vous pouvez jouer sans être connecté. Créez un compte joueur si
-              vous voulez suivre votre progression dans le classement.
-            </>
-          )}
-        </p>
+        {!isConnected && (
+          <p className="ui-alert ui-alert--success text-sm">
+            Vous pouvez jouer sans être connecté. Créez un compte joueur si vous
+            voulez suivre votre progression dans le classement.
+          </p>
+        )}
 
         <div className="grid gap-2 sm:grid-cols-3">
           <button

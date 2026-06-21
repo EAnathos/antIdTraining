@@ -43,7 +43,7 @@ docker compose -f "$REPO_DIR/docker-compose.yml" exec -T postgres \
 if [[ -f "$BACKUP_DIR/uploads.tar.gz" ]]; then
   echo "==> Restauration des uploads (via Docker)"
   docker compose -f "$REPO_DIR/docker-compose.yml" exec -T backend \
-    tar -xzf - -C /app/uploads \
+    tar -xzf - -C / \
     < "$BACKUP_DIR/uploads.tar.gz"
 fi
 
