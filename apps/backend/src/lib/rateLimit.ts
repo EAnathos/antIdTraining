@@ -1,6 +1,7 @@
 import { AppError } from './errors.js'
 import { logger } from './logger.js'
 import { getRedis } from './redis.js'
+import { rateLimitHitsTotal } from './metrics.js'
 
 function normalizeIp(ip: string) {
   return ip.replace(/^::ffff:/, '').trim()
@@ -36,6 +37,7 @@ export async function enforceIpRateLimit(
   const attempts = (results?.[1]?.[1] as number | null) ?? 1
 
   if (attempts > maxAttempts) {
+    rateLimitHitsTotal.inc({ endpoint: namespace })
     throw new AppError(429, message)
   }
 }

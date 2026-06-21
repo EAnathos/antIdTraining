@@ -64,6 +64,19 @@ rate(http_requests_total[1m])
 up
 ```
 
+## Dashboards Grafana
+
+Grafana est accessible sur `/grafana/` (auth Grafana requise). Les dashboards sont provisionnés automatiquement depuis `grafana/dashboards/` au démarrage — aucune configuration manuelle requise.
+
+| Dashboard                   | Description                                                               |
+| --------------------------- | ------------------------------------------------------------------------- |
+| **1 - Vue d'ensemble**      | KPIs globaux : uptime, utilisateurs, entrées, taux d'erreur               |
+| **2 - Application**         | Latence HTTP (P50/P95/P99), trafic, rate-limit, auth events, heap Node.js |
+| **3 - Jeu & Contributions** | Sessions par niveau, taux de réussite, backlog suggestions/propositions   |
+| **4 - Infrastructure**      | CPU, RAM, disque, réseau, PostgreSQL, Redis                               |
+
+Tous les dashboards se trouvent dans le dossier **AntID Training** dans Grafana.
+
 ## Bonnes pratiques
 
 - Ajouter un uptime check externe (Uptime Kuma, Better Uptime, etc.) sur `/api/health`.

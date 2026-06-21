@@ -7,8 +7,6 @@ import type {
   Entry,
   EntryPageResponse,
   EntryProposal,
-  GameLevelStats,
-  GameStatsPeriod,
   ReferenceItem,
   Suggestion,
   Taxon,
@@ -117,9 +115,6 @@ export function useAdminData(onUnauthorized?: () => void) {
   const [entriesLimit, setEntriesLimit] = useState(50)
   const [entriesTotal, setEntriesTotal] = useState(0)
   const [entriesPages, setEntriesPages] = useState(1)
-  const [gameStats, setGameStats] = useState<GameLevelStats[]>([])
-  const [entryStats, setEntryStats] = useState<unknown>(null)
-  const [statsPeriod, setStatsPeriod] = useState<GameStatsPeriod>('all')
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<AdminHistoryItem[]>([])
   const [users, setUsers] = useState<AdminUserPointsItem[]>([])
@@ -266,8 +261,6 @@ export function useAdminData(onUnauthorized?: () => void) {
       subfamilyRes,
       refRes,
       entryRes,
-      statsRes,
-      entryStatsRes,
       historyRes,
       usersRes,
       suggestionsRes,
@@ -278,15 +271,6 @@ export function useAdminData(onUnauthorized?: () => void) {
       api.get<ReferenceItem[]>('/references'),
       adminApi.get<EntryPageResponse>('/entries', {
         params: { page: entriesPage, limit: entriesLimit },
-      }),
-      adminApi.get<{ period: GameStatsPeriod; levels: GameLevelStats[] }>(
-        '/stats/game',
-        {
-          params: { period: statsPeriod },
-        },
-      ),
-      adminApi.get<unknown>('/stats/entries', {
-        params: { period: statsPeriod },
       }),
       adminApi.get<AdminHistoryItem[]>('/history'),
       adminApi.get<AdminUserPointsItem[]>('/users'),
@@ -302,13 +286,11 @@ export function useAdminData(onUnauthorized?: () => void) {
     setEntriesLimit(entryRes.data.pagination.limit)
     setEntriesTotal(entryRes.data.pagination.total)
     setEntriesPages(entryRes.data.pagination.pages)
-    setGameStats(statsRes.data.levels)
-    setEntryStats(entryStatsRes.data)
     setHistory(historyRes.data)
     setUsers(usersRes.data)
     setSuggestions(suggestionsRes.data)
     setProposals(proposalsRes.data)
-  }, [adminApi, entriesLimit, entriesPage, statsPeriod])
+  }, [adminApi, entriesLimit, entriesPage])
 
   async function runAdminAction(
     action: () => Promise<void>,
@@ -1037,10 +1019,6 @@ export function useAdminData(onUnauthorized?: () => void) {
     entriesPages,
     setEntriesPage,
     setEntriesLimit,
-    entryStats,
-    gameStats,
-    statsPeriod,
-    setStatsPeriod,
     entryForm,
     setEntryForm,
     entryFiles,

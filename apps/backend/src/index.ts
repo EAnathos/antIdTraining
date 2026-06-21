@@ -16,6 +16,7 @@ import {
   suggestionsTotal,
   entryProposalsTotal,
   gameSessionsTotal,
+  httpRequestDurationSeconds,
 } from './lib/metrics.js'
 import { prisma } from './prisma.js'
 import { closeRedis } from './lib/redis.js'
@@ -129,6 +130,14 @@ app.use((req, res, next) => {
     )
 
     recordHttpRequest(res.statusCode)
+
+    const durationSeconds = Number(process.hrtime.bigint() - startedAt) / 1e9
+    const statusClass =
+      res.statusCode >= 500 ? '5xx' : res.statusCode >= 400 ? '4xx' : '2xx'
+    httpRequestDurationSeconds.observe(
+      { method: req.method, status_class: statusClass },
+      durationSeconds,
+    )
   })
 
   next()

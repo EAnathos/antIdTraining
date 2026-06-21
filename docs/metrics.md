@@ -31,11 +31,16 @@ Métriques du process backend Express. Exposées par le container `backend` sur 
 
 ## Métriques HTTP (prom-client)
 
-| Métrique              | Type    | Labels         | Description                                  |
-| --------------------- | ------- | -------------- | -------------------------------------------- |
-| `http_requests_total` | Counter | `status_class` | Nombre de requêtes HTTP par classe de statut |
+| Métrique                        | Type      | Labels                   | Description                                  |
+| ------------------------------- | --------- | ------------------------ | -------------------------------------------- |
+| `http_requests_total`           | Counter   | `status_class`           | Nombre de requêtes HTTP par classe de statut |
+| `http_request_duration_seconds` | Histogram | `method`, `status_class` | Durée des requêtes HTTP en secondes          |
+| `rate_limit_hits_total`         | Counter   | `endpoint`               | Rejets rate-limit par endpoint (namespace)   |
+| `auth_events_total`             | Counter   | `type`, `outcome`        | Événements d'authentification                |
 
-Valeurs du label `status_class` : `2xx`, `4xx`, `5xx`.
+Valeurs du label `status_class` : `2xx`, `4xx`, `5xx`.  
+Valeurs du label `type` (auth) : `login`, `register`.  
+Valeurs du label `outcome` (auth) : `success`, `failure`.
 
 Requêtes PromQL utiles :
 
@@ -49,6 +54,15 @@ rate(http_requests_total{status_class="5xx"}[5m])
 # Ratio d'erreurs
 rate(http_requests_total{status_class="5xx"}[5m])
   / rate(http_requests_total[5m])
+
+# Latence P95
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Rate limit hits par endpoint (par minute)
+rate(rate_limit_hits_total[1m]) * 60
+
+# Taux d'échecs de login
+rate(auth_events_total{type="login", outcome="failure"}[5m])
 ```
 
 ## Métriques métier (prom-client)
