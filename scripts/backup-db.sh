@@ -12,14 +12,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-POSTGRES_USER="$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2-)"
-POSTGRES_PASSWORD="$(grep -E '^POSTGRES_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)"
-POSTGRES_DB="$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | cut -d= -f2-)"
-
-if [[ -z "${POSTGRES_USER:-}" || -z "${POSTGRES_PASSWORD:-}" || -z "${POSTGRES_DB:-}" ]]; then
-  echo "ERROR: POSTGRES_USER, POSTGRES_PASSWORD et POSTGRES_DB sont requis dans .env"
-  exit 1
-fi
+# shellcheck source=scripts/lib/load-pg-env.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/load-pg-env.sh"
 
 if ! docker compose -f "$REPO_DIR/docker-compose.yml" ps postgres --quiet 2>/dev/null | grep -q .; then
   echo "ERROR: le container postgres n'est pas en cours d'exécution. Lance 'npm run docker:up' d'abord."

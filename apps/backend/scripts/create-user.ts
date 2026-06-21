@@ -1,15 +1,9 @@
 import bcrypt from 'bcryptjs'
-import { PrismaClient, UserRole } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { UserRole } from '@prisma/client'
 import dotenv from 'dotenv'
+import { createPrisma } from './_prisma.js'
 
 dotenv.config()
-
-export function createPrisma() {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) throw new Error('DATABASE_URL manquant')
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
-}
 
 export async function main(prisma = createPrisma()) {
   const username = process.env.USERNAME_TO_CREATE?.trim()
