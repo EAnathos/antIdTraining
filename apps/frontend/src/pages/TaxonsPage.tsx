@@ -929,7 +929,11 @@ export function TaxonsPage() {
           className="ui-input h-10 w-full min-w-0 sm:flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Recherche (sous-famille, genre, espèce...)"
+          placeholder={
+            window.innerWidth < 640
+              ? 'Recherche'
+              : 'Recherche (sous-famille, genre, espèce...)'
+          }
         />
         <div className="flex flex-wrap gap-2 items-center">
           <button
