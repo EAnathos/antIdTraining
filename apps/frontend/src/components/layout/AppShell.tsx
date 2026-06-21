@@ -281,24 +281,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </NavLink>
             <div className="app-nav--mobile__divider" />
             {role ? (
-              <>
-                {role === 'ADMIN' && (
-                  <NavLink
-                    className={adminNavClass}
-                    to="/admin"
-                    onClick={closeMenu}
-                  >
-                    Admin
-                  </NavLink>
-                )}
-                <NavLink
-                  className={adminNavClass}
-                  to="/profil"
-                  onClick={closeMenu}
-                >
-                  Profil
-                </NavLink>
-              </>
+              <NavLink
+                className={adminNavClass}
+                to="/profil"
+                onClick={closeMenu}
+              >
+                Profil
+              </NavLink>
             ) : (
               <NavLink
                 className={adminNavClass}
@@ -309,16 +298,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </NavLink>
             )}
             {installPromptEvent && (
-              <button
-                className={buttonClass('primary')}
-                type="button"
-                onClick={() => {
-                  void installApp()
-                  closeMenu()
-                }}
-              >
-                Installer l'app
-              </button>
+              <div className="mt-4">
+                <button
+                  className={buttonClass('primary')}
+                  type="button"
+                  onClick={() => {
+                    void installApp()
+                    closeMenu()
+                  }}
+                >
+                  Installer l'app
+                </button>
+              </div>
             )}
           </nav>
         )}
