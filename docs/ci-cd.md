@@ -2,10 +2,11 @@
 
 ## Vue d'ensemble
 
-Le pipeline CI/CD est géré par GitHub Actions avec deux workflows distincts :
+Le pipeline CI/CD est géré par GitHub Actions avec deux workflows distincts, complétés par Dependabot pour les mises à jour automatiques de dépendances :
 
 - **CI** (`.github/workflows/ci.yml`) — validation automatique sur chaque push et PR
 - **CD** (`.github/workflows/cd.yml`) — déploiement automatique sur le VPS à chaque push sur `master`
+- **Dependabot** (`.github/dependabot.yml`) — PRs automatiques de mise à jour des dépendances (voir [dependencies.md](dependencies.md))
 
 ## CI — Validation (`.github/workflows/ci.yml`)
 
