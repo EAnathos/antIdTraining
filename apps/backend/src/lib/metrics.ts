@@ -1,4 +1,10 @@
-import { collectDefaultMetrics, Counter, Gauge, Registry } from 'prom-client'
+import {
+  collectDefaultMetrics,
+  Counter,
+  Gauge,
+  Histogram,
+  Registry,
+} from 'prom-client'
 
 export const register = new Registry()
 
@@ -47,5 +53,27 @@ export const gameSessionsTotal = new Gauge({
   name: 'game_sessions_total',
   help: 'Total number of game sessions by level and outcome',
   labelNames: ['level', 'outcome'],
+  registers: [register],
+})
+
+export const httpRequestDurationSeconds = new Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'status_class'],
+  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  registers: [register],
+})
+
+export const rateLimitHitsTotal = new Counter({
+  name: 'rate_limit_hits_total',
+  help: 'Number of rate limit rejections by endpoint',
+  labelNames: ['endpoint'],
+  registers: [register],
+})
+
+export const authEventsTotal = new Counter({
+  name: 'auth_events_total',
+  help: 'Authentication events by type and outcome',
+  labelNames: ['type', 'outcome'],
   registers: [register],
 })

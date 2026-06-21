@@ -12,6 +12,7 @@ import {
   sendLoginNotificationEmail,
   sendVerificationEmail,
 } from '../lib/mail.js'
+import { authEventsTotal } from '../lib/metrics.js'
 
 function buildUserSummary(user: {
   id: string
@@ -49,11 +50,13 @@ export async function loginAdmin(
   })
 
   if (!user) {
+    authEventsTotal.inc({ type: 'login', outcome: 'failure' })
     throw new AppError(401, 'Identifiants invalides.')
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash)
   if (!isValid) {
+    authEventsTotal.inc({ type: 'login', outcome: 'failure' })
     throw new AppError(401, 'Identifiants invalides.')
   }
 
@@ -65,6 +68,7 @@ export async function loginAdmin(
   }
 
   await resetIpRateLimit('login', ip)
+  authEventsTotal.inc({ type: 'login', outcome: 'success' })
 
   const token = jwt.sign(
     { userId: user.id, role: user.role, tokenVersion: user.tokenVersion },
@@ -143,6 +147,7 @@ export async function registerUser(
   }
 
   await resetIpRateLimit('registration', ip)
+  authEventsTotal.inc({ type: 'register', outcome: 'success' })
 
   return {
     requiresEmailVerification: true as const,

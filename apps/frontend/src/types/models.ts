@@ -243,5 +243,4 @@ export type AdminSection =
   | 'stats'
   | 'database'
   | 'suggestions'
-  | 'points'
   | 'history'

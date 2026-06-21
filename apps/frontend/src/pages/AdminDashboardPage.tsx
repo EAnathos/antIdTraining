@@ -8,7 +8,6 @@ import { TaxonsCrudPanel } from '../components/admin/TaxonsCrudPanel'
 import { ReferencesCrudPanel } from '../components/admin/ReferencesCrudPanel'
 import { EntriesCrudPanel } from '../components/admin/EntriesCrudPanel'
 import { DatabaseToolsPanel } from '../components/admin/DatabaseToolsPanel'
-import { StatsPanel } from '../components/admin/StatsPanel'
 import { SuggestionsPanel } from '../components/admin/SuggestionsPanel'
 import { UserPointsPanel } from '../components/admin/UserPointsPanel'
 import { AdminHistoryPanel } from '../components/admin/AdminHistoryPanel'
@@ -19,7 +18,6 @@ const adminSections: { id: AdminSection; label: string }[] = [
   { id: 'references', label: 'Références' },
   { id: 'entries', label: 'Entrées' },
   { id: 'suggestions', label: 'Contribuer' },
-  { id: 'points', label: 'Points' },
   { id: 'database', label: 'Outils' },
 ]
 
@@ -27,7 +25,7 @@ export function AdminDashboardPage() {
   const navigate = useNavigate()
   const [section, setSection] = useState<AdminSection>('taxons')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
-  const [toolsTab, setToolsTab] = useState<'database' | 'stats' | 'history'>(
+  const [toolsTab, setToolsTab] = useState<'database' | 'history' | 'points'>(
     'database',
   )
 
@@ -167,21 +165,14 @@ export function AdminDashboardPage() {
             />
           )}
 
-          {section === 'points' && (
-            <UserPointsPanel
-              users={data.users}
-              setUserPoints={data.setUserPoints}
-            />
-          )}
-
           {section === 'database' && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 border-b border-[color:var(--app-border)] pb-2">
                 {(
                   [
                     { id: 'database', label: 'Base de données' },
-                    { id: 'stats', label: 'Statistiques' },
                     { id: 'history', label: 'Historique' },
+                    { id: 'points', label: 'Points' },
                   ] as const
                 ).map((item) => (
                   <button
@@ -203,16 +194,15 @@ export function AdminDashboardPage() {
                 />
               )}
 
-              {toolsTab === 'stats' && (
-                <StatsPanel
-                  stats={data.gameStats}
-                  period={data.statsPeriod}
-                  setPeriod={data.setStatsPeriod}
-                />
-              )}
-
               {toolsTab === 'history' && (
                 <AdminHistoryPanel history={data.history} />
+              )}
+
+              {toolsTab === 'points' && (
+                <UserPointsPanel
+                  users={data.users}
+                  setUserPoints={data.setUserPoints}
+                />
               )}
             </div>
           )}

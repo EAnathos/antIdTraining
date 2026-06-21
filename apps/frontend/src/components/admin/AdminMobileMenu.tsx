@@ -18,7 +18,6 @@ export function AdminMobileMenu({
     references: 'Références',
     entries: 'Entrées',
     suggestions: 'Contribuer',
-    points: 'Points',
     stats: 'Statistiques',
     database: 'Outils',
     history: 'Historique',
@@ -29,7 +28,6 @@ export function AdminMobileMenu({
     { id: 'references', label: 'Références' },
     { id: 'entries', label: 'Entrées' },
     { id: 'suggestions', label: 'Contribuer' },
-    { id: 'points', label: 'Points' },
     { id: 'database', label: 'Outils' },
   ]
 
