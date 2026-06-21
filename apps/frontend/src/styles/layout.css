@@ -305,6 +305,51 @@
     }
   }
 
+  /* Burger button — hidden on desktop */
+  .app-burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0.4rem;
+    background: none;
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-md);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .app-burger__bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--app-text);
+    border-radius: 2px;
+    transition: opacity 0.15s;
+  }
+
+  /* Desktop nav — visible by default, hidden on mobile */
+  .app-nav--desktop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Mobile drawer — hidden by default, shown via JS */
+  .app-nav--mobile {
+    display: none;
+  }
+
+  .app-nav--mobile__divider {
+    width: 100%;
+    height: 1px;
+    background: var(--app-border);
+    margin: 0.25rem 0;
+  }
+
   @media (max-width: 640px) {
     .app-shell {
       padding: 0.75rem;
@@ -333,36 +378,42 @@
 
     .app-header__top {
       flex-wrap: nowrap;
+      align-items: center;
       gap: 0.5rem;
     }
 
-    .app-nav {
-      flex-wrap: nowrap;
-      gap: 0.4rem;
+    .app-brand__title {
+      font-size: 1rem;
     }
 
-    .app-nav__group {
-      flex-wrap: nowrap;
-      gap: 0.3rem;
+    /* Show burger, hide desktop nav */
+    .app-burger {
+      display: flex;
+      margin-left: auto;
+    }
+
+    .app-nav--desktop {
+      display: none;
+    }
+
+    /* Mobile drawer */
+    .app-nav--mobile {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding-top: 0.75rem;
+      margin-top: 0.75rem;
+      border-top: 1px solid var(--app-border);
     }
 
     .nav-link {
-      padding: 0.3rem 0.1rem;
-      font-size: 0.8rem;
+      padding: 0.55rem 0.25rem;
+      font-size: 0.95rem;
     }
 
     .nav-action {
-      padding: 0.35rem 0.6rem;
-      min-height: 2rem;
-      font-size: 0.8rem;
-    }
-
-    .app-brand {
-      gap: 0.4rem;
-    }
-
-    .app-brand__title {
-      font-size: 0.9rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
     }
   }
 }

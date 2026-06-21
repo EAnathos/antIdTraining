@@ -60,6 +60,35 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument()
   })
 
+  it('opens and closes the mobile burger menu', () => {
+    authMocks.role = 'USER'
+
+    render(
+      <MemoryRouter>
+        <AppShell>
+          <div>Contenu</div>
+        </AppShell>
+      </MemoryRouter>,
+    )
+
+    const burger = screen.getByRole('button', { name: /ouvrir le menu/i })
+    expect(burger).toBeInTheDocument()
+
+    // Mobile nav is not rendered yet
+    expect(screen.getAllByRole('link', { name: 'Taxons' })).toHaveLength(1)
+
+    fireEvent.click(burger)
+
+    // Mobile drawer is now open: two sets of nav links
+    expect(screen.getAllByRole('link', { name: 'Taxons' })).toHaveLength(2)
+    expect(burger).toHaveAttribute('aria-expanded', 'true')
+
+    // Click a nav link closes the menu
+    const mobileLinks = screen.getAllByRole('link', { name: 'Taxons' })
+    fireEvent.click(mobileLinks[1])
+    expect(screen.getAllByRole('link', { name: 'Taxons' })).toHaveLength(1)
+  })
+
   it('shows admin, offline and install states', async () => {
     authMocks.role = 'ADMIN'
     localStorage.setItem('antidtraining-theme', 'dark')
