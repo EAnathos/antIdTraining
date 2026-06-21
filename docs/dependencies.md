@@ -2,6 +2,19 @@
 
 Bibliothèques principales du projet et leur rôle.
 
+## Dependabot
+
+Dependabot est configuré pour ouvrir des PRs automatiques chaque semaine en cas de nouvelles versions. Les PRs ciblent toujours la branche `dev`.
+
+| Périmètre      | Répertoire               |
+| -------------- | ------------------------ |
+| npm (racine)   | `/`                      |
+| npm (backend)  | `apps/backend`           |
+| npm (frontend) | `apps/frontend`          |
+| Docker images  | `/` (docker-compose.yml) |
+
+Les PRs Dependabot passent par la CI comme toute autre PR. Merger dans `dev` une fois la CI verte, puis dans `master` pour déployer.
+
 ## Frontend
 
 | Dépendance                             | Rôle                                                      |

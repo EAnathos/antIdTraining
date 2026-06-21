@@ -93,4 +93,4 @@ npm run dev          # frontend + backend en parallèle
 npm run docker:up    # environnement complet via Docker Compose
 ```
 
-Docker Compose démarre PostgreSQL, Redis, le backend et le frontend. Le backend expose le port 4000, le frontend le port 8080.
+Docker Compose démarre PostgreSQL, Redis, le backend et le frontend. Seul Nginx expose un port sur l'hôte (`80`) — PostgreSQL, Redis et le backend communiquent uniquement via les réseaux Docker internes.

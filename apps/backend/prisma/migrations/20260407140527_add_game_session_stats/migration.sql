@@ -1,5 +1,9 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "GameDifficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+DO $$ BEGIN
+    CREATE TYPE "GameDifficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "GameSession" (

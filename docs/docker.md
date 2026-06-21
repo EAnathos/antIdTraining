@@ -8,23 +8,25 @@ Le fichier [`docker-compose.yml`](../docker-compose.yml) orchestre l'ensemble de
 
 | Service    | Image                | Port exposé | Rôle                                   |
 | ---------- | -------------------- | ----------- | -------------------------------------- |
-| `postgres` | `postgres:16-alpine` | `5432`      | Base de données principale             |
-| `redis`    | `redis:7-alpine`     | `6379`      | Rate limiting et cache des entrées jeu |
-| `backend`  | Build local          | `4000`      | API Express                            |
+| `postgres` | `postgres:16-alpine` | —           | Base de données principale             |
+| `redis`    | `redis:7-alpine`     | —           | Rate limiting et cache des entrées jeu |
+| `backend`  | Build local          | —           | API Express                            |
 | `frontend` | Build local          | —           | Build Vite → volume partagé            |
 | `nginx`    | `nginx:1.27-alpine`  | `80`        | Reverse proxy + serving du frontend    |
 
+`postgres`, `redis` et `backend` ne sont pas exposés sur l'hôte — ils communiquent uniquement via les réseaux Docker internes.
+
 ### Services de monitoring
 
-| Service             | Image                                          | Port   | Rôle                                              |
-| ------------------- | ---------------------------------------------- | ------ | ------------------------------------------------- |
-| `prometheus`        | `prom/prometheus:latest`                       | `9090` | Collecte et stockage des métriques                |
-| `grafana`           | `grafana/grafana:latest`                       | `3000` | Visualisation des métriques (dashboards)          |
-| `node-exporter`     | `prom/node-exporter:latest`                    | `9100` | Métriques système hôte (CPU, RAM, disque, réseau) |
-| `postgres-exporter` | `prometheuscommunity/postgres-exporter:latest` | `9187` | Métriques PostgreSQL                              |
-| `redis-exporter`    | `oliver006/redis_exporter:latest`              | `9121` | Métriques Redis                                   |
+| Service             | Image                                           | Port exposé | Rôle                                                |
+| ------------------- | ----------------------------------------------- | ----------- | --------------------------------------------------- |
+| `prometheus`        | `prom/prometheus:v3.12.0`                       | —           | Collecte et stockage des métriques                  |
+| `grafana`           | `grafana/grafana:13.0.2`                        | —           | Visualisation des métriques (via Nginx `/grafana/`) |
+| `node-exporter`     | `prom/node-exporter:v1.11.1`                    | —           | Métriques système hôte (CPU, RAM, disque, réseau)   |
+| `postgres-exporter` | `prometheuscommunity/postgres-exporter:v0.19.1` | —           | Métriques PostgreSQL                                |
+| `redis-exporter`    | `oliver006/redis_exporter:v1.86.0`              | —           | Métriques Redis                                     |
 
-> Prometheus et Grafana sont liés à `127.0.0.1` uniquement — accessibles via tunnel SSH, jamais exposés publiquement.
+Aucun service de monitoring n'est exposé directement sur l'hôte. Prometheus est accessible via tunnel SSH uniquement ; Grafana est proxifié par Nginx sur `/grafana/`.
 
 ### Réseaux
 
@@ -56,9 +58,6 @@ Le fichier [`docker-compose.yml`](../docker-compose.yml) orchestre l'ensemble de
 # Démarrer tous les services
 npm run docker:up
 
-# Mode watch — rebuild automatique sur changement de fichiers (dev)
-npm run docker:watch
-
 # Vérifier l'état des services
 docker compose ps
 
@@ -73,29 +72,14 @@ docker compose exec backend npx prisma migrate deploy
 docker compose restart backend
 ```
 
-## Mode watch (développement)
-
-`npm run docker:watch` active la surveillance des fichiers locaux via `docker compose watch`. Dès qu'un fichier change, le service concerné est **rebuildé automatiquement** (avec cache Docker — seuls les layers invalidés sont reconstruits).
-
-| Changement                   | Service rebuildé | Effet                                         |
-| ---------------------------- | ---------------- | --------------------------------------------- |
-| `apps/frontend/src/**`       | `frontend`       | Nouveau build Vite → nginx sert le résultat   |
-| `apps/frontend/public/**`    | `frontend`       | Idem                                          |
-| `apps/frontend/package.json` | `frontend`       | Réinstallation npm + rebuild                  |
-| `apps/backend/src/**`        | `backend`        | Rebuild TypeScript + redémarrage du container |
-| `apps/backend/prisma/**`     | `backend`        | Génération client Prisma + migrations au boot |
-| `apps/backend/package.json`  | `backend`        | Réinstallation npm + rebuild                  |
-
-`docker:up` et `docker:watch` sont complémentaires : `up` pour le premier démarrage, `watch` pour le développement itératif ensuite.
-
 ## Accès aux outils de monitoring
 
-| Outil      | URL publique                | Accès                                                           |
-| ---------- | --------------------------- | --------------------------------------------------------------- |
-| Grafana    | `http://<domaine>/grafana/` | Public (auth Grafana requise)                                   |
-| Prometheus | tunnel SSH uniquement       | `ssh -L 9090:localhost:9090 user@vps` → `http://localhost:9090` |
+| Outil      | URL publique                | Accès                         |
+| ---------- | --------------------------- | ----------------------------- |
+| Grafana    | `http://<domaine>/grafana/` | Public (auth Grafana requise) |
+| Prometheus | non exposé                  | Interne Docker uniquement     |
 
-Prometheus reste lié à `127.0.0.1` — pas d'interface publique. Grafana est proxifié par Nginx sur `/grafana/`.
+Prometheus n'a aucun port exposé sur l'hôte — il n'est accessible que depuis les autres conteneurs sur `backend_net`. Grafana est proxifié par Nginx sur `/grafana/`.
 
 ## Grafana
 
