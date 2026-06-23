@@ -4,7 +4,12 @@ import { prisma } from '../prisma.js'
 import { config } from '../config.js'
 import { AppError } from '../lib/errors.js'
 import { resetIpRateLimit } from '../lib/rateLimit.js'
-import { generateToken, hashToken } from '../lib/token.js'
+import {
+  hashToken,
+  generateAndHashToken,
+  calculateTokenExpiry,
+  isTokenExpired,
+} from '../lib/token.js'
 import { UserRole } from '@prisma/client'
 import { emailSchema } from '../lib/zodUtils.js'
 import { logger } from '../lib/logger.js'
@@ -27,8 +32,6 @@ function buildUserSummary(user: {
     role: user.role,
   }
 }
-
-const ACTIVATION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000
 
 export async function loginAdmin(
   email: string,
@@ -115,11 +118,9 @@ export async function registerUser(
     throw new AppError(409, 'Cette adresse e-mail est déjà utilisée.')
   }
 
-  const activationToken = generateToken()
-  const activationTokenHash = hashToken(activationToken)
-  const activationTokenExpiresAt = new Date(
-    Date.now() + ACTIVATION_TOKEN_EXPIRY_MS,
-  )
+  const { token: activationToken, hash: activationTokenHash } =
+    generateAndHashToken()
+  const activationTokenExpiresAt = calculateTokenExpiry()
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
     data: {
@@ -176,8 +177,7 @@ export async function verifyRegistrationEmail(
     !user ||
     !user.email ||
     user.emailVerifiedAt ||
-    !user.emailVerificationTokenExpiresAt ||
-    user.emailVerificationTokenExpiresAt.getTime() < Date.now()
+    isTokenExpired(user.emailVerificationTokenExpiresAt)
   ) {
     throw new AppError(400, "Lien d'activation invalide ou expiré.")
   }

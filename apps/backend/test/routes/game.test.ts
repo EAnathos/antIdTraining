@@ -11,6 +11,10 @@ import {
 import { ZodError } from 'zod'
 import { commonMocks, resetSharedMocks } from '../utils/sharedMocks'
 
+vi.mock('../../src/lib/syncMetrics.js', () => ({
+  syncBusinessMetrics: vi.fn(),
+}))
+
 vi.mock('../../src/middleware/auth.js', () => ({
   optionalAuth: (
     req: express.Request,

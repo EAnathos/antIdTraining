@@ -26,6 +26,7 @@ import {
 } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 import { cuidSchema } from '../lib/zodUtils.js'
 import { enforceIpRateLimit } from '../lib/rateLimit.js'
 import {
@@ -317,6 +318,7 @@ entriesRouter.post(
     })
 
     invalidateGameEntryCacheSafely('entry created')
+    void syncBusinessMetrics()
 
     return res.status(201).json(publicEntry(created))
   }),
@@ -465,6 +467,7 @@ entriesRouter.delete(
     })
 
     invalidateGameEntryCacheSafely('entry deleted')
+    void syncBusinessMetrics()
 
     return res.status(204).send()
   }),

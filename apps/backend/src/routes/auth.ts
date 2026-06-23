@@ -27,7 +27,13 @@ import {
 } from '../lib/rateLimitConfig.js'
 import { upload } from '../middleware/upload.js'
 import crypto from 'node:crypto'
-import { hashToken } from '../lib/token.js'
+import {
+  hashToken,
+  generateAndHashToken,
+  calculateTokenExpiry,
+  isTokenExpired,
+} from '../lib/token.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {
@@ -177,6 +183,7 @@ authRouter.post(
       req.ip,
     )
 
+    void syncBusinessMetrics()
     return res.status(201).json(result)
   }),
 )
@@ -404,10 +411,8 @@ authRouter.post(
       }
     }
 
-    // generate a token and expiry (valid 24 hours)
-    const token = crypto.randomBytes(24).toString('hex')
-    const tokenHash = hashToken(token)
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const { token, hash: tokenHash } = generateAndHashToken()
+    const expiresAt = calculateTokenExpiry()
 
     // store hashed token — never the raw token — to limit exposure in case of DB breach
     await prisma.user.update({
@@ -488,11 +493,7 @@ authRouter.post(
       },
     })
 
-    if (
-      !user ||
-      !user.passwordResetTokenExpiresAt ||
-      user.passwordResetTokenExpiresAt.getTime() < Date.now()
-    ) {
+    if (!user || isTokenExpired(user.passwordResetTokenExpiresAt)) {
       throw new AppError(400, 'Token de réinitialisation invalide ou expiré.')
     }
 

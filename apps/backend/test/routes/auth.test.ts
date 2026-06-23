@@ -33,6 +33,10 @@ vi.mock('sharp', () => ({
   })),
 }))
 
+vi.mock('../../src/lib/syncMetrics.js', () => ({
+  syncBusinessMetrics: vi.fn(),
+}))
+
 vi.mock('../../src/middleware/auth.js', () => ({
   getAdminCookieOptions: () => ({
     httpOnly: true,
