@@ -17,6 +17,8 @@ import {
   entryProposalsTotal,
   gameSessionsTotal,
   httpRequestDurationSeconds,
+  referencesTotal,
+  taxonsTotal,
 } from './lib/metrics.js'
 import { prisma } from './prisma.js'
 import { closeRedis } from './lib/redis.js'
@@ -232,18 +234,31 @@ const server = app.listen(config.port, () => {
 })
 
 async function syncBusinessMetrics() {
-  const [users, entries, images, suggestions, proposals, sessions] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.observationEntry.count(),
-      prisma.entryImage.count(),
-      prisma.suggestion.groupBy({ by: ['status'], _count: { _all: true } }),
-      prisma.entryProposal.groupBy({ by: ['status'], _count: { _all: true } }),
-      prisma.gameSession.groupBy({
-        by: ['level', 'finalCorrect'],
-        _count: { _all: true },
-      }),
-    ])
+  const [
+    users,
+    entries,
+    images,
+    suggestions,
+    proposals,
+    sessions,
+    references,
+    taxons,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.observationEntry.count(),
+    prisma.entryImage.count(),
+    prisma.suggestion.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.entryProposal.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.gameSession.groupBy({
+      by: ['level', 'finalCorrect'],
+      _count: { _all: true },
+    }),
+    prisma.reference.groupBy({ by: ['type'], _count: { _all: true } }),
+    prisma.taxon.groupBy({
+      by: ['subfamily', 'genus'],
+      _count: { _all: true },
+    }),
+  ])
 
   registeredUsersTotal.set(users)
   observationEntriesTotal.set(entries)
@@ -269,6 +284,17 @@ async function syncBusinessMetrics() {
           : 'abandoned'
     gameSessionsTotal.set(
       { level: row.level.toLowerCase(), outcome },
+      row._count._all,
+    )
+  }
+
+  for (const row of references) {
+    referencesTotal.set({ type: row.type.toLowerCase() }, row._count._all)
+  }
+
+  for (const row of taxons) {
+    taxonsTotal.set(
+      { subfamily: row.subfamily, genus: row.genus },
       row._count._all,
     )
   }

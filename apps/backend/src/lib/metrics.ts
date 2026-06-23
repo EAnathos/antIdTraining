@@ -77,3 +77,17 @@ export const authEventsTotal = new Counter({
   labelNames: ['type', 'outcome'],
   registers: [register],
 })
+
+export const referencesTotal = new Gauge({
+  name: 'references_total',
+  help: 'Total references by type',
+  labelNames: ['type'],
+  registers: [register],
+})
+
+export const taxonsTotal = new Gauge({
+  name: 'taxons_total',
+  help: 'Total taxons by subfamily and genus',
+  labelNames: ['subfamily', 'genus'],
+  registers: [register],
+})
