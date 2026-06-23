@@ -8,7 +8,7 @@ import {
   validateGameAnswerSchema,
 } from '../services/game.js'
 import { optionalAuth } from '../middleware/auth.js'
-import { syncBusinessMetrics } from '../lib/metrics.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 
 const gameQuestionQuerySchema = z.object({
   level: z.string().optional(),

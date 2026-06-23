@@ -33,7 +33,7 @@ import {
   calculateTokenExpiry,
   isTokenExpired,
 } from '../lib/token.js'
-import { syncBusinessMetrics } from '../lib/metrics.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 import bcrypt from 'bcryptjs'
 import { sendPasswordResetEmail } from '../lib/mail.js'
 import {

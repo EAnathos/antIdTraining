@@ -26,7 +26,7 @@ import {
 } from '../services/entries.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
-import { syncBusinessMetrics } from '../lib/metrics.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 import { cuidSchema } from '../lib/zodUtils.js'
 import { enforceIpRateLimit } from '../lib/rateLimit.js'
 import {

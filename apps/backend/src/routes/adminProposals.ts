@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
-import { syncBusinessMetrics } from '../lib/metrics.js'
+import { syncBusinessMetrics } from '../lib/syncMetrics.js'
 import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminProposalsRouter = Router()

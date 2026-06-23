@@ -8,11 +8,8 @@ import swaggerUi from 'swagger-ui-express'
 import { config } from './config.js'
 import { logger } from './lib/logger.js'
 import { recordHttpRequest } from './lib/monitoring.js'
-import {
-  register,
-  httpRequestDurationSeconds,
-  syncBusinessMetrics,
-} from './lib/metrics.js'
+import { register, httpRequestDurationSeconds } from './lib/metrics.js'
+import { syncBusinessMetrics } from './lib/syncMetrics.js'
 import { prisma } from './prisma.js'
 import { closeRedis } from './lib/redis.js'
 import { authRouter } from './routes/auth.js'
