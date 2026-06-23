@@ -8,6 +8,7 @@ import {
   validateGameAnswerSchema,
 } from '../services/game.js'
 import { optionalAuth } from '../middleware/auth.js'
+import { syncBusinessMetrics } from '../lib/metrics.js'
 
 const gameQuestionQuerySchema = z.object({
   level: z.string().optional(),
@@ -94,6 +95,7 @@ gameRouter.post(
       parsed.data,
       req.user?.userId ?? null,
     )
+    void syncBusinessMetrics()
     return res.json(result)
   }),
 )

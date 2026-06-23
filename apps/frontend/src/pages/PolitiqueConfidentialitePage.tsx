@@ -139,13 +139,13 @@ export default function PolitiqueConfidentialitePage() {
 
       <StaticSection title="Stockage local du navigateur">
         <StaticP>
-          Lors de la connexion, des informations d'authentification (jeton JWT,
-          rôle, nom d'utilisateur, adresse e-mail) sont stockées dans le
-          stockage local de votre navigateur (
-          <code className="text-xs">localStorage</code>). Ces données restent
-          sur votre appareil et ne sont transmises au serveur qu'à chaque
-          requête. Elles sont supprimées à la déconnexion ou à la suppression du
-          compte.
+          Lors de la connexion, le jeton JWT est stocké dans un cookie{' '}
+          <code className="text-xs">httpOnly</code> (inaccessible depuis
+          JavaScript). Le rôle et le nom d'utilisateur sont également conservés
+          dans le stockage local de votre navigateur (
+          <code className="text-xs">localStorage</code>) pour l'affichage de
+          l'interface. Ces données restent sur votre appareil et sont supprimées
+          à la déconnexion ou à la suppression du compte.
         </StaticP>
         <StaticP>
           Aucun cookie de traçage ni de service d'analyse tiers n'est utilisé.

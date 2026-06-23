@@ -241,15 +241,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Connexion
                 </NavLink>
               )}
-              {installPromptEvent && (
-                <button
-                  className={buttonClass('primary')}
-                  type="button"
-                  onClick={() => void installApp()}
-                >
-                  Installer l'app
-                </button>
-              )}
             </div>
           </nav>
 

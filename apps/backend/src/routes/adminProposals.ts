@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client'
 import { AppError } from '../lib/errors.js'
 import { recordAdminAudit } from '../lib/adminAudit.js'
 import { invalidateGameEntryCacheSafely } from '../lib/gameEntryCache.js'
+import { syncBusinessMetrics } from '../lib/metrics.js'
 import { decryptSensitiveText } from '../lib/encryption.js'
 
 export const adminProposalsRouter = Router()
@@ -135,6 +136,7 @@ adminProposalsRouter.put(
       })
 
       invalidateGameEntryCacheSafely('proposal accepted')
+      void syncBusinessMetrics()
 
       return res.json({ status: 'ACCEPTED', entry: publicProposal(created) })
     } else {
@@ -197,6 +199,7 @@ adminProposalsRouter.delete(
     })
 
     invalidateGameEntryCacheSafely('proposal rejected or deleted')
+    void syncBusinessMetrics()
 
     return res.status(204).send()
   }),
