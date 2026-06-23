@@ -98,35 +98,6 @@
       }
     },
     {
-      "id": 5,
-      "type": "gauge",
-      "title": "Taux d'erreur 5xx",
-      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "rate(http_requests_total{status_class=\"5xx\"}[5m]) / rate(http_requests_total[5m])",
-          "refId": "A"
-        }
-      ],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 0.1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.01 },
-              { "color": "red", "value": 0.05 }
-            ]
-          }
-        }
-      }
-    },
-    {
       "id": 6,
       "type": "stat",
       "title": "Images uploadées",
@@ -206,6 +177,63 @@
           },
           "custom": { "lineWidth": 2 }
         }
+      }
+    },
+    {
+      "id": 9,
+      "type": "piechart",
+      "title": "Références par type",
+      "gridPos": { "x": 0, "y": 12, "w": 8, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "references_total{type=\"website\"}",
+          "legendFormat": "Sites web",
+          "refId": "A"
+        },
+        {
+          "expr": "references_total{type=\"myrmecology\"}",
+          "legendFormat": "Publications",
+          "refId": "B"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Taxons (espèces)",
+      "gridPos": { "x": 8, "y": 12, "w": 4, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "count(taxons_total)", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Taxons par sous-famille",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (subfamily) (taxons_total)",
+          "legendFormat": "{{subfamily}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "orientation": "horizontal" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
       }
     }
   ]
