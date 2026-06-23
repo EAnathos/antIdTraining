@@ -376,6 +376,12 @@
       gap: 0.5rem;
     }
 
+    .app-footer__link,
+    .app-footer__content--inline,
+    .app-footer__copyright {
+      font-size: 0.65rem;
+    }
+
     .app-header__top {
       flex-wrap: nowrap;
       align-items: center;
