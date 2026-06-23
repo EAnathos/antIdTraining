@@ -18,6 +18,9 @@ vi.mock('../../src/lib/adminAudit.js', () => ({
 vi.mock('../../src/lib/gameEntryCache.js', () => ({
   invalidateGameEntryCacheSafely: mocks.invalidateGameEntryCacheSafely,
 }))
+vi.mock('../../src/lib/syncMetrics.js', () => ({
+  syncBusinessMetrics: vi.fn(),
+}))
 
 import { adminProposalsRouter } from '../../src/routes/adminProposals.js'
 
