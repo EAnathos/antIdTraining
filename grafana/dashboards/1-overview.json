@@ -98,6 +98,25 @@
       }
     },
     {
+      "id": 10,
+      "type": "stat",
+      "title": "Taxons (espèces)",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(taxons_total)", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        }
+      }
+    },
+    {
       "id": 6,
       "type": "stat",
       "title": "Images uploadées",
@@ -183,7 +202,7 @@
       "id": 9,
       "type": "piechart",
       "title": "Références par type",
-      "gridPos": { "x": 0, "y": 12, "w": 8, "h": 6 },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -199,25 +218,7 @@
       ],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-    {
-      "id": 10,
-      "type": "stat",
-      "title": "Taxons (espèces)",
-      "gridPos": { "x": 8, "y": 12, "w": 4, "h": 6 },
-      "datasource": "Prometheus",
-      "targets": [{ "expr": "sum(taxons_total)", "refId": "A" }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
-          }
-        }
-      }
-    },
+
     {
       "id": 11,
       "type": "piechart",
