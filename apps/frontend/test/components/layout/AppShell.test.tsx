@@ -116,6 +116,8 @@ describe('AppShell', () => {
     expect(screen.getByText(/Mode hors ligne activé/)).toBeInTheDocument()
     fireEvent(window, beforeInstallPrompt)
 
+    // Le bouton d'installation est uniquement dans le drawer mobile
+    fireEvent.click(screen.getByRole('button', { name: /Ouvrir le menu/i }))
     expect(
       screen.getByRole('button', { name: /Installer/i }),
     ).toBeInTheDocument()
