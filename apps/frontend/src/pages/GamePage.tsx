@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api, backendOrigin } from '../lib/api'
 import { AUTH_ROLE_KEY } from '../lib/authKeys'
 import { getResponsiveImageProps } from '../lib/image'
+import { UserProfileModal } from '../components/UserProfileModal'
 import type { GameQuestion } from '../types/models'
 
 type GameValidation = {
@@ -153,6 +154,10 @@ export function GamePage() {
     url: string
   } | null>(null)
   const [sessionScore, setSessionScore] = useState(0)
+  const [selectedProfileUsername, setSelectedProfileUsername] = useState<
+    string | null
+  >(null)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const fullscreenTouchStartX = useRef<number | null>(null)
   const isConnected =
     typeof window !== 'undefined' &&
@@ -561,10 +566,23 @@ export function GamePage() {
                     )}
                   </p>
                 )}
-                <p>
-                  <span className="font-semibold">Crédit photo :</span>{' '}
-                  {question.details.photoCredit}
-                </p>
+                {question.details.photoCredit && (
+                  <p>
+                    <span className="font-semibold">Crédit photo :</span>{' '}
+                    <button
+                      type="button"
+                      className="underline hover:opacity-80"
+                      onClick={() => {
+                        setSelectedProfileUsername(
+                          question.details!.photoCredit as string,
+                        )
+                        setProfileModalOpen(true)
+                      }}
+                    >
+                      {question.details.photoCredit}
+                    </button>
+                  </p>
+                )}
               </div>
             )}
 
@@ -820,6 +838,12 @@ export function GamePage() {
           </div>
         </div>
       )}
+
+      <UserProfileModal
+        username={selectedProfileUsername ?? ''}
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+      />
     </section>
   )
 }

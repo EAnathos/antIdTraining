@@ -8,7 +8,7 @@ export default function CguPage() {
   return (
     <StaticPage
       title="Conditions générales d'utilisation"
-      subtitle="Dernière mise à jour : 16 juin 2026"
+      subtitle="Dernière mise à jour : 24 juin 2026"
     >
       <StaticSection title="Objet">
         <StaticP>
@@ -55,6 +55,12 @@ export default function CguPage() {
           En soumettant un contenu, l'utilisateur accorde à l'éditeur une
           licence non exclusive d'utilisation à des fins pédagogiques dans le
           cadre de la plateforme.
+        </StaticP>
+        <StaticP>
+          La biographie du profil peut contenir des liens ou des références vers
+          des réseaux sociaux (Instagram, pseudo Discord, etc.). Les liens vers
+          des sites de vente, de commerce ou à caractère publicitaire sont
+          interdits dans la biographie.
         </StaticP>
       </StaticSection>
 
