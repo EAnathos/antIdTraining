@@ -440,14 +440,14 @@ function ProposalFormFields({
               {form.biotope.length}/50
             </p>
           </div>
-          <input
-            className="ui-input"
-            placeholder="Crédit photo (votre pseudo par défaut)"
-            value={form.photoCredit}
-            minLength={3}
-            required
-            onChange={(e) => onPatch({ photoCredit: e.target.value })}
-          />
+          <div className="ui-input flex items-center gap-2 bg-[color:var(--app-surface-muted)] cursor-not-allowed">
+            <span className="text-[color:var(--app-text-soft)] text-sm">
+              Crédit photo :
+            </span>
+            <span className="font-medium text-[color:var(--app-text)]">
+              {form.photoCredit}
+            </span>
+          </div>
           <div className="space-y-2 md:col-span-2">
             {existingImages && existingImages.length > 0 && (
               <div className="space-y-1">

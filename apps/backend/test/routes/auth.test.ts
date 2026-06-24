@@ -608,7 +608,7 @@ describe('authRouter', () => {
   })
 
   it('returns public user profile for username', async () => {
-    prismaMocks.user.findUnique.mockResolvedValue({
+    prismaMocks.user.findFirst.mockResolvedValue({
       id: 'user_5',
       username: 'bob',
       avatar: '/uploads/bob.webp',
@@ -628,7 +628,7 @@ describe('authRouter', () => {
   })
 
   it('returns 404 for unknown username', async () => {
-    prismaMocks.user.findUnique.mockResolvedValue(null)
+    prismaMocks.user.findFirst.mockResolvedValue(null)
 
     const { response, json } = await get('/api/auth/users/unknown_user')
 
