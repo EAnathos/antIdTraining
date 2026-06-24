@@ -634,10 +634,10 @@ authRouter.post(
 authRouter.get(
   '/users/:username',
   asyncHandler(async (req, res) => {
-    const username = req.params.username as string
+    const username = (req.params.username as string).replace(/\s+/g, '_')
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const user = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true, username: true, avatar: true, bio: true },
     })
 
