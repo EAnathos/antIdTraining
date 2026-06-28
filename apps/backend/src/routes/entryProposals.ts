@@ -48,7 +48,7 @@ const proposalSchema = z.object({
     .trim(),
   observedAt: z.coerce
     .date()
-    .max(new Date(), 'La date ne peut pas être dans le futur'),
+    .refine((d) => d <= new Date(), 'La date ne peut pas être dans le futur'),
   biotope: z
     .string()
     .min(3, 'Biotope trop court')
