@@ -59,7 +59,7 @@
     "@types/ioredis": "^4.28.10",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.1.1",
     "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^7.8.0",
     "tsx": "^4.22.3",
