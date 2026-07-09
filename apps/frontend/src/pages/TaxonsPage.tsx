@@ -165,6 +165,7 @@ function TreeView({
     new Map(),
   )
   const containerRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
   const MARGIN = 16
 
   const ROW_H = 30
@@ -308,6 +309,92 @@ function TreeView({
   const svgWidth = 8 + 7 * COL_W + NODE_W + 20
   const allExpanded = collapsed.size === 0
 
+  // Build a standalone SVG string of the full tree (current collapse state),
+  // without the pan/zoom transform and with CSS variables resolved to concrete
+  // colors so the file renders correctly outside the app.
+  function buildExportSvg(): string | null {
+    const source = svgRef.current
+    if (!source) return null
+
+    const rootStyles = getComputedStyle(document.documentElement)
+    const resolveVar = (name: string) =>
+      rootStyles.getPropertyValue(name.trim()).trim()
+
+    const clone = source.cloneNode(true) as SVGSVGElement
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    clone.setAttribute('width', String(svgWidth))
+    clone.setAttribute('height', String(svgHeight))
+    clone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
+    clone.setAttribute(
+      'style',
+      'font-family: system-ui, -apple-system, sans-serif',
+    )
+
+    // Reset the inner transform so the whole tree is exported at natural size.
+    const group = clone.querySelector('g')
+    if (group) group.setAttribute('transform', 'translate(0,10)')
+
+    // Opaque background so the export isn't transparent.
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    bg.setAttribute('x', '0')
+    bg.setAttribute('y', '0')
+    bg.setAttribute('width', String(svgWidth))
+    bg.setAttribute('height', String(svgHeight))
+    bg.setAttribute('fill', resolveVar('--app-surface') || '#ffffff')
+    clone.insertBefore(bg, clone.firstChild)
+
+    let str = new XMLSerializer().serializeToString(clone)
+    str = str.replace(
+      /var\(([^)]+)\)/g,
+      (_match, name: string) => resolveVar(name) || 'transparent',
+    )
+    return str
+  }
+
+  function triggerDownload(url: string, filename: string) {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
+  function exportSvg() {
+    const str = buildExportSvg()
+    if (!str) return
+    const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    triggerDownload(url, 'arbre-taxonomique.svg')
+    URL.revokeObjectURL(url)
+  }
+
+  function exportPng() {
+    const str = buildExportSvg()
+    if (!str) return
+    const scaleFactor = 2
+    // Use a data: URL rather than a blob: URL — the app's CSP allows
+    // `img-src 'self' data:` but not blob:, which would block the <img> load.
+    const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(str)}`
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = svgWidth * scaleFactor
+      canvas.height = svgHeight * scaleFactor
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.scale(scaleFactor, scaleFactor)
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const pngUrl = URL.createObjectURL(blob)
+        triggerDownload(pngUrl, 'arbre-taxonomique.png')
+        URL.revokeObjectURL(pngUrl)
+      }, 'image/png')
+    }
+    img.src = svgDataUrl
+  }
+
   // Auto-fit initial scale to container width on mount
   useEffect(() => {
     const cw = containerRef.current?.clientWidth
@@ -404,6 +491,22 @@ function TreeView({
           >
             {allExpanded ? 'Tout réduire' : 'Tout étendre'}
           </button>
+          <button
+            type="button"
+            className="ui-action ui-action--secondary"
+            onClick={exportSvg}
+            title="Exporter l'arbre au format SVG"
+          >
+            SVG
+          </button>
+          <button
+            type="button"
+            className="ui-action ui-action--secondary"
+            onClick={exportPng}
+            title="Exporter l'arbre au format image (PNG)"
+          >
+            PNG
+          </button>
         </div>
       </div>
 
@@ -462,6 +565,7 @@ function TreeView({
         onWheel={onWheel}
       >
         <svg
+          ref={svgRef}
           width={svgWidth}
           height={svgHeight}
           style={{ display: 'block', overflow: 'visible' }}

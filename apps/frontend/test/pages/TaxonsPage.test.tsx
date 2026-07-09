@@ -536,6 +536,66 @@ describe('TaxonsPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('exports the tree view as SVG and PNG', async () => {
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock')
+    const revokeObjectURL = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    // jsdom has no real canvas; stub the 2D context + toBlob used by exportPng.
+    const drawImage = vi.fn()
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    const originalToBlob = HTMLCanvasElement.prototype.toBlob
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+      scale: vi.fn(),
+      drawImage,
+    }) as unknown as typeof originalGetContext
+    HTMLCanvasElement.prototype.toBlob = vi.fn((cb: BlobCallback) =>
+      cb(new Blob(['png'], { type: 'image/png' })),
+    )
+
+    // Setting src on a real jsdom Image never fires onload; stub it so the
+    // PNG rasterization path runs synchronously.
+    class MockImage {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      private _src = ''
+      set src(value: string) {
+        this._src = value
+        this.onload?.()
+      }
+      get src() {
+        return this._src
+      }
+    }
+    vi.stubGlobal('Image', MockImage)
+
+    try {
+      render(<TaxonsPage />)
+      await screen.findByText('Taxons enregistrés')
+      fireEvent.click(screen.getByTitle('Basculer en vue arborescente'))
+
+      fireEvent.click(screen.getByRole('button', { name: 'SVG' }))
+      fireEvent.click(screen.getByRole('button', { name: 'PNG' }))
+
+      expect(clickSpy).toHaveBeenCalledTimes(2)
+      expect(drawImage).toHaveBeenCalled()
+      expect(createObjectURL).toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+      HTMLCanvasElement.prototype.getContext = originalGetContext
+      HTMLCanvasElement.prototype.toBlob = originalToBlob
+      createObjectURL.mockRestore()
+      revokeObjectURL.mockRestore()
+      clickSpy.mockRestore()
+    }
+  })
+
   it('shows empty state when no taxons are returned', async () => {
     apiMocks.get.mockImplementationOnce(async (path: string) => {
       if (path === '/taxons') {
